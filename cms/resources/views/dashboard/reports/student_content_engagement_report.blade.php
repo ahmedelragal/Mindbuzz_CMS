@@ -16,28 +16,54 @@
                         <div class="nk-content-body">
                             <div class="card">
                                 <div class="card-header">
-                                    <h5 class="title">Class Content Engagement Report</h5>
+                                    <h5 class="title">Student Content Engagement Report</h5>
                                 </div>
                                 <!-- Form Section -->
                                 <div class="card-body">
-                                    <form method="GET" action="{{ route('reports.classContentEngagementReport') }}">
+                                    <form method="GET" action="{{ route('reports.studentContentEngagementReport') }}">
                                         <div class="row">
-                                            <!-- Group Filter -->
+                                            <!-- School Filter -->
+                                            @role('Admin')
                                             <div class="col-md-4">
-                                                <label for="group_id">Select school/class</label>
-                                                <select class="form-select js-select2" name="group_id" id="group_id" required>
-                                                    <option value="" disabled {{ old('group_id', $request['group_id'] ?? '') == '' ? 'selected' : '' }}>Choose a school/class</option>
-                                                    @foreach ($groups as $group)
-                                                    @php
-                                                    $sch = App\Models\School::where('id', $group->school_id)->first();
-                                                    @endphp
-                                                    <!-- <option value="{{ $group->id }}" data-school="{{ $sch->id }}">{{ $sch->name }} / {{ $group->name }}</option> -->
-                                                    <option value="{{ $group->id }}" data-school="{{ $sch->id }}" {{ old('group_id', $request['group_id'] ?? '') == $group->id ? 'selected' : '' }}>
-                                                        {{ $sch->name }} / {{ $group->name }}
+                                                <label for="school_id">Select School</label>
+                                                <select class="form-select js-select2" name="school_id" id="school_id" required>
+                                                    <option value="" disabled {{ old('school_id', $request['school_id'] ?? '') == '' ? 'selected' : '' }}>Choose a school/class</option>
+                                                    @foreach ($schools as $school)
+                                                    <option value="{{ $school->id }}" data-school="{{ $school->id }}" {{ old('school_id', $request['school_id'] ?? '') == $school->id ? 'selected' : '' }}>
+                                                        {{ $school->name }}
                                                     </option>
                                                     @endforeach
                                                 </select>
                                             </div>
+                                            @endrole
+                                            @role('school')
+                                            <input type="hidden" name="school_id" value="{{ auth()->user()->school_id }}">
+                                            @endrole
+
+
+                                            <div class="col-md-4">
+                                                <label for="student_id">Select Student</label>
+                                                <select class="form-select js-select2" name="student_id" id="student_id">
+                                                    @role('Admin')
+                                                    <option value="" selected disabled>Choose a Student</option>
+                                                    @endrole
+                                                    @role('school')
+                                                    @php
+                                                    $schStudents = App\Models\User::where('school_id', auth()->user()->school_id)
+                                                    ->where('role', 2)
+                                                    ->where('is_student', 1)
+                                                    ->get();
+                                                    @endphp
+                                                    @foreach ($schStudents as $student)
+                                                    <option value="{{ $student->id }}" {{ old('student_id', $request['student_id'] ?? '') == $student->id ? 'selected' : '' }}>
+                                                        {{ $student->name }}
+                                                    </option>
+                                                    @endforeach
+                                                    @endrole
+                                                </select>
+                                            </div>
+                                        </div>
+                                        <div class="row">
                                             <!-- Program Filter -->
                                             <div class="col-md-4">
                                                 <label for="program_id">Select Program</label>
@@ -56,7 +82,7 @@
                                             <div class="col-md-4">
                                                 <label for="filter">Filter By</label>
                                                 <select class="form-select js-select2" name="filter" id="filter">
-                                                    <option value="Unit" selected {{ old('filter', $request['filter'] ?? '') == 'Unit' ? 'selected' : '' }}>Unit</option>
+                                                    <option value="Unit" selected{{ old('filter', $request['filter'] ?? '') == 'Unit' ? 'selected' : '' }}>Unit</option>
                                                     <option value="Lesson" {{ old('filter', $request['filter'] ?? '') == 'Lesson' ? 'selected' : '' }}>Lesson</option>
                                                     <option value="Game" {{ old('filter', $request['filter'] ?? '') == 'Game' ? 'selected' : '' }}>Game</option>
                                                     <option value="Skill" {{ old('filter', $request['filter'] ?? '') == 'Skill' ? 'selected' : '' }}>Skill</option>
@@ -206,6 +232,79 @@
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 @section('page_js')
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    $(document).ready(function() {
+        // Initialize select2 for the filters
+        $('.js-select2').select2();
+
+        // Retrieve the PHP variable in JavaScript
+        var selectedStudentId = "{{ $request['student_id'] ?? '' }}";
+        var selectedProgramId = "{{ $request['program_id'] ?? '' }}";
+
+        // Trigger change on page load
+        var schoolId = $('#school_id option:selected').data('school');
+        if (schoolId) {
+            getSchoolStudents(schoolId, function() {
+                setSelectedStudent(selectedStudentId);
+                setSelectedProgram(selectedProgramId);
+            });
+        }
+
+        // Fetch students when school is changed
+        $('#school_id').change(function() {
+            var schoolId = $('#school_id option:selected').data('school');
+            getSchoolStudents(schoolId, function() {
+                setSelectedStudent(selectedStudentId);
+            });
+        });
+    });
+
+    function getSchoolStudents(schoolId, callback) {
+        $.ajax({
+            url: '/get-students-school/' + schoolId,
+            type: "GET",
+            dataType: "json",
+            success: function(data) {
+                $('select[name="student_id"]').empty();
+                $('select[name="student_id"]').append('<option value="">Choose a Student</option>');
+                $.each(data, function(key, value) {
+                    $('select[name="student_id"]').append('<option value="' +
+                        value.id + '">' + value.name + '</option>');
+                });
+
+                // Re-initialize select2 to refresh the options
+                $('select[name="student_id"]').select2();
+
+                // Execute the callback function if provided
+                if (typeof callback === 'function') {
+                    callback();
+                }
+            },
+            error: function(xhr, status, error) {
+                console.error('AJAX Error:', error);
+            }
+        });
+    }
+
+    function setSelectedStudent(studentId) {
+        if (studentId) {
+            // Check if the student ID exists in the options
+            if ($('select[name="student_id"] option[value="' + studentId + '"]').length > 0) {
+                $('select[name="student_id"]').val(studentId).trigger('change');
+            }
+        }
+    }
+
+    function setSelectedProgram(ProgramId) {
+        if (ProgramId) {
+            // Check if the student ID exists in the options
+            if ($('select[name="program_id"] option[value="' + ProgramId + '"]').length > 0) {
+                $('select[name="program_id"]').val(ProgramId).trigger('change');
+            }
+        }
+    }
+</script>
+
 @if (isset($highEngagementLabels) || isset($highEngagementValues) || isset($lowEngagementLabels) || isset($lowEngagementValues))
 <script>
     document.addEventListener('DOMContentLoaded', function() {
@@ -295,6 +394,7 @@
     });
 </script>
 @endif
+
 <!-- SweetAlert validation messages -->
 @if($errors->any())
 <script>
@@ -329,38 +429,4 @@
     });
 </script>
 @endif
-
-<script>
-    $(document).ready(function() {
-        $('.js-select2').select2();
-
-        $('#group_id').change(function() {
-            var schoolId = $('#group_id option:selected').data('school');
-            var groupId = $('#group_id').val();
-            getProgramsByGroup(schoolId, groupId);
-        });
-        $('#group_id').trigger('change');
-    });
-
-    function getProgramsByGroup(schoolId, groupId) {
-        $.ajax({
-            url: '/get-programs-group/' + schoolId + '/' + groupId,
-            type: "GET",
-            dataType: "json",
-            success: function(data) {
-                $('select[name="program_id"]').empty();
-                $('select[name="program_id"]').append(
-                    '<option value="">Choose a Program</option>');
-                $.each(data, function(key, value) {
-                    $('select[name="program_id"]').append('<option value="' +
-                        value.id + '">' +
-                        value.program_details + '</option>');
-                });
-            },
-            error: function(xhr, status, error) {
-                console.error('AJAX Error:', error);
-            }
-        });
-    }
-</script>
 @endsection

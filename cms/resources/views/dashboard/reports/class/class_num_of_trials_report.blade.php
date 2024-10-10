@@ -124,7 +124,7 @@
                                                     <th>Test Name</th>
                                                     <th>Score</th>
                                                     <th>Mistake Count</th>
-                                                    <th>Created At</th>
+                                                    <th>Started At</th>
                                                 </tr>
                                             </thead>
                                             <tbody>

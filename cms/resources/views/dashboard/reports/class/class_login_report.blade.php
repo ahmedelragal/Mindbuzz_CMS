@@ -42,6 +42,7 @@
                                             </div>
                                         </div>
                                     </form>
+                                    @if(isset($studentName) && isset($numLogin))
                                     <ul class="nav nav-tabs mt-4" id="reportTabs" role="tablist">
                                         <li class="nav-item">
                                             <a class="nav-link active" id="student-login-tab" data-toggle="tab"
@@ -56,10 +57,17 @@
                                     </ul>
 
                                     <!-- Display Chart if Data is Available -->
-                                    @if(isset($studentName) && isset($numLogin))
                                     <div class="container mt-5">
-                                        <canvas id="studentloginChart" width="400" height="200"></canvas>
+
+                                        <div class="container mt-5">
+                                            <div class="chart-buttons" id="chart-buttons" style="display: flex; justify-content: flex-end; gap: 10px;">
+                                                <button class="btn btn-primary" id="prevBtn" onclick="previousPage()">Previous</button>
+                                                <button class="btn btn-primary" id="nextBtn" onclick="nextPage()">Next</button>
+                                            </div>
+                                            <canvas id="studentloginChart" width="400" height="200"></canvas>
+                                        </div>
                                     </div>
+
                                     <div class="container mt-5">
                                         <canvas id="teacherloginChart" width="400" height="200"></canvas>
                                     </div>
@@ -80,61 +88,83 @@
 @section('page_js')
 <!-- Include Chart.js -->
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        $(document).ready(function() {
+            console.log("aaa");
+            // Initialize select2 for the filters
+            $('.js-select2').select2();
+        });
+    });
+</script>
 
 @if(isset($studentName) && isset($numLogin) && isset($teacherName) && isset($teacherLogin))
 <script>
     document.addEventListener('DOMContentLoaded', function() {
-        // Data from controller
-        var studentNames = @json($studentName);
-        var numLogins = @json($numLogin);
-        var teacherNames = @json($teacherName);
-        var teacherLogins = @json($teacherLogin);
+        const pageSize = 6;
+        let currentPage = 0;
 
-        // Create the bar chart
-        var ctx = document.getElementById('studentloginChart').getContext('2d');
-        var ctx2 = document.getElementById('teacherloginChart').getContext('2d');
-        var studentloginChart = new Chart(ctx, {
-            type: 'bar',
-            data: {
-                labels: studentNames,
-                datasets: [{
-                    label: 'Student Logins',
-                    data: numLogins,
-                    backgroundColor: '#E9C874',
-                    borderColor: '#E9C874',
-                    borderWidth: 1
-                }]
-            },
-            options: {
-                scales: {
-                    x: {
-                        min: 0,
-                        max: studentNames.length > 1 ? studentNames.length - 1 : 1,
-                        grid: {
-                            display: false
+        // Data from controller
+        const studentNames = @json($studentName);
+        const numLogins = @json($numLogin);
+        const teacherNames = @json($teacherName);
+        const teacherLogins = @json($teacherLogin);
+
+        // Initialize the student login chart
+        const ctx = document.getElementById('studentloginChart').getContext('2d');
+        const ctx2 = document.getElementById('teacherloginChart').getContext('2d');
+
+        let studentloginChart = initializeChart(ctx, studentNames.slice(0, pageSize), numLogins.slice(0, pageSize));
+
+        // Function to initialize chart
+        function initializeChart(ctx, labels, data) {
+            return new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'Student Logins',
+                        data: data,
+                        backgroundColor: '#E9C874',
+                        borderColor: '#E9C874',
+                        borderWidth: 1,
+                        barThickness: 120
+                    }]
+                },
+                options: {
+                    scales: {
+                        x: {
+                            grid: {
+                                display: false
+                            }
+                        },
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                stepSize: 1,
+                            }
                         }
                     },
-                    y: {
-                        beginAtZero: true
-                    }
-                },
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: {
-                    legend: {
-                        display: true,
-                        position: 'top'
-                    }
-                },
-                layout: {
-                    padding: {
-                        left: 50,
-                        right: 50
+                    responsive: true,
+                    maintainAspectRatio: true,
+                    plugins: {
+                        legend: {
+                            display: true,
+                            position: 'top'
+                        }
+                    },
+                    layout: {
+                        padding: {
+                            left: 50,
+                            right: 50
+                        }
                     }
                 }
-            }
-        });
-        var teacherloginChart = new Chart(ctx2, {
+            });
+        }
+
+        // Initialize teacher login chart
+        let teacherloginChart = new Chart(ctx2, {
             type: 'bar',
             data: {
                 labels: teacherNames,
@@ -143,20 +173,22 @@
                     data: teacherLogins,
                     backgroundColor: '#E9C874',
                     borderColor: '#E9C874',
-                    borderWidth: 1
+                    borderWidth: 1,
+                    barThickness: 120
                 }]
             },
             options: {
                 scales: {
                     x: {
-                        min: 0,
-                        max: studentNames.length > 1 ? studentNames.length - 1 : 1,
                         grid: {
                             display: false
                         }
                     },
                     y: {
-                        beginAtZero: true
+                        beginAtZero: true,
+                        ticks: {
+                            stepSize: 1,
+                        }
                     }
                 },
                 responsive: true,
@@ -175,10 +207,48 @@
                 }
             }
         });
+
+        // Function to get data for the current page
+        function getCurrentPageData() {
+            const start = currentPage * pageSize;
+            const end = start + pageSize;
+            return {
+                labels: studentNames.slice(start, end),
+                data: numLogins.slice(start, end)
+            };
+        }
+
+        // Function to update the chart with the current page data
+        function updateChart() {
+            const pageData = getCurrentPageData();
+            if (studentloginChart) {
+                studentloginChart.data.labels = pageData.labels;
+                studentloginChart.data.datasets[0].data = pageData.data;
+                studentloginChart.update();
+            }
+        }
+
+        // Function to go to the previous page
+        window.previousPage = function() {
+            if (currentPage > 0) {
+                currentPage--;
+                updateChart(); // Call updateChart to refresh with new data
+            }
+        }
+
+        // Function to go to the next page
+        window.nextPage = function() {
+            if ((currentPage + 1) * pageSize < studentNames.length) {
+                currentPage++;
+                updateChart(); // Call updateChart to refresh with new data
+            }
+        }
+
         // Handle tab click events to show/hide charts
         document.getElementById('student-login-tab').addEventListener('click', function() {
             document.getElementById('studentloginChart').style.display = 'block';
             document.getElementById('teacherloginChart').style.display = 'none';
+            document.getElementById('chart-buttons').style.display = 'flex';
             // Update aria-selected attributes
             document.getElementById('student-login-tab').setAttribute('aria-selected', 'true');
             document.getElementById('teacher-login-tab').setAttribute('aria-selected', 'false');
@@ -191,6 +261,7 @@
         document.getElementById('teacher-login-tab').addEventListener('click', function() {
             document.getElementById('teacherloginChart').style.display = 'block';
             document.getElementById('studentloginChart').style.display = 'none';
+            document.getElementById('chart-buttons').style.display = 'none';
             // Update aria-selected attributes
             document.getElementById('teacher-login-tab').setAttribute('aria-selected', 'true');
             document.getElementById('student-login-tab').setAttribute('aria-selected', 'false');
@@ -205,9 +276,6 @@
         document.getElementById('teacherloginChart').style.display = 'none';
     });
 </script>
-
-
-
 @endif
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.min.js"

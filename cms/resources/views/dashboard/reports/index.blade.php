@@ -291,15 +291,19 @@
                                                     </div>
                                                 </form>
                                             </div>
-                                            <section class="mt-4">
-                                                <div class="containerchart" style="max-width: 600px; max-height: 600px;">
-                                                    {{-- <h2>Chart.js Responsive Bar Chart Demo</h2> --}}
-                                                    <div>
-                                                        <canvas id="masterybarChart" width="200" height="200" style="display:none;"></canvas>
-                                                    </div>
 
+                                            <section class="mt-4">
+                                                <div class="containerchart" style="max-width: 1000px; max-height: 700px;">
+                                                    <div class="chart-buttons" id="chart-buttons" style="display: none; justify-content: flex-end; gap: 10px;">
+                                                        <button class="btn btn-primary" id="prevBtn" onclick="previousPage()">Previous</button>
+                                                        <button class="btn btn-primary" id="nextBtn" onclick="nextPage()">Next</button>
+                                                    </div>
+                                                    <div>
+                                                        <canvas id="masterybarChart" width="1000" height="600" style="display:block;"></canvas>
+                                                    </div>
                                                 </div>
                                             </section>
+
                                             <div class="report-container mt-4"></div>
                                         </div>
 
@@ -484,6 +488,7 @@
 @endsection
 
 @section('page_js')
+
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.min.js"
     integrity="sha512-L0Shl7nXXzIlBSUUPpxrokqq4ojqgZFQczTYlGjzONGTDAcLremjwaWv5A+EDLnxhQzY5xUZPWLOLqYRkY0Cbw=="
     crossorigin="anonymous" referrerpolicy="no-referrer"></script>
@@ -492,6 +497,35 @@
     $(document).ready(function() {
         // Initialize select2 for the filters
         $('.js-select2').select2();
+
+        // Define the page size and the current page for pagination
+        let pageSize = 7; // Number of items per page
+        let currentPage = 0;
+        let masteryData = null;
+
+        // Function to get the current page data
+        function getCurrentPageData(data) {
+            const start = currentPage * pageSize;
+            const end = start + pageSize;
+            return {
+                labels: data.map(item => item.name).slice(start, end),
+                masteryPercentage: data.map(item => item.mastery_percentage).slice(start, end)
+            };
+        }
+        // Pagination controls for "Previous" and "Next"
+        window.previousPage = function() {
+            if (currentPage > 0) {
+                currentPage--;
+                renderMasteryChart(masteryData);
+            }
+        }
+
+        window.nextPage = function() {
+            if ((currentPage + 1) * pageSize < masteryData.length) {
+                currentPage++;
+                renderMasteryChart(masteryData);
+            }
+        }
 
         // Function to fetch and display reports
         function fetchReport(url, form, container) {
@@ -510,6 +544,12 @@
                     // Render the chart if data is available and it's the Mastery Report tab
                     if (response.length > 0 && response[0].mastery_percentage !== undefined) {
                         document.getElementById('masterybarChart').style.display = 'block';
+                        if (response.length < 7) {
+                            document.getElementById('chart-buttons').style.display = 'none';
+                        } else {
+                            document.getElementById('chart-buttons').style.display = 'flex';
+                        }
+                        masteryData = response;
                         renderMasteryChart(response);
                     }
 
@@ -550,7 +590,7 @@
                         backgroundColor: ['#1cd0a0', '#d84d42', '#e3b00d'],
                         borderColor: ['#1cd0a0', '#d84d42', '#e3b00d'],
                         borderWidth: 1,
-                        barThickness: 100
+                        maxBarThickness: 100
                     }]
                 },
                 options: {
@@ -571,43 +611,44 @@
                 }
             });
         }
-        // Function to render the chart
+
+        // Function to render the chart with paginated data
         function renderMasteryChart(data) {
-            // const ctx = document.getElementById('barChart').getContext('2d');
-            // var index = 11;
-            var ctx = document.getElementById("masterybarChart").getContext("2d");
+            const ctx = document.getElementById("masterybarChart").getContext("2d");
+
             // Destroy previous chart instance if it exists
             if (window.masteryChart) {
                 window.masteryChart.destroy();
             }
 
-            // Extract labels and data points from the response
-            const labels = data.map(item => item.name);
-            const failedData = data.map(item => item.failed);
-            const introducedData = data.map(item => item.introduced);
-            const practicedData = data.map(item => item.practiced);
-            const masteredData = data.map(item => item.mastered);
-            const masteredPercentage = data.map(item => item.mastery_percentage);
+            // Get current page data
+            const pageData = getCurrentPageData(data);
 
-            // Create the new chart with the actual data
+            // Create the new chart with the paginated data
             window.masteryChart = new Chart(ctx, {
                 type: 'bar',
                 data: {
-                    labels: labels,
+                    labels: pageData.labels,
                     datasets: [{
                         label: 'Mastery Percentage',
-                        data: masteredPercentage,
+                        data: pageData.masteryPercentage,
                         backgroundColor: 'rgba(54, 162, 235, 0.5)',
                         borderColor: 'rgba(54, 162, 235, 1)',
                         borderWidth: 1,
-                        barThickness: 100
+                        maxBarThickness: 100
                     }]
                 },
                 options: {
                     scales: {
                         x: {
-                            min: 0,
-                            max: labels.length > 1 ? labels.length - 1 : 1,
+                            ticks: {
+                                callback: function(value, index, values) {
+                                    let label = this.getLabelForValue(value);
+                                    return label.length > 10 ? label.substr(0, 10) + '...' : label;
+                                },
+                                minRotation: 45,
+                                maxRotation: 45,
+                            },
                             grid: {
                                 display: false
                             }
@@ -646,6 +687,8 @@
                 }
             });
         }
+
+
 
         function renderTrialsChart(data) {
             const ctx = document.getElementById('trialsbarChart').getContext('2d');

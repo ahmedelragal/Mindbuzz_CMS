@@ -155,6 +155,9 @@
 
 <script>
     $(document).ready(function() {
+        // Initialize select2 for the filters
+        $('.js-select2').select2();
+
         $('#sch_id').change(function() {
             var schoolId = $('#sch_id option:selected').data('school');
             var groupId = $('#sch_id').val();

@@ -16,31 +16,33 @@
                         <div class="nk-content-body">
                             <div class="card">
                                 <div class="card-header">
-                                    <h5 class="title">Class Mastery Report</h5>
+                                    <h5 class="title">Class Content Usage Report</h5>
                                 </div>
                                 <!-- Form Section -->
                                 <div class="card-body">
-                                    <form method="GET" action="{{ route('reports.classMasteryReportWeb') }}">
+                                    <form method="GET" action="{{ route('reports.classContentUsageReport') }}">
                                         <div class="row">
                                             <!-- Group Filter -->
                                             <div class="col-md-4">
                                                 <label for="group_id">Select school/class</label>
                                                 <select class="form-select js-select2" name="group_id" id="group_id" required>
-                                                    <option value="" disabled>Choose a school/class</option>
+                                                    <option value="" disabled {{ old('group_id', $request['group_id'] ?? '') == '' ? 'selected' : '' }}>Choose a school/class</option>
                                                     @foreach ($groups as $group)
                                                     @php
                                                     $sch = App\Models\School::where('id', $group->school_id)->first();
                                                     @endphp
-                                                    <option value="{{ $group->id }}" data-school="{{ $sch->id }}">{{ $sch->name }} / {{ $group->name }}</option>
+                                                    <!-- <option value="{{ $group->id }}" data-school="{{ $sch->id }}">{{ $sch->name }} / {{ $group->name }}</option> -->
+                                                    <option value="{{ $group->id }}" data-school="{{ $sch->id }}" {{ old('group_id', $request['group_id'] ?? '') == $group->id ? 'selected' : '' }}>
+                                                        {{ $sch->name }} / {{ $group->name }}
+                                                    </option>
                                                     @endforeach
                                                 </select>
                                             </div>
-
                                             <!-- Program Filter -->
                                             <div class="col-md-4">
                                                 <label for="program_id">Select Program</label>
-                                                <select class="form-select js-select2" name="program_id" id="program_id" required>
-                                                    <option value="" disabled selected>Choose a Program</option>
+                                                <select class="form-select js-select2" name="program_id" id="program_id">
+                                                    <option value="" selected>All Programs</option>
                                                     @foreach ($programs as $program)
                                                     <option value="{{ $program->id }}">
                                                         {{ $program->course ? $program->course->name : 'No Course' }} /
@@ -54,10 +56,11 @@
                                             <div class="col-md-4">
                                                 <label for="filter">Filter By</label>
                                                 <select class="form-select js-select2" name="filter" id="filter">
-                                                    <option value="Unit" selected>Unit</option>
-                                                    <option value="Lesson">Lesson</option>
-                                                    <option value="Game">Game</option>
-                                                    <option value="Skill">Skill</option>
+                                                    <option value="" selected>No Filter</option>
+                                                    <option value="Unit" {{ old('filter', $request['filter'] ?? '') == 'Unit' ? 'selected' : '' }}>Unit</option>
+                                                    <option value="Lesson" {{ old('filter', $request['filter'] ?? '') == 'Lesson' ? 'selected' : '' }}>Lesson</option>
+                                                    <option value="Game" {{ old('filter', $request['filter'] ?? '') == 'Game' ? 'selected' : '' }}>Game</option>
+                                                    <option value="Skill" {{ old('filter', $request['filter'] ?? '') == 'Skill' ? 'selected' : '' }}>Skill</option>
                                                 </select>
                                             </div>
                                         </div>
@@ -66,13 +69,15 @@
                                             <!-- From Date Filter -->
                                             <div class="col-md-4">
                                                 <label for="from_date">From Date</label>
-                                                <input type="date" class="form-control" name="from_date" id="from_date">
+                                                <!-- <input type="date" class="form-control" name="from_date" id="from_date"> -->
+                                                <input type="date" class="form-control" name="from_date" id="from_date" value="{{ old('from_date', $request['from_date'] ?? '') }}">
                                             </div>
 
                                             <!-- To Date Filter -->
                                             <div class="col-md-4">
                                                 <label for="to_date">To Date</label>
-                                                <input type="date" class="form-control" name="to_date" id="to_date">
+                                                <!-- <input type="date" class="form-control" name="to_date" id="to_date"> -->
+                                                <input type="date" class="form-control" name="to_date" id="to_date" value="{{ old('to_date', $request['to_date'] ?? '') }}">
                                             </div>
 
                                             <!-- Submit Button -->
@@ -84,7 +89,7 @@
                                 </div>
                             </div>
                             <!-- Report Section -->
-                            @if(isset($chartLabels) && isset($chartPercentage))
+                            @if(isset($highEngagementLabels) || isset($highEngagementValues) || isset($lowEngagementLabels) || isset($lowEngagementValues))
                             <div class="card mt-4">
                                 <div class="card-body">
                                     <!-- Display Chart if Data is Available -->
@@ -99,114 +104,82 @@
 
                             <div class="card mt-4">
                                 <div class="card-body">
-                                    @if (!empty($units) || !empty($lessons) || !empty($games) || !empty($skills))
+                                    @if (isset($unitsEngagement) || isset($lessonsEngagement) || isset($gameEngagement) || isset($skillsEngagement))
 
-                                    @if (!empty($units))
-                                    <h5>Units Mastery</h5>
+                                    @if (isset($unitsEngagement))
+                                    <h5>Units Engagement</h5>
                                     <table class="table">
                                         <thead>
                                             <tr>
                                                 <th>Unit</th>
-                                                <th>Failed</th>
-                                                <th>Introduced</th>
-                                                <th>Practiced</th>
-                                                <th>Mastered</th>
-                                                <th>Mastery Percentage</th>
+                                                <th>Engagement Percentage</th>
                                             </tr>
                                         </thead>
                                         <tbody>
-                                            @foreach ($units as $unit)
+                                            @foreach ($unitsEngagement as $engagement)
                                             <tr>
-                                                <td>{{ $unit['name'] }}</td>
-                                                <td>{{ $unit['failed'] }}</td>
-                                                <td>{{ $unit['introduced'] }}</td>
-                                                <td>{{ $unit['practiced'] }}</td>
-                                                <td>{{ $unit['mastered'] }}</td>
-                                                <td>{{ $unit['mastery_percentage'] }}%</td>
+                                                <td>{{ $engagement['name'] }}</td>
+                                                <td>{{ $engagement['engagement_percentage'] }}%</td>
                                             </tr>
                                             @endforeach
                                         </tbody>
                                     </table>
                                     @endif
 
-                                    @if (!empty($lessons))
-                                    <h5>Lessons Mastery</h5>
+                                    @if (isset($lessonsEngagement))
+                                    <h5>Lessons Engagement</h5>
                                     <table class="table">
                                         <thead>
                                             <tr>
                                                 <th>Lesson</th>
-                                                <th>Failed</th>
-                                                <th>Introduced</th>
-                                                <th>Practiced</th>
-                                                <th>Mastered</th>
-                                                <th>Mastery Percentage</th>
+                                                <th>Engagement Percentage</th>
                                             </tr>
                                         </thead>
                                         <tbody>
-                                            @foreach ($lessons as $lesson)
+                                            @foreach ($lessonsEngagement as $engagement)
                                             <tr>
-                                                <td>{{ $lesson['name'] }}</td>
-                                                <td>{{ $lesson['failed'] }}</td>
-                                                <td>{{ $lesson['introduced'] }}</td>
-                                                <td>{{ $lesson['practiced'] }}</td>
-                                                <td>{{ $lesson['mastered'] }}</td>
-                                                <td>{{ $lesson['mastery_percentage'] }}%</td>
+                                                <td>{{ $engagement['name'] }}</td>
+                                                <td>{{ $engagement['engagement_percentage'] }}%</td>
                                             </tr>
                                             @endforeach
                                         </tbody>
                                     </table>
                                     @endif
 
-                                    @if (!empty($games))
-                                    <h5>Games Mastery</h5>
+                                    @if (isset($gameEngagement))
+                                    <h5>Game Engagement</h5>
                                     <table class="table">
                                         <thead>
                                             <tr>
                                                 <th>Game</th>
-                                                <th>Failed</th>
-                                                <th>Introduced</th>
-                                                <th>Practiced</th>
-                                                <th>Mastered</th>
-                                                <th>Mastery Percentage</th>
+                                                <th>Engagement Percentage</th>
                                             </tr>
                                         </thead>
                                         <tbody>
-                                            @foreach ($games as $game)
+                                            @foreach ($gameEngagement as $engagement)
                                             <tr>
-                                                <td>{{ $game['name'] }}</td>
-                                                <td>{{ $game['failed'] }}</td>
-                                                <td>{{ $game['introduced'] }}</td>
-                                                <td>{{ $game['practiced'] }}</td>
-                                                <td>{{ $game['mastered'] }}</td>
-                                                <td>{{ $game['mastery_percentage'] }}%</td>
+                                                <td>{{ $engagement['name'] }}</td>
+                                                <td>{{ $engagement['engagement_percentage'] }}%</td>
                                             </tr>
                                             @endforeach
                                         </tbody>
                                     </table>
                                     @endif
 
-                                    @if (!empty($skills))
-                                    <h5>Skills Mastery</h5>
+                                    @if (isset($skillsEngagement))
+                                    <h5>Skills Engagement</h5>
                                     <table class="table">
                                         <thead>
                                             <tr>
                                                 <th>Skill</th>
-                                                <th>Failed</th>
-                                                <th>Introduced</th>
-                                                <th>Practiced</th>
-                                                <th>Mastered</th>
-                                                <th>Mastery Percentage</th>
+                                                <th>Engagement Percentage</th>
                                             </tr>
                                         </thead>
                                         <tbody>
-                                            @foreach ($skills as $skill)
+                                            @foreach ($skillsEngagement as $engagement)
                                             <tr>
-                                                <td>{{ $skill['name'] }}</td>
-                                                <td>{{ $skill['failed'] }}</td>
-                                                <td>{{ $skill['introduced'] }}</td>
-                                                <td>{{ $skill['practiced'] }}</td>
-                                                <td>{{ $skill['mastered'] }}</td>
-                                                <td>{{ $skill['mastery_percentage'] }}%</td>
+                                                <td>{{ $engagement['name'] }}</td>
+                                                <td>{{ $engagement['engagement_percentage'] }}%</td>
                                             </tr>
                                             @endforeach
                                         </tbody>
@@ -223,6 +196,7 @@
                     </div>
                 </div>
             </div>
+            <!-- Footer -->
             @include('dashboard.layouts.footer')
         </div>
     </div>
@@ -232,84 +206,96 @@
 
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 @section('page_js')
-<!-- Include Chart.js -->
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-
-@if(isset($chartLabels) && isset($chartPercentage))
+@if (isset($highEngagementLabels) || isset($highEngagementValues) || isset($lowEngagementLabels) || isset($lowEngagementValues))
 <script>
     document.addEventListener('DOMContentLoaded', function() {
         // Data from your controller
-        var chartLabels = @json($chartLabels);
-        var chartPercentage = @json($chartPercentage);
-        console.log(chartPercentage);
+        var highEngagementLabels = @json($highEngagementLabels);
+        var highEngagementValues = @json($highEngagementValues);
+        var lowEngagementLabels = @json($lowEngagementLabels);
+        var lowEngagementValues = @json($lowEngagementValues);
         // Create the bar chart
         var ctx = document.getElementById('masteryChart').getContext('2d');
-        var loginChart = new Chart(ctx, {
+
+
+        function getRandomColor() {
+            // Decide whether to generate a blue or gray shade
+            var isBlue = Math.random() < 0.5; // 50% chance to pick blue or gray
+
+            if (isBlue) {
+                // Blue shades
+                var hue = Math.floor(Math.random() * 21) + 200; // Random hue between 200 and 220 for blue tones
+                var saturation = Math.floor(Math.random() * 22) + 60; // Saturation between 60% and 80% for pastel effect
+                var lightness = Math.floor(Math.random() * 22) + 60; // Lightness between 60% and 80% for pastel shades
+                return `hsl(${hue}, ${saturation}%, ${lightness}%)`; // HSL format for pastel blue colors
+            } else {
+                // Gray shades
+                var lightness = Math.floor(Math.random() * 41) + 40; // Lightness between 40% and 80% for gray shades
+                return `hsl(0, 0%, ${lightness}%)`; // HSL format for gray colors
+            }
+        }
+
+
+
+
+        var datasets = [];
+
+        // Low Engagement datasets
+        for (var i = 0; i < lowEngagementLabels.length; i++) {
+            datasets.push({
+                label: lowEngagementLabels[i] + ' (' + lowEngagementValues[i] + '%)',
+                data: [lowEngagementValues[i], 0],
+                backgroundColor: getRandomColor()
+            });
+        }
+
+        // High Engagement datasets
+        for (var i = 0; i < highEngagementLabels.length; i++) {
+            datasets.push({
+                label: highEngagementLabels[i] + ' (' + highEngagementValues[i] + '%)',
+                data: [0, highEngagementValues[i]],
+                backgroundColor: getRandomColor()
+            });
+        }
+
+        // Create the chart
+        var myChart = new Chart(ctx, {
             type: 'bar',
             data: {
-                labels: chartLabels,
-                datasets: [{
-                    label: 'Mastery Percentage',
-                    data: chartPercentage,
-                    backgroundColor: '#E9C874',
-                    borderColor: '#E9C874',
-                    borderWidth: 1,
-                    maxBarThickness: 100
-                }]
+                labels: ['Low Engagement', 'High Engagement'],
+                datasets: datasets
             },
             options: {
-                scales: {
-                    x: {
-                        min: 0,
-                        max: chartLabels.length > 1 ? chartLabels.length - 1 : 1,
-                        grid: {
-                            display: false
-                        }
-                    },
-                    y: {
-                        beginAtZero: true,
-                        max: 100, // Ensure the y-axis always goes up to 100
-                        ticks: {
-                            callback: function(value) {
-                                return value + '%'; // Add '%' to the y-axis labels
-                            }
-                        }
-                    }
-                },
-                responsive: true,
-                maintainAspectRatio: false,
                 plugins: {
-                    legend: {
+                    title: {
                         display: true,
-                        position: 'top'
+                        text: 'Engagements - Low vs High'
                     },
                     tooltip: {
                         callbacks: {
-                            label: function(context) {
-                                return context.dataset.label + ': ' + context.raw + '%'; // Format tooltip values as percentages
+                            label: function(tooltipItem) {
+                                return tooltipItem.dataset.label;
                             }
                         }
                     }
                 },
-                layout: {
-                    padding: {
-                        left: 50,
-                        right: 50
+                scales: {
+                    x: {
+                        stacked: true
+                    },
+                    y: {
+                        beginAtZero: true,
+                        stacked: true
                     }
                 }
             }
         });
 
+
     });
 </script>
-
-
 @endif
-
-<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.min.js"
-    integrity="sha512-L0Shl7nXXzIlBSUUPpxrokqq4ojqgZFQczTYlGjzONGTDAcLremjwaWv5A+EDLnxhQzY5xUZPWLOLqYRkY0Cbw=="
-    crossorigin="anonymous" referrerpolicy="no-referrer"></script>
-
 <!-- SweetAlert validation messages -->
 @if($errors->any())
 <script>
@@ -354,6 +340,7 @@
             var groupId = $('#group_id').val();
             getProgramsByGroup(schoolId, groupId);
         });
+        $('#group_id').trigger('change');
     });
 
     function getProgramsByGroup(schoolId, groupId) {
@@ -364,7 +351,7 @@
             success: function(data) {
                 $('select[name="program_id"]').empty();
                 $('select[name="program_id"]').append(
-                    '<option value="">Choose a Program</option>');
+                    '<option value="" selected>All Programs</option>');
                 $.each(data, function(key, value) {
                     $('select[name="program_id"]').append('<option value="' +
                         value.id + '">' +

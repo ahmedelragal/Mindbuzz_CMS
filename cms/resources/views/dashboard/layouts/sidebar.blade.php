@@ -200,12 +200,21 @@
                         <li class="nk-menu-item"><a href="{{ route('reports.studentLoginReport') }}"
                                 class="nk-menu-link"><span class="nk-menu-text">Number of Logins Report</span></a>
                         </li>
+                        <li class="nk-menu-item"><a href="{{ route('reports.studentContentEngagementReport') }}"
+                                class="nk-menu-link"><span class="nk-menu-text">Content Engagement Report</span></a>
+                        </li>
                     </ul>
                 </li>
                 <li class="nk-menu-item has-sub"><a href="#" class="nk-menu-link nk-menu-toggle"><span
                             class="nk-menu-icon"><em class="icon ni ni-property-add"></em></span><span
                             class="nk-menu-text">Instructor Reports</span></a>
                     <ul class="nk-menu-sub">
+                        <li class="nk-menu-item"><a href="{{ route('reports.teacherCompletionReport') }}"
+                                class="nk-menu-link"><span class="nk-menu-text">Completion Report</span></a>
+                        </li>
+                        <li class="nk-menu-item"><a href="{{ route('reports.teacherStudentsMasteryLevel') }}"
+                                class="nk-menu-link"><span class="nk-menu-text">Students Mastery Level Report</span></a>
+                        </li>
                         <li class="nk-menu-item"><a href="{{ route('reports.teacherLoginReport') }}"
                                 class="nk-menu-link"><span class="nk-menu-text">Number of Logins Report</span></a>
                         </li>
@@ -227,6 +236,9 @@
                         <li class="nk-menu-item"><a href="{{ route('reports.classContentEngagementReport') }}"
                                 class="nk-menu-link"><span class="nk-menu-text">Content Engagement Report</span></a>
                         </li>
+                        <li class="nk-menu-item"><a href="{{ route('reports.classContentUsageReport') }}"
+                                class="nk-menu-link"><span class="nk-menu-text">Content Usage Report</span></a>
+                        </li>
                         <li class="nk-menu-item"><a href="{{ route('reports.classLoginReport') }}"
                                 class="nk-menu-link"><span class="nk-menu-text">Number of Logins Report</span></a>
                         </li>
@@ -236,6 +248,9 @@
                             class="nk-menu-icon"><em class="icon ni ni-property-add"></em></span><span
                             class="nk-menu-text">School Reports</span></a>
                     <ul class="nk-menu-sub">
+                        <li class="nk-menu-item"><a href="{{ route('reports.schoolCompletionReport') }}"
+                                class="nk-menu-link"><span class="nk-menu-text">Completion Report</span></a>
+                        </li>
                         <li class="nk-menu-item"><a href="{{ route('reports.schoolContentEngagementReport') }}"
                                 class="nk-menu-link"><span class="nk-menu-text">Content Engagement Report</span></a>
                         </li>

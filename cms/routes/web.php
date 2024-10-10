@@ -88,11 +88,17 @@ Route::middleware('auth')->group(function () {
         Route::get('school-gender-report', [ReportController::class, 'schoolGenderReportWeb'])->name('schoolGenderReportWeb');
         Route::get('studentLoginReport', [ReportController::class, 'studentLoginReport'])->name('studentLoginReport');
         Route::get('teacherLoginReport', [ReportController::class, 'teacherLoginReport'])->name('teacherLoginReport');
+        Route::get('teacherCompletionReport', [ReportController::class, 'teacherCompletionReport'])->name('teacherCompletionReport');
+        Route::get('schoolCompletionReport', [ReportController::class, 'schoolCompletionReport'])->name('schoolCompletionReport');
+        Route::get('teacherStudentsMasteryLevel', [ReportController::class, 'teacherStudentsMasteryLevel'])->name('teacherStudentsMasteryLevel');
         Route::get('classLoginReport', [ReportController::class, 'classLoginReport'])->name('classLoginReport');
         Route::get('schoolLoginReport', [ReportController::class, 'schoolLoginReport'])->name('schoolLoginReport');
         Route::get('schoolContentEngagementReport', [ReportController::class, 'schoolContentEngagementReport'])->name('schoolContentEngagementReport');
         Route::get('classContentEngagementReport', [ReportController::class, 'classContentEngagementReport'])->name('classContentEngagementReport');
+        Route::get('studentContentEngagementReport', [ReportController::class, 'studentContentEngagementReport'])->name('studentContentEngagementReport');
+        Route::get('classContentUsageReport', [ReportController::class, 'classContentUsageReport'])->name('classContentUsageReport');
     });
+    Route::get('/get-teacher-assignments/{teacherId}', [ReportController::class, 'getTeacherAssignments']);
     Route::get('/reports/fetch-mastery-data', [ReportController::class, 'fetchMasteryData'])->name('reports.fetchMasteryData');
     Route::post('/get-lessons-by-units', [ProgramController::class, 'getLessonsByUnits'])->name('get.lessons.by.units');
     Route::post('/get-units-by-program', [ProgramController::class, 'getUnitsByProgram'])->name('get.units.by.program');
