@@ -43,12 +43,7 @@
                                                 <label for="program_id">Select Program</label>
                                                 <select class="form-select js-select2" name="program_id" id="program_id">
                                                     <option value="" selected>All Programs</option>
-                                                    @foreach ($programs as $program)
-                                                    <option value="{{ $program->id }}">
-                                                        {{ $program->course ? $program->course->name : 'No Course' }} /
-                                                        {{ $program->stage ? $program->stage->name : 'No Stage' }}
-                                                    </option>
-                                                    @endforeach
+
                                                 </select>
                                             </div>
 
@@ -89,98 +84,161 @@
                                 </div>
                             </div>
                             <!-- Report Section -->
-                            @if(isset($highEngagementLabels) || isset($highEngagementValues) || isset($lowEngagementLabels) || isset($lowEngagementValues))
+                            @if (isset($programsUsage) || isset($unitsUsage) || isset($lessonsUsage) || isset($gamesUsage) || isset($skillsUsage))
                             <div class="card mt-4">
                                 <div class="card-body">
                                     <!-- Display Chart if Data is Available -->
-                                    <div class="container mt-5">
-                                        <canvas id="masteryChart" width="400" height="200"></canvas>
+                                    <div class="chart-buttons" id="chart-buttons" style="display: none; justify-content: flex-end; gap: 10px; padding-top:20px">
+                                        <button class="btn btn-primary" id="prevBtn" onclick="previousPage()">Previous</button>
+                                        <button class="btn btn-primary" id="nextBtn" onclick="nextPage()">Next</span></button>
                                     </div>
                                     <div class="container mt-5">
-                                        <canvas id="masteryChartNumbers" width="400" height="200" style="display:none;"></canvas>
+                                        <canvas id="usageChart" width="400" height="200"></canvas>
                                     </div>
+
                                 </div>
                             </div>
 
                             <div class="card mt-4">
                                 <div class="card-body">
-                                    @if (isset($unitsEngagement) || isset($lessonsEngagement) || isset($gameEngagement) || isset($skillsEngagement))
+                                    @if (isset($programsUsage) || isset($unitsUsage) || isset($lessonsUsage) || isset($gamesUsage) || isset($skillsUsage))
+                                    @if (isset($programsUsage))
+                                    <h5>Programs Usage</h5>
+                                    <table class="table">
+                                        <thead>
+                                            <tr>
+                                                <th>Program</th>
+                                                <th>Usage Count</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            @foreach ($programsUsage as $program)
+                                            <tr>
+                                                <td>{{ $program['name'] }}</td>
+                                                <td>{{ $program['usage_count'] }}</td>
+                                            </tr>
+                                            @endforeach
+                                        </tbody>
+                                    </table>
+                                    @endif
 
-                                    @if (isset($unitsEngagement))
-                                    <h5>Units Engagement</h5>
+                                    @if (isset($unitsUsage))
+                                    <h5>Units Usage</h5>
                                     <table class="table">
                                         <thead>
                                             <tr>
                                                 <th>Unit</th>
-                                                <th>Engagement Percentage</th>
+                                                <th>Usage Count</th>
                                             </tr>
                                         </thead>
                                         <tbody>
-                                            @foreach ($unitsEngagement as $engagement)
+                                            @foreach ($unitsUsage as $unit)
                                             <tr>
-                                                <td>{{ $engagement['name'] }}</td>
-                                                <td>{{ $engagement['engagement_percentage'] }}%</td>
+                                                <td>{{ $unit['name'] }}</td>
+                                                <td>{{ $unit['usage_count'] }}</td>
                                             </tr>
                                             @endforeach
                                         </tbody>
                                     </table>
                                     @endif
 
-                                    @if (isset($lessonsEngagement))
-                                    <h5>Lessons Engagement</h5>
+
+
+                                    @if (isset($lessonsUsage))
+                                    <h5>Lessons Usage</h5>
+                                    <table class="table">
+                                        <thead>
+                                            <tr>
+                                                <th>Unit</th>
+                                                <th>lesson</th>
+                                                <th>Usage Count</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <?php $inc = 1; ?>
+                                            @foreach ($chartLabels as $index => $lesson)
+                                            <?php $lessonValue = $chartValues[$index]; ?>
+                                            @if ($lesson == "-" && $lessonValue == "-")
+                                            <td><strong>Unit {{$inc}}</strong></td>
+                                            <td> </td>
+                                            <td> </td>
+                                            <?php $inc++; ?>
+                                            @else
+                                            <tr>
+                                                <td></td>
+                                                <td>{{ $lesson }}</td>
+                                                <td>{{ $lessonValue }}</td>
+                                            </tr>
+                                            @endif
+                                            @endforeach
+                                        </tbody>
+                                    </table>
+                                    @endif
+
+                                    @if (isset($gamesUsage))
+                                    <h5>Games Usage</h5>
                                     <table class="table">
                                         <thead>
                                             <tr>
                                                 <th>Lesson</th>
-                                                <th>Engagement Percentage</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody>
-                                            @foreach ($lessonsEngagement as $engagement)
-                                            <tr>
-                                                <td>{{ $engagement['name'] }}</td>
-                                                <td>{{ $engagement['engagement_percentage'] }}%</td>
-                                            </tr>
-                                            @endforeach
-                                        </tbody>
-                                    </table>
-                                    @endif
-
-                                    @if (isset($gameEngagement))
-                                    <h5>Game Engagement</h5>
-                                    <table class="table">
-                                        <thead>
-                                            <tr>
                                                 <th>Game</th>
-                                                <th>Engagement Percentage</th>
+                                                <th>Usage Count</th>
                                             </tr>
                                         </thead>
                                         <tbody>
-                                            @foreach ($gameEngagement as $engagement)
+                                            <?php $inc = 1; ?>
+                                            @foreach ($chartLabels as $index => $game)
+                                            <?php $gameValue = $chartValues[$index]; ?>
+                                            @if ($game == "-" && $gameValue == "-")
+                                            <td><strong>Lesson {{$inc}}</strong></td>
+                                            <td> </td>
+                                            <td> </td>
+                                            <?php $inc++; ?>
+                                            @else
                                             <tr>
-                                                <td>{{ $engagement['name'] }}</td>
-                                                <td>{{ $engagement['engagement_percentage'] }}%</td>
+                                                <td></td>
+                                                <td>{{ $game }}</td>
+                                                <td>{{ $gameValue }}</td>
                                             </tr>
+                                            @endif
                                             @endforeach
                                         </tbody>
                                     </table>
                                     @endif
 
-                                    @if (isset($skillsEngagement))
-                                    <h5>Skills Engagement</h5>
+                                    @if (isset($skillsUsage))
+
+                                    <h5>Skill Usage</h5>
                                     <table class="table">
                                         <thead>
                                             <tr>
+                                                <th>Unit</th>
+                                                <th>Lesson/Game</th>
                                                 <th>Skill</th>
-                                                <th>Engagement Percentage</th>
+                                                <th>Usage Count</th>
                                             </tr>
                                         </thead>
                                         <tbody>
-                                            @foreach ($skillsEngagement as $engagement)
+                                            @foreach ($skillsUsage as $unit)
+                                            @foreach ($unit['lessons'] as $lesson)
+                                            @foreach ($lesson['games'] as $game)
                                             <tr>
-                                                <td>{{ $engagement['name'] }}</td>
-                                                <td>{{ $engagement['engagement_percentage'] }}%</td>
+                                                <td>{{$unit['name']}}</td>
+                                                <td>{{$lesson['name']}} / {{$game['name']}}</td>
+                                                <td></td>
+                                                <td></td>
                                             </tr>
+
+                                            @foreach ($game['skills'] as $skill)
+                                            <tr>
+                                                <td></td>
+                                                <td></td>
+                                                <td>{{ $skill['name'] != null ? $skill['name'] : 'No skill specified' }}</td>
+                                                <td>{{ $skill['usage_count'] != null ? $skill['usage_count'] : 0 }}</td>
+                                            </tr>
+                                            @endforeach
+                                            @endforeach
+                                            @endforeach
                                             @endforeach
                                         </tbody>
                                     </table>
@@ -207,92 +265,189 @@
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 @section('page_js')
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-@if (isset($highEngagementLabels) || isset($highEngagementValues) || isset($lowEngagementLabels) || isset($lowEngagementValues))
+@if (isset($programOrUnitLabels) || isset($programOrUnitValues))
 <script>
     document.addEventListener('DOMContentLoaded', function() {
         // Data from your controller
-        var highEngagementLabels = @json($highEngagementLabels);
-        var highEngagementValues = @json($highEngagementValues);
-        var lowEngagementLabels = @json($lowEngagementLabels);
-        var lowEngagementValues = @json($lowEngagementValues);
+        var programOrUnitLabels = @json($programOrUnitLabels);
+        var programOrUnitValues = @json($programOrUnitValues);
         // Create the bar chart
-        var ctx = document.getElementById('masteryChart').getContext('2d');
-
-
-        function getRandomColor() {
-            // Decide whether to generate a blue or gray shade
-            var isBlue = Math.random() < 0.5; // 50% chance to pick blue or gray
-
-            if (isBlue) {
-                // Blue shades
-                var hue = Math.floor(Math.random() * 21) + 200; // Random hue between 200 and 220 for blue tones
-                var saturation = Math.floor(Math.random() * 22) + 60; // Saturation between 60% and 80% for pastel effect
-                var lightness = Math.floor(Math.random() * 22) + 60; // Lightness between 60% and 80% for pastel shades
-                return `hsl(${hue}, ${saturation}%, ${lightness}%)`; // HSL format for pastel blue colors
-            } else {
-                // Gray shades
-                var lightness = Math.floor(Math.random() * 41) + 40; // Lightness between 40% and 80% for gray shades
-                return `hsl(0, 0%, ${lightness}%)`; // HSL format for gray colors
-            }
-        }
-
-
-
-
-        var datasets = [];
-
-        // Low Engagement datasets
-        for (var i = 0; i < lowEngagementLabels.length; i++) {
-            datasets.push({
-                label: lowEngagementLabels[i] + ' (' + lowEngagementValues[i] + '%)',
-                data: [lowEngagementValues[i], 0],
-                backgroundColor: getRandomColor()
-            });
-        }
-
-        // High Engagement datasets
-        for (var i = 0; i < highEngagementLabels.length; i++) {
-            datasets.push({
-                label: highEngagementLabels[i] + ' (' + highEngagementValues[i] + '%)',
-                data: [0, highEngagementValues[i]],
-                backgroundColor: getRandomColor()
-            });
-        }
+        var ctx = document.getElementById('usageChart').getContext('2d');
 
         // Create the chart
         var myChart = new Chart(ctx, {
             type: 'bar',
             data: {
-                labels: ['Low Engagement', 'High Engagement'],
-                datasets: datasets
+                labels: programOrUnitLabels,
+                datasets: [{
+                    label: 'Usage Count',
+                    data: programOrUnitValues,
+                    backgroundColor: '#E9C874',
+                    borderColor: '#E9C874',
+                    borderWidth: 1,
+                    maxBarThickness: 100
+                }]
             },
             options: {
-                plugins: {
-                    title: {
-                        display: true,
-                        text: 'Engagements - Low vs High'
-                    },
-                    tooltip: {
-                        callbacks: {
-                            label: function(tooltipItem) {
-                                return tooltipItem.dataset.label;
-                            }
-                        }
-                    }
-                },
                 scales: {
                     x: {
-                        stacked: true
+                        min: 0,
+                        max: programOrUnitLabels.length > 1 ? programOrUnitLabels.length - 1 : 1,
+                        grid: {
+                            display: false
+                        }
                     },
                     y: {
                         beginAtZero: true,
-                        stacked: true
+                    }
+                },
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        display: true,
+                        position: 'top'
+                    },
+                },
+                layout: {
+                    padding: {
+                        left: 50,
+                        right: 50
                     }
                 }
             }
         });
 
 
+    });
+</script>
+@endif
+
+@if (isset($chartLabels) || isset($chartValues))
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Data from controller
+        const names = @json($chartLabels);
+        const usageCounts = @json($chartValues);
+
+        // Group lessons by unit using the "-" separator
+        const units = [];
+        let currentUnit = [];
+        names.forEach((label, index) => {
+            if (label !== "-") {
+                currentUnit.push({
+                    label: label,
+                    value: usageCounts[index]
+                });
+            } else if (currentUnit.length > 0) {
+                units.push(currentUnit);
+                currentUnit = [];
+            }
+        });
+        // Push the last unit if it's not empty
+        if (currentUnit.length > 0) {
+            units.push(currentUnit);
+        }
+
+        // Initialize dynamic pagination variables
+        let currentPage = 0;
+
+        // Initialize the student login chart
+        const ctx = document.getElementById('usageChart').getContext('2d');
+        const btnContainer = document.getElementById('chart-buttons').style.display = 'flex';
+        toggleButtons();
+        // Initialize the chart with the first unit's data
+        let usageChart = initializeChart(ctx, units[currentPage].map(item => item.label), units[currentPage].map(item => item.value));
+
+        // Function to initialize chart
+        function initializeChart(ctx, labels, data) {
+            return new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'Usage Counts',
+                        data: data,
+                        backgroundColor: '#E9C874',
+                        borderColor: '#E9C874',
+                        borderWidth: 1,
+                        maxBarThickness: 120
+                    }]
+                },
+                options: {
+                    scales: {
+                        x: {
+                            grid: {
+                                display: false
+                            }
+                        },
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                stepSize: 1
+                            }
+                        }
+                    },
+                    responsive: true,
+                    maintainAspectRatio: true,
+                    plugins: {
+                        legend: {
+                            display: true,
+                            position: 'top'
+                        }
+                    },
+                    layout: {
+                        padding: {
+                            left: 50,
+                            right: 50
+                        }
+                    }
+                }
+            });
+        }
+
+        // Function to update the chart with the current page data (current unit)
+        function updateChart() {
+            const currentUnit = units[currentPage];
+            if (usageChart) {
+                usageChart.data.labels = currentUnit.map(item => item.label);
+                usageChart.data.datasets[0].data = currentUnit.map(item => item.value);
+                usageChart.update();
+            }
+            toggleButtons();
+        }
+
+        // Function to go to the previous unit (previous page)
+        window.previousPage = function() {
+            if (currentPage > 0) {
+                currentPage--;
+                updateChart(); // Call updateChart to refresh with new data
+            }
+        }
+
+        // Function to go to the next unit (next page)
+        window.nextPage = function() {
+            if (currentPage < units.length - 1) {
+                currentPage++;
+                updateChart(); // Call updateChart to refresh with new data
+            }
+        }
+
+        // Function to toggle the visibility of the previous and next buttons
+        function toggleButtons() {
+            const prevButton = document.getElementById('prevBtn');
+            const nextButton = document.getElementById('nextBtn');
+
+            // If only one page, hide both buttons
+            if (units.length <= 1) {
+                prevButton.style.display = 'none';
+                nextButton.style.display = 'none';
+            } else {
+                // Show or hide buttons based on the current page
+                prevButton.style.display = (currentPage === 0) ? 'none' : 'block';
+                nextButton.style.display = (currentPage === units.length - 1) ? 'none' : 'block';
+            }
+        }
     });
 </script>
 @endif
@@ -335,28 +490,48 @@
     $(document).ready(function() {
         $('.js-select2').select2();
 
+        // Get previously selected program_id from localStorage if exists
+        var selectedProgramId = localStorage.getItem('selectedProgramId') || '';
+
+        // Trigger getProgramsByGroup on group change
         $('#group_id').change(function() {
-            var schoolId = $('#group_id option:selected').data('school');
             var groupId = $('#group_id').val();
-            getProgramsByGroup(schoolId, groupId);
+            getProgramsByGroup(groupId, selectedProgramId);
         });
+
+        // Trigger change on page load to fetch programs for the selected group
         $('#group_id').trigger('change');
+
+        // Save the selected program_id to localStorage when it changes
+        $('select[name="program_id"]').change(function() {
+            var programId = $(this).val();
+            localStorage.setItem('selectedProgramId', programId);
+        });
     });
 
-    function getProgramsByGroup(schoolId, groupId) {
+    function getProgramsByGroup(groupId, selectedProgramId) {
         $.ajax({
-            url: '/get-programs-group/' + schoolId + '/' + groupId,
+            url: '/get-programs-group/' + groupId,
             type: "GET",
             dataType: "json",
             success: function(data) {
+                // Clear the existing options
                 $('select[name="program_id"]').empty();
+
+                // Append the "All Programs" option
                 $('select[name="program_id"]').append(
                     '<option value="" selected>All Programs</option>');
+
+                // Append the fetched program options
                 $.each(data, function(key, value) {
                     $('select[name="program_id"]').append('<option value="' +
-                        value.id + '">' +
-                        value.program_details + '</option>');
+                        value.id + '">' + value.program_details + '</option>');
                 });
+
+                // Re-select the program_id if it exists in localStorage
+                if (selectedProgramId) {
+                    $('select[name="program_id"]').val(selectedProgramId).trigger('change');
+                }
             },
             error: function(xhr, status, error) {
                 console.error('AJAX Error:', error);
@@ -364,4 +539,5 @@
         });
     }
 </script>
+
 @endsection

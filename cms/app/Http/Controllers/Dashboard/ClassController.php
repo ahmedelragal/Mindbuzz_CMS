@@ -527,19 +527,18 @@ class ClassController extends Controller
         // dd($programs);
         return response()->json($programs);
     }
-    public function getProgramsGroup($schoolId, $groupId)
+    public function getProgramsGroup($groupId)
     {
-        $programs = Program::with('course')
-            ->join('school_programs', 'programs.id', '=', 'school_programs.program_id')
-            ->join('courses', 'programs.course_id', '=', 'courses.id')
-            ->join('groups', 'school_programs.school_id', '=', 'groups.school_id')
-            ->join('stages', 'programs.stage_id', '=', 'stages.id')
-            ->where('school_programs.school_id', $schoolId)
-            ->where('groups.id', $groupId)
-            ->select('programs.*', DB::raw("CONCAT(courses.name, ' - ', stages.name) as program_details"))
-            ->get();
-        // dd($programs);
-        return response()->json($programs);
+        $programs =  Program::whereIn('id', Group::with(['groupCourses'])->findOrFail($groupId)->groupCourses->pluck('program_id'))->get();
+        $programsData = $programs->map(function ($program) {
+            return [
+                'id' => $program->id,
+                'program_details' => $program->course->name . ' - ' . $program->stage->name, // Assuming relationships for course and stage
+            ];
+        });
+
+        // Return the JSON response
+        return response()->json($programsData);
     }
 
     public function store(Request $request)

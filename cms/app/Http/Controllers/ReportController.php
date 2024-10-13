@@ -3940,17 +3940,17 @@ class ReportController extends Controller
         } else {
             $groups = Group::all();
         }
-        if (Auth::user()->hasRole('school')) {
-            $programs = Program::when(Auth::user()->hasRole('school'), function ($query) {
-                return $query->where('school_id', Auth::user()->school_id);
-            })->get();
-        } else {
-            $programs = Program::all();
-        }
+        // if (Auth::user()->hasRole('school')) {
+        //     $programs = Program::when(Auth::user()->hasRole('school'), function ($query) {
+        //         return $query->where('school_id', Auth::user()->school_id);
+        //     })->get();
+        // } else {
+        //     $programs = Program::all();
+        // }
         // Initialize $data array with defaults
         $data = [
             'groups' => $groups,
-            'programs' => $programs,
+            // 'programs' => $programs,
             'request' => $request->all(),
         ];
         if ($request->has('group_id')) {
@@ -4086,7 +4086,7 @@ class ReportController extends Controller
                     }
                 }
             }
-
+            // dd($programsUsage);
 
 
             $chartLabels = [];
@@ -4094,7 +4094,25 @@ class ReportController extends Controller
             if ($request->filled('filter') && $request->filled('program_id')) {
                 switch ($request->filter) {
                     case 'Skill':
-
+                        $skillsData =  [];
+                        foreach ($programsUsage as $program) {
+                            foreach ($program['units'] as $unit) {
+                                foreach ($unit['lessons'] as $lesson) {
+                                    foreach ($lesson['games'] as $game) {
+                                        $chartLabels[] = '-';
+                                        $chartValues[] = '-';
+                                        foreach ($game['skills'] as $skill) {
+                                            $skillsData[] = $skill;
+                                            $chartLabels[] = $skill['name'];
+                                            $chartValues[] = $skill['usage_count'];
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                        $data['skillsUsage'] =  $programsUsage[$request->program_id]['units'];
+                        $data['chartLabels'] =  $chartLabels;
+                        $data['chartValues'] =  $chartValues;
                         break;
                     case 'Unit':
                         foreach ($programsUsage as $program) {
@@ -4103,12 +4121,46 @@ class ReportController extends Controller
                                 $chartValues[] = $unit['usage_count'];
                             }
                         }
+                        $data['unitsUsage'] =  $programsUsage[$request->program_id]['units'];
+                        $data['programOrUnitLabels'] =  $chartLabels;
+                        $data['programOrUnitValues'] =  $chartValues;
                         break;
                     case 'Lesson':
+                        $lessonsData =  [];
+                        foreach ($programsUsage as $program) {
+                            foreach ($program['units'] as $unit) {
+                                $chartLabels[] = '-';
+                                $chartValues[] = '-';
+                                foreach ($unit['lessons'] as $lesson) {
+                                    $lessonsData[] = $lesson;
+                                    $chartLabels[] = $lesson['name'];
+                                    $chartValues[] = $lesson['usage_count'];
+                                }
+                            }
+                        }
 
+                        $data['lessonsUsage'] =  $lessonsData;
+                        $data['chartLabels'] =  $chartLabels;
+                        $data['chartValues'] =  $chartValues;
                         break;
                     case 'Game':
-
+                        $gameData = [];
+                        foreach ($programsUsage as $program) {
+                            foreach ($program['units'] as $unit) {
+                                foreach ($unit['lessons'] as $lesson) {
+                                    $chartLabels[] = '-';
+                                    $chartValues[] = '-';
+                                    foreach ($lesson['games'] as $game) {
+                                        $gameData[] = $game;
+                                        $chartLabels[] = $game['name'];
+                                        $chartValues[] = $game['usage_count'];
+                                    }
+                                }
+                            }
+                        }
+                        $data['gamesUsage'] =  $gameData;
+                        $data['chartLabels'] =  $chartLabels;
+                        $data['chartValues'] =  $chartValues;
                         break;
                     default:
 
@@ -4121,8 +4173,9 @@ class ReportController extends Controller
                     $chartLabels[] = $program['name'];
                     $chartValues[] = $program['usage_count'];
                 }
-                $data['chartLabels'] = $chartLabels;
-                $data['chartValues'] = $chartValues;
+                $data['programsUsage'] =  $programsUsage;
+                $data['programOrUnitLabels'] =  $chartLabels;
+                $data['programOrUnitValues'] =  $chartValues;
             }
         }
         // dd($data);

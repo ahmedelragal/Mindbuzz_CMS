@@ -52,7 +52,7 @@ Route::delete('groupCourses/{id}/remove', [ClassController::class, 'removeGroupC
 Route::get('get-courses/{id}/{schoolId}', [StudentController::class, 'getCourses']);
 Route::get('/get-groups-student/{school_id}', [StudentController::class, 'getGroups']);
 Route::get('/get-programs-school/{school_id}', [ClassController::class, 'getProgramSchool']);
-Route::get('/get-programs-group/{school_id}/{group_id}', [ClassController::class, 'getProgramsGroup']);
+Route::get('/get-programs-group/{group_id}', [ClassController::class, 'getProgramsGroup']);
 Route::get('/get-students-school/{school_id}', [SchoolController::class, 'getStudentsSchool']);
 Route::get('/get-teachers-school/{school_id}', [SchoolController::class, 'getTeachersSchool']);
 
