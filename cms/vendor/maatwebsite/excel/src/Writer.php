@@ -144,16 +144,6 @@ class Writer
     }
 
     /**
-     * Determine if the application is running in a serverless environment.
-     *
-     * @return bool
-     */
-    public function isRunningServerless(): bool
-    {
-        return isset($_ENV['AWS_LAMBDA_RUNTIME_API']);
-    }
-
-    /**
      * @param  object  $export
      * @param  TemporaryFile  $temporaryFile
      * @param  string  $writerType
@@ -176,7 +166,7 @@ class Writer
             $export
         );
 
-        if ($temporaryFile instanceof RemoteTemporaryFile && !$temporaryFile->existsLocally() && !$this->isRunningServerless()) {
+        if ($temporaryFile instanceof RemoteTemporaryFile && !$temporaryFile->existsLocally()) {
             $temporaryFile = resolve(TemporaryFileFactory::class)
                 ->makeLocal(Arr::last(explode('/', $temporaryFile->getLocalPath())));
         }

@@ -348,12 +348,11 @@ class Request
         $server['PATH_INFO'] = '';
         $server['REQUEST_METHOD'] = strtoupper($method);
 
-        if (false === ($components = parse_url($uri)) && '/' === ($uri[0] ?? '')) {
+        $components = parse_url($uri);
+        if (false === $components) {
             trigger_deprecation('symfony/http-foundation', '6.3', 'Calling "%s()" with an invalid URI is deprecated.', __METHOD__);
-            $components = parse_url($uri.'#');
-            unset($components['fragment']);
+            $components = [];
         }
-
         if (isset($components['host'])) {
             $server['SERVER_NAME'] = $components['host'];
             $server['HTTP_HOST'] = $components['host'];

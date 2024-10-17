@@ -113,33 +113,21 @@ class XmlScanner
      */
     private function toUtf8($xml)
     {
-        $charset = $this->findCharSet($xml);
+        $pattern = '/encoding="(.*?)"/';
+        $result = preg_match($pattern, $xml, $matches);
+        $charset = strtoupper($result ? $matches[1] : 'UTF-8');
+
         if ($charset !== 'UTF-8') {
             $xml = self::forceString(mb_convert_encoding($xml, 'UTF-8', $charset));
 
-            $charset = $this->findCharSet($xml);
+            $result = preg_match($pattern, $xml, $matches);
+            $charset = strtoupper($result ? $matches[1] : 'UTF-8');
             if ($charset !== 'UTF-8') {
                 throw new Reader\Exception('Suspicious Double-encoded XML, spreadsheet file load() aborted to prevent XXE/XEE attacks');
             }
         }
 
         return $xml;
-    }
-
-    private function findCharSet(string $xml): string
-    {
-        $patterns = [
-            '/encoding\\s*=\\s*"([^"]*]?)"/',
-            "/encoding\\s*=\\s*'([^']*?)'/",
-        ];
-
-        foreach ($patterns as $pattern) {
-            if (preg_match($pattern, $xml, $matches)) {
-                return strtoupper($matches[1]);
-            }
-        }
-
-        return 'UTF-8';
     }
 
     /**

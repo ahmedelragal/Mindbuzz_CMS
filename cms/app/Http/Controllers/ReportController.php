@@ -20,6 +20,7 @@ use App\Models\StudentProgress;
 use App\Models\GroupTeachers;
 use App\Models\TestTypes;
 use App\Models\User;
+use App\Models\TestQuestion;
 use Carbon\Carbon;
 use DB;
 use Illuminate\Support\Facades\Auth;
@@ -2092,9 +2093,9 @@ class ReportController extends Controller
                 $division = 1;
             }
             $data['reports_percentages'] = [
-                'first_trial' => round(($threestars / $division) * 100, 1),
-                'second_trial' => round(($twostars / $division) * 100, 1),
-                'third_trial' => round(($onestar / $division) * 100, 1),
+                'first_trial' => round(($threestars / $division) * 100, 2),
+                'second_trial' => round(($twostars / $division) * 100, 2),
+                'third_trial' => round(($onestar / $division) * 100, 2),
             ];
         }
 
@@ -3131,7 +3132,7 @@ class ReportController extends Controller
                     case 'Skill':
                         foreach ($skillsEngagement as $key => $Engagement) {
                             if ($skillEngagementCount > 0) {
-                                $skillsEngagement[$key]['engagement_percentage'] = (int)(round($Engagement['engagement_count'] / $skillEngagementCount * 100));
+                                $skillsEngagement[$key]['engagement_percentage'] = round($Engagement['engagement_count'] / $skillEngagementCount * 100, 2);
                             } else {
                                 $skillsEngagement[$key]['engagement_percentage'] = 0;
                             }
@@ -3177,7 +3178,7 @@ class ReportController extends Controller
                     case 'Unit':
                         foreach ($unitsEngagement as $key => $Engagement) {
                             if ($unitEngagementCount > 0) {
-                                $unitsEngagement[$key]['engagement_percentage'] = (int)(round($Engagement['engagement_count'] / $unitEngagementCount * 100));
+                                $unitsEngagement[$key]['engagement_percentage'] = round($Engagement['engagement_count'] / $unitEngagementCount * 100, 2);
                             } else {
                                 $unitsEngagement[$key]['engagement_percentage'] = 0;
                             }
@@ -3222,7 +3223,7 @@ class ReportController extends Controller
                     case 'Lesson':
                         foreach ($lessonsEngagement as $key => $Engagement) {
                             if ($lessonEngagementCount > 0) {
-                                $lessonsEngagement[$key]['engagement_percentage'] = (int)(round($Engagement['engagement_count'] / $lessonEngagementCount * 100));
+                                $lessonsEngagement[$key]['engagement_percentage'] = round($Engagement['engagement_count'] / $lessonEngagementCount * 100, 2);
                             } else {
                                 $lessonsEngagement[$key]['engagement_percentage'] = 0;
                             }
@@ -3268,7 +3269,7 @@ class ReportController extends Controller
                     case 'Game':
                         foreach ($gameEngagement as $key => $Engagement) {
                             if ($gameEngagementCount > 0) {
-                                $gameEngagement[$key]['engagement_percentage'] = (int)(round($Engagement['engagement_count'] / $gameEngagementCount * 100));
+                                $gameEngagement[$key]['engagement_percentage'] = round($Engagement['engagement_count'] / $gameEngagementCount * 100, 2);
                             } else {
                                 $gameEngagement[$key]['engagement_percentage'] = 0;
                             }
@@ -3341,21 +3342,30 @@ class ReportController extends Controller
             $students = User::where('role', '2')->where('school_id', $request->school_id)->pluck('id');
 
             if ($students->isEmpty()) {
-                return redirect()->back()->with('error', 'No Students Found.');
+                $data['error'] = 'No Students Found';
+                return view('dashboard.reports.school.school_content_engagement_report', $data);
             }
 
             // Initialize query builder for student progress
             $query = StudentProgress::whereIn('student_id', $students)
                 ->where('program_id', $request->program_id);
 
-            if ($query->get()->isEmpty()) {
-                return redirect()->back()->with('error', 'No Student Progress Found.');
-            }
-
-            if ($request->filled(['from_date', 'to_date']) && $request->from_date != NULL && $request->to_date != NULL) {
+            // Add the 'from_date' filter if it exists
+            $query->when($request->filled('from_date'), function ($query) use ($request) {
                 $fromDate = Carbon::parse($request->from_date)->startOfDay();
+                return $query->where('created_at', '>=', $fromDate);
+            });
+
+            // Add the 'to_date' filter if it exists
+            $query->when($request->filled('to_date'), function ($query) use ($request) {
                 $toDate = Carbon::parse($request->to_date)->endOfDay();
-                $query->whereBetween('created_at', [$fromDate, $toDate]);
+                return $query->where('created_at', '<=', $toDate);
+            });
+
+            // Check if query is empty
+            if ($query->get()->isEmpty()) {
+                $data['error'] = 'No Student Progress Found';
+                return view('dashboard.reports.school.school_content_engagement_report', $data);
             }
 
             $student_progress = $query->get();
@@ -3440,195 +3450,565 @@ class ReportController extends Controller
             if ($request->has('filter')) {
                 switch ($request->filter) {
                     case 'Skill':
-                        foreach ($skillsEngagement as $key => $Engagement) {
-                            if ($skillEngagementCount > 0) {
-                                $skillsEngagement[$key]['engagement_percentage'] = (int)(round($Engagement['engagement_count'] / $skillEngagementCount * 100));
-                            } else {
-                                $skillsEngagement[$key]['engagement_percentage'] = 0;
+                        if (isset($skillsEngagement)) {
+                            foreach ($skillsEngagement as $key => $Engagement) {
+                                if ($skillEngagementCount > 0) {
+                                    $skillsEngagement[$key]['engagement_percentage'] = round($Engagement['engagement_count'] / $skillEngagementCount * 100, 2);
+                                } else {
+                                    $skillsEngagement[$key]['engagement_percentage'] = 0;
+                                }
+                                $chartLabels[] = $skillsEngagement[$key]['name'];
+                                $chartValues[] = $skillsEngagement[$key]['engagement_percentage'];
                             }
-                            $chartLabels[] = $skillsEngagement[$key]['name'];
-                            $chartValues[] = $skillsEngagement[$key]['engagement_percentage'];
-                        }
-                        usort($skillsEngagement, function ($a, $b) {
-                            return $a['engagement_percentage'] <=> $b['engagement_percentage'];
-                        });
-                        $data['skillsEngagement'] = array_values($skillsEngagement);
+                            usort($skillsEngagement, function ($a, $b) {
+                                return $a['engagement_percentage'] <=> $b['engagement_percentage'];
+                            });
+                            $data['skillsEngagement'] = array_values($skillsEngagement);
 
-                        $engagement_percentages = array_column($skillsEngagement, 'engagement_percentage');
-                        sort($engagement_percentages);
-                        $count = count($engagement_percentages);
-                        $middleIndex = floor(($count - 1) / 2);
-                        if ($count <= 1) {
-                            $median = 0;
-                        } else if ($count % 2) {
-                            $median = $engagement_percentages[$middleIndex];
+                            $engagement_percentages = array_column($skillsEngagement, 'engagement_percentage');
+                            sort($engagement_percentages);
+                            $count = count($engagement_percentages);
+                            $middleIndex = floor(($count - 1) / 2);
+                            if ($count <= 1) {
+                                $median = 0;
+                            } else if ($count % 2) {
+                                $median = $engagement_percentages[$middleIndex];
+                            } else {
+                                $median = ($engagement_percentages[$middleIndex] + $engagement_percentages[$middleIndex + 1]) / 2;
+                            }
+
+                            $highEngagementLabels = [];
+                            $highEngagementValues = [];
+                            $lowEngagementLabels = [];
+                            $lowEngagementValues = [];
+
+                            foreach ($skillsEngagement as $engagement) {
+                                if ($engagement['engagement_percentage'] > $median || $engagement['engagement_percentage'] >= 50) {
+                                    $highEngagementLabels[] = $engagement['name'];
+                                    $highEngagementValues[] = $engagement['engagement_percentage'];
+                                } else {
+                                    $lowEngagementLabels[] = $engagement['name'];
+                                    $lowEngagementValues[] = $engagement['engagement_percentage'];
+                                }
+                            }
+                            $data['highEngagementLabels'] = $highEngagementLabels;
+                            $data['highEngagementValues'] = $highEngagementValues;
+                            $data['lowEngagementLabels'] = $lowEngagementLabels;
+                            $data['lowEngagementValues'] = $lowEngagementValues;
                         } else {
-                            $median = ($engagement_percentages[$middleIndex] + $engagement_percentages[$middleIndex + 1]) / 2;
+                            $data['error'] = 'No Skills Found';
+                            return view('dashboard.reports.school.school_content_engagement_report', $data);
                         }
-
-                        $highEngagementLabels = [];
-                        $highEngagementValues = [];
-                        $lowEngagementLabels = [];
-                        $lowEngagementValues = [];
-
-                        foreach ($skillsEngagement as $engagement) {
-                            if ($engagement['engagement_percentage'] > $median || $engagement['engagement_percentage'] >= 50) {
-                                $highEngagementLabels[] = $engagement['name'];
-                                $highEngagementValues[] = $engagement['engagement_percentage'];
-                            } else {
-                                $lowEngagementLabels[] = $engagement['name'];
-                                $lowEngagementValues[] = $engagement['engagement_percentage'];
-                            }
-                        }
-                        $data['highEngagementLabels'] = $highEngagementLabels;
-                        $data['highEngagementValues'] = $highEngagementValues;
-                        $data['lowEngagementLabels'] = $lowEngagementLabels;
-                        $data['lowEngagementValues'] = $lowEngagementValues;
                         break;
                     case 'Unit':
-                        foreach ($unitsEngagement as $key => $Engagement) {
-                            if ($unitEngagementCount > 0) {
-                                $unitsEngagement[$key]['engagement_percentage'] = (int)(round($Engagement['engagement_count'] / $unitEngagementCount * 100));
-                            } else {
-                                $unitsEngagement[$key]['engagement_percentage'] = 0;
+                        if (isset($unitsEngagement)) {
+                            foreach ($unitsEngagement as $key => $Engagement) {
+                                if ($unitEngagementCount > 0) {
+                                    $unitsEngagement[$key]['engagement_percentage'] = round($Engagement['engagement_count'] / $unitEngagementCount * 100, 2);
+                                } else {
+                                    $unitsEngagement[$key]['engagement_percentage'] = 0;
+                                }
+                                $chartLabels[] = $unitsEngagement[$key]['name'];
+                                $chartValues[] = $unitsEngagement[$key]['engagement_percentage'];
                             }
-                            $chartLabels[] = $unitsEngagement[$key]['name'];
-                            $chartValues[] = $unitsEngagement[$key]['engagement_percentage'];
-                        }
-                        usort($unitsEngagement, function ($a, $b) {
-                            return $a['engagement_percentage'] <=> $b['engagement_percentage'];
-                        });
-                        $data['unitsEngagement'] = array_values($unitsEngagement);
-                        $engagement_percentages = array_column($unitsEngagement, 'engagement_percentage');
-                        sort($engagement_percentages);
-                        $count = count($engagement_percentages);
-                        $middleIndex = floor(($count - 1) / 2);
-                        if ($count <= 1) {
-                            $median = 0;
-                        } else if ($count % 2) {
-                            $median = $engagement_percentages[$middleIndex];
+                            usort($unitsEngagement, function ($a, $b) {
+                                return $a['engagement_percentage'] <=> $b['engagement_percentage'];
+                            });
+                            $data['unitsEngagement'] = array_values($unitsEngagement);
+                            $engagement_percentages = array_column($unitsEngagement, 'engagement_percentage');
+                            sort($engagement_percentages);
+                            $count = count($engagement_percentages);
+                            $middleIndex = floor(($count - 1) / 2);
+                            if ($count <= 1) {
+                                $median = 0;
+                            } else if ($count % 2) {
+                                $median = $engagement_percentages[$middleIndex];
+                            } else {
+                                $median = ($engagement_percentages[$middleIndex] + $engagement_percentages[$middleIndex + 1]) / 2;
+                            }
+
+                            $highEngagementLabels = [];
+                            $highEngagementValues = [];
+                            $lowEngagementLabels = [];
+                            $lowEngagementValues = [];
+
+                            foreach ($unitsEngagement as $engagement) {
+                                if ($engagement['engagement_percentage'] > $median || $engagement['engagement_percentage'] >= 50) {
+                                    $highEngagementLabels[] = $engagement['name'];
+                                    $highEngagementValues[] = $engagement['engagement_percentage'];
+                                } else {
+                                    $lowEngagementLabels[] = $engagement['name'];
+                                    $lowEngagementValues[] = $engagement['engagement_percentage'];
+                                }
+                            }
+                            $data['highEngagementLabels'] = $highEngagementLabels;
+                            $data['highEngagementValues'] = $highEngagementValues;
+                            $data['lowEngagementLabels'] = $lowEngagementLabels;
+                            $data['lowEngagementValues'] = $lowEngagementValues;
                         } else {
-                            $median = ($engagement_percentages[$middleIndex] + $engagement_percentages[$middleIndex + 1]) / 2;
+                            $data['error'] = 'No Units Found';
+                            return view('dashboard.reports.school.school_content_engagement_report', $data);
                         }
-
-                        $highEngagementLabels = [];
-                        $highEngagementValues = [];
-                        $lowEngagementLabels = [];
-                        $lowEngagementValues = [];
-
-                        foreach ($unitsEngagement as $engagement) {
-                            if ($engagement['engagement_percentage'] > $median || $engagement['engagement_percentage'] >= 50) {
-                                $highEngagementLabels[] = $engagement['name'];
-                                $highEngagementValues[] = $engagement['engagement_percentage'];
-                            } else {
-                                $lowEngagementLabels[] = $engagement['name'];
-                                $lowEngagementValues[] = $engagement['engagement_percentage'];
-                            }
-                        }
-                        $data['highEngagementLabels'] = $highEngagementLabels;
-                        $data['highEngagementValues'] = $highEngagementValues;
-                        $data['lowEngagementLabels'] = $lowEngagementLabels;
-                        $data['lowEngagementValues'] = $lowEngagementValues;
                         break;
                     case 'Lesson':
-                        foreach ($lessonsEngagement as $key => $Engagement) {
-                            if ($lessonEngagementCount > 0) {
-                                $lessonsEngagement[$key]['engagement_percentage'] = (int)(round($Engagement['engagement_count'] / $lessonEngagementCount * 100));
+                        if (isset($lessonsEngagement)) {
+                            foreach ($lessonsEngagement as $key => $Engagement) {
+                                if ($lessonEngagementCount > 0) {
+                                    $lessonsEngagement[$key]['engagement_percentage'] = round($Engagement['engagement_count'] / $lessonEngagementCount * 100, 2);
+                                } else {
+                                    $lessonsEngagement[$key]['engagement_percentage'] = 0;
+                                }
+
+                                $chartLabels[] = $lessonsEngagement[$key]['name'];
+                                $chartValues[] = $lessonsEngagement[$key]['engagement_percentage'];
+                            }
+                            usort($lessonsEngagement, function ($a, $b) {
+                                return $a['engagement_percentage'] <=> $b['engagement_percentage'];
+                            });
+                            $data['lessonsEngagement'] = array_values($lessonsEngagement);
+                            $engagement_percentages = array_column($lessonsEngagement, 'engagement_percentage');
+                            sort($engagement_percentages);
+                            $count = count($engagement_percentages);
+                            $middleIndex = floor(($count - 1) / 2);
+                            if ($count <= 1) {
+                                $median = 0;
+                            } else if ($count % 2) {
+                                $median = $engagement_percentages[$middleIndex];
                             } else {
-                                $lessonsEngagement[$key]['engagement_percentage'] = 0;
+                                $median = ($engagement_percentages[$middleIndex] + $engagement_percentages[$middleIndex + 1]) / 2;
                             }
 
-                            $chartLabels[] = $lessonsEngagement[$key]['name'];
-                            $chartValues[] = $lessonsEngagement[$key]['engagement_percentage'];
-                        }
-                        usort($lessonsEngagement, function ($a, $b) {
-                            return $a['engagement_percentage'] <=> $b['engagement_percentage'];
-                        });
-                        $data['lessonsEngagement'] = array_values($lessonsEngagement);
-                        $engagement_percentages = array_column($lessonsEngagement, 'engagement_percentage');
-                        sort($engagement_percentages);
-                        $count = count($engagement_percentages);
-                        $middleIndex = floor(($count - 1) / 2);
-                        if ($count <= 1) {
-                            $median = 0;
-                        } else if ($count % 2) {
-                            $median = $engagement_percentages[$middleIndex];
+                            $highEngagementLabels = [];
+                            $highEngagementValues = [];
+                            $lowEngagementLabels = [];
+                            $lowEngagementValues = [];
+
+                            foreach ($lessonsEngagement as $engagement) {
+                                if ($engagement['engagement_percentage'] > $median || $engagement['engagement_percentage'] >= 50) {
+                                    $highEngagementLabels[] = $engagement['name'];
+                                    $highEngagementValues[] = $engagement['engagement_percentage'];
+                                } else {
+                                    $lowEngagementLabels[] = $engagement['name'];
+                                    $lowEngagementValues[] = $engagement['engagement_percentage'];
+                                }
+                            }
+                            $data['highEngagementLabels'] = $highEngagementLabels;
+                            $data['highEngagementValues'] = $highEngagementValues;
+                            $data['lowEngagementLabels'] = $lowEngagementLabels;
+                            $data['lowEngagementValues'] = $lowEngagementValues;
                         } else {
-                            $median = ($engagement_percentages[$middleIndex] + $engagement_percentages[$middleIndex + 1]) / 2;
+                            $data['error'] = 'No Lessons Found';
+                            return view('dashboard.reports.school.school_content_engagement_report', $data);
                         }
-
-                        $highEngagementLabels = [];
-                        $highEngagementValues = [];
-                        $lowEngagementLabels = [];
-                        $lowEngagementValues = [];
-
-                        foreach ($lessonsEngagement as $engagement) {
-                            if ($engagement['engagement_percentage'] > $median || $engagement['engagement_percentage'] >= 50) {
-                                $highEngagementLabels[] = $engagement['name'];
-                                $highEngagementValues[] = $engagement['engagement_percentage'];
-                            } else {
-                                $lowEngagementLabels[] = $engagement['name'];
-                                $lowEngagementValues[] = $engagement['engagement_percentage'];
-                            }
-                        }
-                        $data['highEngagementLabels'] = $highEngagementLabels;
-                        $data['highEngagementValues'] = $highEngagementValues;
-                        $data['lowEngagementLabels'] = $lowEngagementLabels;
-                        $data['lowEngagementValues'] = $lowEngagementValues;
                         break;
                     case 'Game':
-                        foreach ($gameEngagement as $key => $Engagement) {
-                            if ($gameEngagementCount > 0) {
-                                $gameEngagement[$key]['engagement_percentage'] = (int)(round($Engagement['engagement_count'] / $gameEngagementCount * 100));
-                            } else {
-                                $gameEngagement[$key]['engagement_percentage'] = 0;
+                        if (isset($gameEngagement)) {
+                            foreach ($gameEngagement as $key => $Engagement) {
+                                if ($gameEngagementCount > 0) {
+                                    $gameEngagement[$key]['engagement_percentage'] = round($Engagement['engagement_count'] / $gameEngagementCount * 100, 2);
+                                } else {
+                                    $gameEngagement[$key]['engagement_percentage'] = 0;
+                                }
+                                $chartLabels[] = $gameEngagement[$key]['name'];
+                                $chartValues[] = $gameEngagement[$key]['engagement_percentage'];
                             }
-                            $chartLabels[] = $gameEngagement[$key]['name'];
-                            $chartValues[] = $gameEngagement[$key]['engagement_percentage'];
-                        }
-                        usort($gameEngagement, function ($a, $b) {
-                            return $a['engagement_percentage'] <=> $b['engagement_percentage'];
-                        });
-                        $data['gameEngagement'] = array_values($gameEngagement);
-                        $engagement_percentages = array_column($gameEngagement, 'engagement_percentage');
-                        sort($engagement_percentages);
-                        $count = count($engagement_percentages);
-                        $middleIndex = floor(($count - 1) / 2);
-                        if ($count <= 1) {
-                            $median = 0;
-                        } else if ($count % 2) {
-                            $median = $engagement_percentages[$middleIndex];
+                            usort($gameEngagement, function ($a, $b) {
+                                return $a['engagement_percentage'] <=> $b['engagement_percentage'];
+                            });
+                            $data['gameEngagement'] = array_values($gameEngagement);
+                            $engagement_percentages = array_column($gameEngagement, 'engagement_percentage');
+                            sort($engagement_percentages);
+                            $count = count($engagement_percentages);
+                            $middleIndex = floor(($count - 1) / 2);
+                            if ($count <= 1) {
+                                $median = 0;
+                            } else if ($count % 2) {
+                                $median = $engagement_percentages[$middleIndex];
+                            } else {
+                                $median = ($engagement_percentages[$middleIndex] + $engagement_percentages[$middleIndex + 1]) / 2;
+                            }
+
+                            $highEngagementLabels = [];
+                            $highEngagementValues = [];
+                            $lowEngagementLabels = [];
+                            $lowEngagementValues = [];
+
+                            foreach ($gameEngagement as $engagement) {
+                                if ($engagement['engagement_percentage'] > $median || $engagement['engagement_percentage'] >= 50) {
+                                    $highEngagementLabels[] = $engagement['name'];
+                                    $highEngagementValues[] = $engagement['engagement_percentage'];
+                                } else {
+                                    $lowEngagementLabels[] = $engagement['name'];
+                                    $lowEngagementValues[] = $engagement['engagement_percentage'];
+                                }
+                            }
+                            $data['highEngagementLabels'] = $highEngagementLabels;
+                            $data['highEngagementValues'] = $highEngagementValues;
+                            $data['lowEngagementLabels'] = $lowEngagementLabels;
+                            $data['lowEngagementValues'] = $lowEngagementValues;
                         } else {
-                            $median = ($engagement_percentages[$middleIndex] + $engagement_percentages[$middleIndex + 1]) / 2;
+                            $data['error'] = 'No Games Found';
+                            return view('dashboard.reports.school.school_content_engagement_report', $data);
                         }
-
-                        $highEngagementLabels = [];
-                        $highEngagementValues = [];
-                        $lowEngagementLabels = [];
-                        $lowEngagementValues = [];
-
-                        foreach ($gameEngagement as $engagement) {
-                            if ($engagement['engagement_percentage'] > $median || $engagement['engagement_percentage'] >= 50) {
-                                $highEngagementLabels[] = $engagement['name'];
-                                $highEngagementValues[] = $engagement['engagement_percentage'];
-                            } else {
-                                $lowEngagementLabels[] = $engagement['name'];
-                                $lowEngagementValues[] = $engagement['engagement_percentage'];
-                            }
-                        }
-                        $data['highEngagementLabels'] = $highEngagementLabels;
-                        $data['highEngagementValues'] = $highEngagementValues;
-                        $data['lowEngagementLabels'] = $lowEngagementLabels;
-                        $data['lowEngagementValues'] = $lowEngagementValues;
                         break;
                     default:
-
                         break;
                 }
             }
         }
 
         return view('dashboard.reports.school.school_content_engagement_report', $data);
+    }
+
+    public function teacherContentEngagementReport(Request $request)
+    {
+        if (Auth::user()->hasRole('school')) {
+            $programs = Program::when(Auth::user()->hasRole('school'), function ($query) {
+                return $query->where('school_id', Auth::user()->school_id);
+            })->get();
+        } else {
+            $programs = Program::all();
+        }
+
+        $schools = School::all();
+        // Initialize $data array with defaults
+        $data = [
+            'schools' => $schools,
+            'programs' => $programs,
+            'request' => $request->all(),
+        ];
+        if ($request->has('school_id')) {
+
+            $students = User::where('role', '2')->where('school_id', $request->school_id)->pluck('id');
+            $teacher = User::find($request->teacher_id);
+
+
+            $teacherGroups = $teacher->groupTeachers;
+            $students = [];
+            foreach ($teacherGroups as $teacherGroup) {
+                $groupStudents = GroupStudent::where('group_id', $teacherGroup->group_id)->get();
+                foreach ($groupStudents as $student) {
+                    if (!in_array($student->student_id, $students)) {
+                        $students[] = $student->student_id;
+                    }
+                }
+            }
+            if (empty($students)) {
+                $data['error'] = 'No Students Found';
+                return view('dashboard.reports.instructor.instructor_content_engagement_report', $data);
+            }
+
+            // Initialize query builder for student progress
+            $query = StudentProgress::whereIn('student_id', $students)
+                ->where('program_id', $request->program_id);
+
+            // Add the 'from_date' filter if it exists
+            $query->when($request->filled('from_date'), function ($query) use ($request) {
+                $fromDate = Carbon::parse($request->from_date)->startOfDay();
+                return $query->where('created_at', '>=', $fromDate);
+            });
+
+            // Add the 'to_date' filter if it exists
+            $query->when($request->filled('to_date'), function ($query) use ($request) {
+                $toDate = Carbon::parse($request->to_date)->endOfDay();
+                return $query->where('created_at', '<=', $toDate);
+            });
+
+            // Check if query is empty
+            if ($query->get()->isEmpty()) {
+                $data['error'] = 'No Student Progress Found';
+                return view('dashboard.reports.instructor.instructor_content_engagement_report', $data);
+            }
+
+            $student_progress = $query->get();
+
+            $unitEngagementCount = 0;
+            $lessonEngagementCount = 0;
+            $gameEngagementCount = 0;
+            $skillEngagementCount = 0;
+            foreach ($student_progress as $progress) {
+                $test = Test::with(['game.gameTypes.skills.skill'])->where('lesson_id', $progress->lesson_id)->find($progress->test_id);
+
+
+                // Check if the test and its relationships are properly loaded
+                if (!$test || !$test->game || !$test->game->gameTypes) {
+                    continue; // Skip to the next progress record if any of these are null
+                }
+
+                // Get the game type (since each game has one game type)
+                $gameType = $test->game->gameTypes;
+                // dd($gameType);
+
+                // Group by unit
+                if (!isset($unitsEngagement[$progress->unit_id])) {
+                    $unitsEngagement[$progress->unit_id] = [
+                        'unit_id' => $progress->unit_id,
+                        'name' => Unit::find($progress->unit_id)->name,
+                        'lessons' => [],
+                        'engagement_count' => 0,
+                        'engagement_percentage' => 0,
+                    ];
+                }
+                $unitsEngagement[$progress->unit_id]['engagement_count']++;
+                $unitEngagementCount++;
+
+
+                // Group by lesson
+                if (!isset($lessonsEngagement[$progress->lesson_id])) {
+                    $lessonsEngagement[$progress->lesson_id] = [
+                        'lesson_id' => $progress->lesson_id,
+                        'name' => Unit::find(Lesson::find($progress->lesson_id)->unit_id)->name . " | " . Lesson::find($progress->lesson_id)->name,
+                        'games' => [],
+                        'engagement_count' => 0,
+                        'engagement_percentage' => 0,
+                    ];
+                }
+                $lessonsEngagement[$progress->lesson_id]['engagement_count']++;
+                $lessonEngagementCount++;
+
+
+                // Group by game type
+                if (!isset($gameEngagement[$gameType->id])) {
+                    $gameEngagement[$gameType->id] = [
+                        'game_type_id' => $gameType->id,
+                        'name' => GameType::find($gameType->id)->name,
+                        'engagement_count' => 0,
+                        'engagement_percentage' => 0,
+                        'games' => [],
+                    ];
+                }
+                $gameEngagement[$gameType->id]['engagement_count']++;
+                $gameEngagementCount++;
+
+                if ($gameType && $gameType->skills) {
+                    foreach ($gameType->skills->where('lesson_id', $progress->lesson_id)->unique('skill') as $gameSkill) {
+                        $skill = $gameSkill->skill;
+
+                        if (!isset($skillsEngagement[$skill->id])) {
+                            $skillsEngagement[$skill->id] = [
+                                'skill_id' => $skill->id,
+                                'name' => $skill->skill,
+                                'engagement_count' => 0,
+                                'engagement_percentage' => 0,
+                            ];
+                        }
+                        $skillsEngagement[$skill->id]['engagement_count']++;
+                        $skillEngagementCount++;
+                    }
+                }
+            }
+
+            if ($request->has('filter')) {
+                switch ($request->filter) {
+                    case 'Skill':
+                        if (isset($skillsEngagement)) {
+                            foreach ($skillsEngagement as $key => $Engagement) {
+                                if ($skillEngagementCount > 0) {
+                                    $skillsEngagement[$key]['engagement_percentage'] = round($Engagement['engagement_count'] / $skillEngagementCount * 100, 2);
+                                } else {
+                                    $skillsEngagement[$key]['engagement_percentage'] = 0;
+                                }
+                                $chartLabels[] = $skillsEngagement[$key]['name'];
+                                $chartValues[] = $skillsEngagement[$key]['engagement_percentage'];
+                            }
+                            usort($skillsEngagement, function ($a, $b) {
+                                return $a['engagement_percentage'] <=> $b['engagement_percentage'];
+                            });
+                            $data['skillsEngagement'] = array_values($skillsEngagement);
+
+                            $engagement_percentages = array_column($skillsEngagement, 'engagement_percentage');
+                            sort($engagement_percentages);
+                            $count = count($engagement_percentages);
+                            $middleIndex = floor(($count - 1) / 2);
+                            if ($count <= 1) {
+                                $median = 0;
+                            } else if ($count % 2) {
+                                $median = $engagement_percentages[$middleIndex];
+                            } else {
+                                $median = ($engagement_percentages[$middleIndex] + $engagement_percentages[$middleIndex + 1]) / 2;
+                            }
+
+                            $highEngagementLabels = [];
+                            $highEngagementValues = [];
+                            $lowEngagementLabels = [];
+                            $lowEngagementValues = [];
+
+                            foreach ($skillsEngagement as $engagement) {
+                                if ($engagement['engagement_percentage'] > $median || $engagement['engagement_percentage'] >= 50) {
+                                    $highEngagementLabels[] = $engagement['name'];
+                                    $highEngagementValues[] = $engagement['engagement_percentage'];
+                                } else {
+                                    $lowEngagementLabels[] = $engagement['name'];
+                                    $lowEngagementValues[] = $engagement['engagement_percentage'];
+                                }
+                            }
+                            $data['highEngagementLabels'] = $highEngagementLabels;
+                            $data['highEngagementValues'] = $highEngagementValues;
+                            $data['lowEngagementLabels'] = $lowEngagementLabels;
+                            $data['lowEngagementValues'] = $lowEngagementValues;
+                        } else {
+                            $data['error'] = 'No Skills Found';
+                            return view('dashboard.reports.instructor.instructor_content_engagement_report', $data);
+                        }
+                        break;
+                    case 'Unit':
+                        if (isset($unitsEngagement)) {
+                            foreach ($unitsEngagement as $key => $Engagement) {
+                                if ($unitEngagementCount > 0) {
+                                    $unitsEngagement[$key]['engagement_percentage'] = round($Engagement['engagement_count'] / $unitEngagementCount * 100, 2);
+                                } else {
+                                    $unitsEngagement[$key]['engagement_percentage'] = 0;
+                                }
+                                $chartLabels[] = $unitsEngagement[$key]['name'];
+                                $chartValues[] = $unitsEngagement[$key]['engagement_percentage'];
+                            }
+                            usort($unitsEngagement, function ($a, $b) {
+                                return $a['engagement_percentage'] <=> $b['engagement_percentage'];
+                            });
+                            $data['unitsEngagement'] = array_values($unitsEngagement);
+                            $engagement_percentages = array_column($unitsEngagement, 'engagement_percentage');
+                            sort($engagement_percentages);
+                            $count = count($engagement_percentages);
+                            $middleIndex = floor(($count - 1) / 2);
+                            if ($count <= 1) {
+                                $median = 0;
+                            } else if ($count % 2) {
+                                $median = $engagement_percentages[$middleIndex];
+                            } else {
+                                $median = ($engagement_percentages[$middleIndex] + $engagement_percentages[$middleIndex + 1]) / 2;
+                            }
+
+                            $highEngagementLabels = [];
+                            $highEngagementValues = [];
+                            $lowEngagementLabels = [];
+                            $lowEngagementValues = [];
+
+                            foreach ($unitsEngagement as $engagement) {
+                                if ($engagement['engagement_percentage'] > $median || $engagement['engagement_percentage'] >= 50) {
+                                    $highEngagementLabels[] = $engagement['name'];
+                                    $highEngagementValues[] = $engagement['engagement_percentage'];
+                                } else {
+                                    $lowEngagementLabels[] = $engagement['name'];
+                                    $lowEngagementValues[] = $engagement['engagement_percentage'];
+                                }
+                            }
+                            $data['highEngagementLabels'] = $highEngagementLabels;
+                            $data['highEngagementValues'] = $highEngagementValues;
+                            $data['lowEngagementLabels'] = $lowEngagementLabels;
+                            $data['lowEngagementValues'] = $lowEngagementValues;
+                        } else {
+                            $data['error'] = 'No Units Found';
+                            return view('dashboard.reports.instructor.instructor_content_engagement_report', $data);
+                        }
+                        break;
+                    case 'Lesson':
+                        if (isset($lessonsEngagement)) {
+                            foreach ($lessonsEngagement as $key => $Engagement) {
+                                if ($lessonEngagementCount > 0) {
+                                    $lessonsEngagement[$key]['engagement_percentage'] = round($Engagement['engagement_count'] / $lessonEngagementCount * 100, 2);
+                                } else {
+                                    $lessonsEngagement[$key]['engagement_percentage'] = 0;
+                                }
+
+                                $chartLabels[] = $lessonsEngagement[$key]['name'];
+                                $chartValues[] = $lessonsEngagement[$key]['engagement_percentage'];
+                            }
+                            usort($lessonsEngagement, function ($a, $b) {
+                                return $a['engagement_percentage'] <=> $b['engagement_percentage'];
+                            });
+                            $data['lessonsEngagement'] = array_values($lessonsEngagement);
+                            $engagement_percentages = array_column($lessonsEngagement, 'engagement_percentage');
+                            sort($engagement_percentages);
+                            $count = count($engagement_percentages);
+                            $middleIndex = floor(($count - 1) / 2);
+                            if ($count <= 1) {
+                                $median = 0;
+                            } else if ($count % 2) {
+                                $median = $engagement_percentages[$middleIndex];
+                            } else {
+                                $median = ($engagement_percentages[$middleIndex] + $engagement_percentages[$middleIndex + 1]) / 2;
+                            }
+
+                            $highEngagementLabels = [];
+                            $highEngagementValues = [];
+                            $lowEngagementLabels = [];
+                            $lowEngagementValues = [];
+
+                            foreach ($lessonsEngagement as $engagement) {
+                                if ($engagement['engagement_percentage'] > $median || $engagement['engagement_percentage'] >= 50) {
+                                    $highEngagementLabels[] = $engagement['name'];
+                                    $highEngagementValues[] = $engagement['engagement_percentage'];
+                                } else {
+                                    $lowEngagementLabels[] = $engagement['name'];
+                                    $lowEngagementValues[] = $engagement['engagement_percentage'];
+                                }
+                            }
+                            $data['highEngagementLabels'] = $highEngagementLabels;
+                            $data['highEngagementValues'] = $highEngagementValues;
+                            $data['lowEngagementLabels'] = $lowEngagementLabels;
+                            $data['lowEngagementValues'] = $lowEngagementValues;
+                        } else {
+                            $data['error'] = 'No Lessons Found';
+                            return view('dashboard.reports.instructor.instructor_content_engagement_report', $data);
+                        }
+                        break;
+                    case 'Game':
+                        if (isset($gameEngagement)) {
+                            foreach ($gameEngagement as $key => $Engagement) {
+                                if ($gameEngagementCount > 0) {
+                                    $gameEngagement[$key]['engagement_percentage'] = round($Engagement['engagement_count'] / $gameEngagementCount * 100, 2);
+                                } else {
+                                    $gameEngagement[$key]['engagement_percentage'] = 0;
+                                }
+                                $chartLabels[] = $gameEngagement[$key]['name'];
+                                $chartValues[] = $gameEngagement[$key]['engagement_percentage'];
+                            }
+                            usort($gameEngagement, function ($a, $b) {
+                                return $a['engagement_percentage'] <=> $b['engagement_percentage'];
+                            });
+                            $data['gameEngagement'] = array_values($gameEngagement);
+                            $engagement_percentages = array_column($gameEngagement, 'engagement_percentage');
+                            sort($engagement_percentages);
+                            $count = count($engagement_percentages);
+                            $middleIndex = floor(($count - 1) / 2);
+                            if ($count <= 1) {
+                                $median = 0;
+                            } else if ($count % 2) {
+                                $median = $engagement_percentages[$middleIndex];
+                            } else {
+                                $median = ($engagement_percentages[$middleIndex] + $engagement_percentages[$middleIndex + 1]) / 2;
+                            }
+
+                            $highEngagementLabels = [];
+                            $highEngagementValues = [];
+                            $lowEngagementLabels = [];
+                            $lowEngagementValues = [];
+
+                            foreach ($gameEngagement as $engagement) {
+                                if ($engagement['engagement_percentage'] > $median || $engagement['engagement_percentage'] >= 50) {
+                                    $highEngagementLabels[] = $engagement['name'];
+                                    $highEngagementValues[] = $engagement['engagement_percentage'];
+                                } else {
+                                    $lowEngagementLabels[] = $engagement['name'];
+                                    $lowEngagementValues[] = $engagement['engagement_percentage'];
+                                }
+                            }
+                            $data['highEngagementLabels'] = $highEngagementLabels;
+                            $data['highEngagementValues'] = $highEngagementValues;
+                            $data['lowEngagementLabels'] = $lowEngagementLabels;
+                            $data['lowEngagementValues'] = $lowEngagementValues;
+                        } else {
+                            $data['error'] = 'No Games Found';
+                            return view('dashboard.reports.instructor.instructor_content_engagement_report', $data);
+                        }
+                        break;
+                    default:
+                        break;
+                }
+            }
+        }
+
+        return view('dashboard.reports.instructor.instructor_content_engagement_report', $data);
     }
     public function studentContentEngagementReport(Request $request)
     {
@@ -3743,7 +4123,7 @@ class ReportController extends Controller
                     case 'Skill':
                         foreach ($skillsEngagement as $key => $Engagement) {
                             if ($skillEngagementCount > 0) {
-                                $skillsEngagement[$key]['engagement_percentage'] = (int)(round($Engagement['engagement_count'] / $skillEngagementCount * 100));
+                                $skillsEngagement[$key]['engagement_percentage'] = round($Engagement['engagement_count'] / $skillEngagementCount * 100, 2);
                             } else {
                                 $skillsEngagement[$key]['engagement_percentage'] = 0;
                             }
@@ -3789,7 +4169,7 @@ class ReportController extends Controller
                     case 'Unit':
                         foreach ($unitsEngagement as $key => $Engagement) {
                             if ($unitEngagementCount > 0) {
-                                $unitsEngagement[$key]['engagement_percentage'] = (int)(round($Engagement['engagement_count'] / $unitEngagementCount * 100));
+                                $unitsEngagement[$key]['engagement_percentage'] = round($Engagement['engagement_count'] / $unitEngagementCount * 100, 2);
                             } else {
                                 $unitsEngagement[$key]['engagement_percentage'] = 0;
                             }
@@ -3834,7 +4214,7 @@ class ReportController extends Controller
                     case 'Lesson':
                         foreach ($lessonsEngagement as $key => $Engagement) {
                             if ($lessonEngagementCount > 0) {
-                                $lessonsEngagement[$key]['engagement_percentage'] = (int)(round($Engagement['engagement_count'] / $lessonEngagementCount * 100));
+                                $lessonsEngagement[$key]['engagement_percentage'] = round($Engagement['engagement_count'] / $lessonEngagementCount * 100, 2);
                             } else {
                                 $lessonsEngagement[$key]['engagement_percentage'] = 0;
                             }
@@ -3880,7 +4260,7 @@ class ReportController extends Controller
                     case 'Game':
                         foreach ($gameEngagement as $key => $Engagement) {
                             if ($gameEngagementCount > 0) {
-                                $gameEngagement[$key]['engagement_percentage'] = (int)(round($Engagement['engagement_count'] / $gameEngagementCount * 100));
+                                $gameEngagement[$key]['engagement_percentage'] = round($Engagement['engagement_count'] / $gameEngagementCount * 100, 2);
                             } else {
                                 $gameEngagement[$key]['engagement_percentage'] = 0;
                             }
@@ -3940,13 +4320,7 @@ class ReportController extends Controller
         } else {
             $groups = Group::all();
         }
-        // if (Auth::user()->hasRole('school')) {
-        //     $programs = Program::when(Auth::user()->hasRole('school'), function ($query) {
-        //         return $query->where('school_id', Auth::user()->school_id);
-        //     })->get();
-        // } else {
-        //     $programs = Program::all();
-        // }
+
         // Initialize $data array with defaults
         $data = [
             'groups' => $groups,
@@ -3960,14 +4334,524 @@ class ReportController extends Controller
                 $selectedPrograms = Program::whereIn('id', Group::with(['groupCourses'])->findOrFail($request->group_id)->groupCourses->pluck('program_id'))->get();
             }
 
-            $students = GroupStudent::where('group_id', $request->group_id)->pluck('student_id');
+            // $students = GroupStudent::where('group_id', $request->group_id)->pluck('student_id');
+            $students = GroupStudent::whereIn('student_id', [239, 504])->pluck('student_id');
             if ($students->isEmpty()) {
-                return redirect()->back()->with('error', 'No Students Found.')->withInput();
+                $data['error'] = 'No Students Found.';
+
+                // Return the view with the $data array
+                return view('dashboard.reports.class.class_content_usage_report', $data);
             }
 
-            $student_assignments = StudentTest::whereIn('student_id', $students)->whereIn('program_id', $selectedPrograms->pluck('id'))->get();
+            // Fetch student tests and filter for valid test IDs
+            $student_tests = StudentTest::whereIn('student_id', $students)
+                ->whereIn('program_id', $selectedPrograms->pluck('id'))
+                ->when($request->filled('from_date'), function ($query) use ($request) {
+                    return $query->whereDate('created_at', '>=', $request->from_date);
+                })
+                ->when($request->filled('to_date'), function ($query) use ($request) {
+                    return $query->whereDate('created_at', '<=', $request->to_date);
+                })
+                ->whereNotNull('test_id')
+                ->get();
+            // dd($student_tests);
+
+            // Check if there are multiple students
+            if ($students->count() > 1) {
+                // Group the results by test_id
+                $grouped_tests = $student_tests->groupBy('test_id');
+                $common_tests = [];
+
+                foreach ($grouped_tests as $test) {
+                    $studentsTest = [];
+                    foreach ($test as $testStudent) {
+                        if (!in_array($testStudent->student_id, $studentsTest))
+                            $studentsTest[] = $testStudent->student_id;
+                    }
+                    if (count($studentsTest) == $students->count()) {
+                        $common_tests[] = $testStudent->test_id;
+                    }
+                }
+                // dd($common_tests);
+            } else {
+                // If there's only one student, skip filtering
+                $common_tests = $student_tests->pluck('test_id');
+            }
+
+
+            // Fetch the actual test records for the common tests
+            $student_assignments = Test::whereIn('id', $common_tests)->get();
+            // dd($student_assignments);
+
             if ($student_assignments->isEmpty()) {
-                return redirect()->back()->with('error', 'No Assignments Found for Any Student.')->withInput();
+                // Add an error message to the data array
+                $data['error'] = 'No Assignments Found for All Students';
+                return view('dashboard.reports.class.class_content_usage_report', $data);
+            }
+
+
+            $unitsUsage = [];
+            $lessonsUsage = [];
+            $gamesUsage = [];
+            $skillsUsage = [];
+            $programsUsage = [];
+
+            foreach ($selectedPrograms as $program) {
+                $totalProgramGames = 0;
+                if (!isset($programsUsage[$program->id])) {
+                    $programsUsage[$program->id] = [
+                        'program_id' => $program->id,
+                        'name' => $program->course->name . ' - ' . $program->stage->name,
+                        'units' => [],
+                        'usage_count' => 0,
+                        'usage_percentage' => 0,
+                        'total_games' => 0,
+                        'total_assigned_games' => 0,
+                    ];
+                }
+
+                $unitsUsage = []; // Initialize unitsUsage for each program
+
+                foreach ($program->units as $unit) {
+                    $totalUnitGames = 0;
+                    if (!isset($unitsUsage[$unit->id])) {
+                        $unitsUsage[$unit->id] = [
+                            'unit_id' => $unit->id,
+                            'name' => $unit->name,
+                            'lessons' => [],
+                            'usage_count' => 0,
+                            'usage_percentage' => 0,
+                            'total_games' => 0,
+                            'total_assigned_games' => 0,
+                        ];
+                    }
+
+                    $lessonsUsage = []; // Initialize lessonsUsage for each unit
+
+                    foreach ($unit->lessons as $lesson) {
+                        $gamesCount = Game::where('lesson_id', $lesson->id)->get()->count();
+                        $totalProgramGames += $gamesCount;
+                        $totalUnitGames += $gamesCount;
+                        if (!isset($lessonsUsage[$lesson->id])) {
+                            $lessonsUsage[$lesson->id] = [
+                                'lesson_id' => $lesson->id,
+                                'name' => $lesson->name,
+                                'games' => [],
+                                'assigned' => 0,
+                                'usage_percentage' => 0,
+                                'total_games' => $gamesCount,
+                                'assigned_games' => [],
+                                'total_assigned_games' => 0,
+                            ];
+                        }
+
+                        $gamesUsage = [];
+                        $skillsUsage = [];
+
+                        foreach ($lesson->game as $game) {
+                            if (!isset($gamesUsage[$game->game_type_id])) {
+                                $gameType = GameType::find($game->game_type_id);
+                                $gamesUsage[$game->game_type_id] = [
+                                    'game_type_id' => $game->game_type_id,
+                                    'name' => $gameType->name,
+                                    'skills' => [],
+                                    'assigned' => 0,
+                                    'usage_percentage' => 0,
+                                ];
+
+                                // Assign skills to the game type using skill IDs as keys
+                                if ($gameType->skills) {
+                                    foreach ($gameType->skills->where('lesson_id', $lesson->id)->unique('skill') as $gameSkill) {
+                                        $skill = $gameSkill->skill;
+
+                                        if (!isset($skillsUsage[$skill->id])) {
+                                            $skillsUsage[$skill->id] = [
+                                                'skill_id' => $skill->id,
+                                                'name' => $skill->skill,
+                                                'usage_count' => 0,
+                                                'usage_percentage' => 0,
+                                            ];
+                                        }
+                                    }
+                                    // Assign the collected skills to the game's 'skills'
+                                    $gamesUsage[$game->game_type_id]['skills'] = $skillsUsage;
+                                }
+                            }
+                        }
+                        // Assign the collected games to the lesson's 'games'
+                        $lessonsUsage[$lesson->id]['games'] = $gamesUsage;
+                    }
+                    // Assign the collected lessons to the unit's 'lessons'
+                    $unitsUsage[$unit->id]['lessons'] = $lessonsUsage;
+                    $unitsUsage[$unit->id]['total_games'] = $totalUnitGames;
+                }
+                // Assign the collected units to the program's 'units'
+                $programsUsage[$program->id]['units'] = $unitsUsage;
+                $programsUsage[$program->id]['total_games'] = $totalProgramGames;
+            }
+
+            foreach ($student_assignments as $assignment) {
+                // $testGames = Game::whereIn('id', TestQuestion::where('test_id', $assignment->id)->pluck('game_id'))->get();
+                $testGame = Game::find($assignment->game_id);
+                // dd($testGames);
+                $lesson = Lesson::find($assignment->lesson_id);
+                $unit_id = $lesson->unit_id;
+                $programsUsage[$assignment->program_id]['units'][$unit_id]['lessons'][$assignment->lesson_id]['assigned'] = 1;
+                $programsUsage[$assignment->program_id]['units'][$unit_id]['lessons'][$assignment->lesson_id]['games'][$testGame->game_type_id]['assigned'] = 1;
+
+                if (!in_array($testGame->id,    $programsUsage[$assignment->program_id]['units'][$unit_id]['lessons'][$assignment->lesson_id]['assigned_games'])) {
+                    $programsUsage[$assignment->program_id]['units'][$unit_id]['lessons'][$assignment->lesson_id]['assigned_games'][] = $testGame->id;
+                }
+            }
+
+            foreach ($programsUsage as $program) {
+                $programAssignedGames = 0;
+                foreach ($program['units'] as $unit) {
+                    $assignedCount = 0;
+                    $unitAssignedGames = 0;
+                    foreach ($unit['lessons'] as $lesson) {
+                        if ($lesson['assigned'] == 1) {
+                            $assignedCount++;
+                            $totalGamesCount  = $programsUsage[$program['program_id']]['units'][$unit['unit_id']]['lessons'][$lesson['lesson_id']]['total_games'];
+                            $assignedGamesCount = count($programsUsage[$program['program_id']]['units'][$unit['unit_id']]['lessons'][$lesson['lesson_id']]['assigned_games']);
+                            $programsUsage[$program['program_id']]['units'][$unit['unit_id']]['lessons'][$lesson['lesson_id']]['usage_percentage'] = round(($assignedGamesCount / $totalGamesCount) * 100, 2);
+                            $unitAssignedGames += $assignedGamesCount;
+                            $programsUsage[$program['program_id']]['units'][$unit['unit_id']]['lessons'][$lesson['lesson_id']]['total_assigned_games'] = $assignedGamesCount;
+                        }
+                    }
+                    if ($programsUsage[$program['program_id']]['units'][$unit['unit_id']]['total_games']  != 0) {
+                        $programAssignedGames += $unitAssignedGames;
+                        $programsUsage[$program['program_id']]['units'][$unit['unit_id']]['total_assigned_games'] = $unitAssignedGames;
+                        $programsUsage[$program['program_id']]['units'][$unit['unit_id']]['usage_percentage'] = round($unitAssignedGames /  $programsUsage[$program['program_id']]['units'][$unit['unit_id']]['total_games'] * 100, 2);
+                    }
+                }
+
+                $programsUsage[$program['program_id']]['total_assigned_games'] = $programAssignedGames;
+                if ($programsUsage[$program['program_id']]['total_games'] != 0) {
+                    $programsUsage[$program['program_id']]['usage_percentage'] = round($programAssignedGames / $programsUsage[$program['program_id']]['total_games'] * 100, 2);
+                }
+            }
+            // dd($programsUsage);
+
+
+            $chartLabels = [];
+            $chartValues = [];
+            if ($request->filled('filter') && $request->filled('program_id')) {
+                switch ($request->filter) {
+                    case 'Unit':
+                        foreach ($programsUsage as $program) {
+                            foreach ($program['units'] as $unit) {
+                                $chartLabels[] = $unit['name'];
+                                $chartValues[] = $unit['usage_percentage'];
+                            }
+                        }
+                        $data['unitsUsage'] =  $programsUsage[$request->program_id]['units'];
+                        $data['chartLabels'] =  $chartLabels;
+                        $data['chartValues'] =  $chartValues;
+                        break;
+                    case 'Lesson':
+                        $lessonsData =  [];
+                        foreach ($programsUsage as $program) {
+                            foreach ($program['units'] as $unit) {
+                                $chartLabels[] = '-';
+                                $chartValues[] = '-';
+                                foreach ($unit['lessons'] as $lesson) {
+                                    $chartLabels[] = $lesson['name'];
+                                    $chartValues[] = $lesson['usage_percentage'];
+                                    if ($lesson['assigned'] == 1) {
+                                        $assignedCount++;
+                                    }
+                                }
+                            }
+                        }
+
+                        $data['lessonsUsage'] =  $programsUsage[$request->program_id]['units'];
+                        $data['chartLabels'] =  $chartLabels;
+                        $data['chartValues'] =  $chartValues;
+                        break;
+                    case 'Game':
+                        $gameData = [];
+                        foreach ($programsUsage as $program) {
+                            foreach ($program['units'] as $unit) {
+                                foreach ($unit['lessons'] as $lesson) {
+                                    $chartLabels[] = '-';
+                                    $chartValues[] = '-';
+                                    foreach ($lesson['games'] as $game) {
+                                        $gameData[] = $game;
+                                        $chartLabels[] = $game['name'];
+                                        $chartValues[] = $game['assigned'];
+                                    }
+                                }
+                            }
+                        }
+                        $data['gamesUsage'] =  $programsUsage[$request->program_id]['units'];
+                        $data['gamesLabels'] =  $chartLabels;
+                        $data['gamesValues'] =  $chartValues;
+                        break;
+                    default:
+
+                        break;
+                }
+            } else if ($request->filled('filter') && !$request->filled('program_id')) {
+                $data['error'] = 'Please Select a Program to Use filters';
+                return view('dashboard.reports.class.class_content_usage_report', $data);
+            } elseif (!$request->filled('program_id')) {
+                foreach ($programsUsage as $program) {
+                    $chartLabels[] = $program['name'];
+                    $chartValues[] = $program['usage_percentage'];
+                }
+                $data['programsUsage'] =  $programsUsage;
+                $data['chartLabels'] =  $chartLabels;
+                $data['chartValues'] =  $chartValues;
+            } else {
+                $data['error'] = 'Please Select a Filter for this Program';
+                return view('dashboard.reports.class.class_content_usage_report', $data);
+            }
+        }
+        return view('dashboard.reports.class.class_content_usage_report', $data);
+    }
+
+    public function teacherContentCoverageReport(Request $request)
+    {
+        if (Auth::user()->hasRole('school')) {
+            $programs = Program::when(Auth::user()->hasRole('school'), function ($query) {
+                return $query->where('school_id', Auth::user()->school_id);
+            })->get();
+
+            $data['programs'] = $programs;
+        }
+
+        $schools = School::all();
+
+
+        $data = [
+            'schools' => $schools,
+            'request' => $request->all(),
+        ];
+
+        if ($request->filled('school_id') && $request->filled('teacher_id') && $request->filled('program_id')) {
+            $teacherStudentTests = StudentTest::where('teacher_id', $request->teacher_id)
+                ->where('program_id', $request->program_id)
+                ->when($request->filled('from_date'), function ($query) use ($request) {
+                    return $query->whereDate('created_at', '>=', $request->from_date);
+                })
+                ->when($request->filled('to_date'), function ($query) use ($request) {
+                    return $query->whereDate('created_at', '<=', $request->to_date);
+                })
+                ->distinct()
+                ->pluck('test_id');
+
+            if ($teacherStudentTests->isEmpty()) {
+                // Add an error message to the data array
+                $data['error'] = "No Assignments Found for All Teacher's Students";
+                return view('dashboard.reports.instructor.instructor_content_coverage_report', $data);
+            }
+            $teacherTests =  Test::whereIn('id', $teacherStudentTests)->get();
+            $program = Program::find($request->program_id);
+
+            $unitsCoverage = [];
+            $totalGames = 0;
+
+            foreach ($program->units as $unit) {
+                $unitGames = 0;
+                if (!isset($unitsCoverage[$unit->id])) {
+                    $unitsCoverage[$unit->id] = [
+                        'unit_id' => $unit->id,
+                        'name' => $unit->name,
+                        'lessons' => [],
+                        'coverage_percentage' => 0,
+                        'total_games_count' => 0,
+                        'assigned_games_count' => 0,
+
+                    ];
+                }
+
+                $lessonsCoverage = [];
+
+                foreach ($unit->lessons as $lesson) {
+                    $gamesCount = Game::where('lesson_id', $lesson->id)->get()->count();
+                    $totalGames += $gamesCount;
+                    $unitGames += $gamesCount;
+
+                    if (!isset($lessonsCoverage[$lesson->id])) {
+                        $lessonsCoverage[$lesson->id] = [
+                            'lesson_id' => $lesson->id,
+                            'name' => $lesson->name,
+                            'games_count' => $gamesCount,
+                            'assigned' => 0,
+                            'assigned_games' => [],
+                            'coverage_percentage' => 0,
+                        ];
+                    }
+                }
+                // Assign the collected lessons to the unit's 'lessons'
+                $unitsCoverage[$unit->id]['lessons'] = $lessonsCoverage;
+                $unitsCoverage[$unit->id]['total_games_count'] = $unitGames;
+            }
+
+            foreach ($teacherTests as $test) {
+                $lesson_id = Lesson::find($test->lesson_id);
+                $unit_id = $lesson_id->unit_id;
+                $testGameId = $test->game_id;
+                // dd($test->lesson_id, $unit_id);
+                $unitsCoverage[$unit_id]['lessons'][$test->lesson_id]['assigned'] = 1;
+
+                if (!in_array($testGameId,  $unitsCoverage[$unit_id]['lessons'][$test->lesson_id]['assigned_games'])) {
+                    $unitsCoverage[$unit_id]['lessons'][$test->lesson_id]['assigned_games'][] = $testGameId;
+                }
+            }
+            $totalAssignedGames = 0;
+            foreach ($unitsCoverage as $unit) {
+                $assignedCount = 0;
+
+                foreach ($unit['lessons'] as $lesson) {
+                    $unitAssignedGames = 0;
+                    if ($lesson['assigned'] == 1) {
+                        $assignedCount++;
+
+                        $totalGamesCount  = $unitsCoverage[$unit['unit_id']]['lessons'][$lesson['lesson_id']]['games_count'];
+                        $assignedGamesCount = count($unitsCoverage[$unit['unit_id']]['lessons'][$lesson['lesson_id']]['assigned_games']);
+                        $unitsCoverage[$unit['unit_id']]['lessons'][$lesson['lesson_id']]['coverage_percentage'] = round(($assignedGamesCount / $totalGamesCount) * 100, 2);
+                        $unitAssignedGames += $assignedGamesCount;
+                    }
+                }
+                if ($unitsCoverage[$unit['unit_id']]['total_games_count'] != 0) {
+                    $totalAssignedGames += $unitAssignedGames;
+                    $unitsCoverage[$unit['unit_id']]['assigned_games_count'] = $unitAssignedGames;
+                    $unitsCoverage[$unit['unit_id']]['coverage_percentage'] = round($unitAssignedGames / $unitsCoverage[$unit['unit_id']]['total_games_count'] * 100, 2);
+                }
+            }
+            // dd($unitsCoverage);
+            if ($request->filled('filter') && $request->filled('program_id')) {
+                switch ($request->filter) {
+                    case 'Unit':
+                        $chartLabels = [];
+                        $chartValues = [];
+                        $total_percentage = 0;
+                        foreach ($unitsCoverage as $unit) {
+                            $chartLabels[] = $unit['name'];
+                            $chartValues[] = $unit['coverage_percentage'];
+                            $total_percentage += $unit['coverage_percentage'];
+                        }
+
+                        $data['unitsCoverage'] = $unitsCoverage;
+                        $data['chartLabels'] = $chartLabels;
+                        $data['chartValues'] = $chartValues;
+                        $data['programCoverage'] = round($totalAssignedGames / $totalGames * 100, 2);
+                        break;
+                    case 'Lesson':
+                        $chartLabels = [];
+                        $chartValues = [];
+                        $total_percentage = 0;
+                        $assignedCount = 0;
+                        $unassignedCount = 0;
+
+                        foreach ($unitsCoverage as $unit) {
+                            $chartLabels[] = '-';
+                            $chartValues[] = '-';
+                            foreach ($unit['lessons'] as $lesson) {
+                                $chartLabels[] = $lesson['name'];
+                                $chartValues[] = $lesson['coverage_percentage'];
+                                if ($lesson['assigned'] == 1) {
+                                    $assignedCount++;
+                                } else {
+                                    $unassignedCount++;
+                                }
+                            }
+                            $total_percentage += $unit['coverage_percentage'];
+                        }
+
+                        $data['lessonsCoverage'] = $unitsCoverage;
+                        $data['chartLabels'] = $chartLabels;
+                        $data['chartValues'] = $chartValues;
+                        $data['programCoverage'] = round($totalAssignedGames / $totalGames * 100, 2);
+                        break;
+                    default:
+                        break;
+                }
+            }
+        }
+        // dd($unitsCoverage);
+
+        return view('dashboard.reports.instructor.instructor_content_coverage_report', $data);
+    }
+
+    public function classContentGapReport(Request $request)
+    {
+        if (Auth::user()->hasRole('school')) {
+            $groups = Group::when(Auth::user()->hasRole('school'), function ($query) {
+                return $query->where('school_id', Auth::user()->school_id);
+            })->get();
+        } else {
+            $groups = Group::all();
+        }
+
+        // Initialize $data array with defaults
+        $data = [
+            'groups' => $groups,
+            // 'programs' => $programs,
+            'request' => $request->all(),
+        ];
+        if ($request->has('group_id')) {
+            if ($request->filled('program_id')) {
+                $selectedPrograms = Program::where('id', $request->program_id)->get();
+            } else {
+                $selectedPrograms = Program::whereIn('id', Group::with(['groupCourses'])->findOrFail($request->group_id)->groupCourses->pluck('program_id'))->get();
+            }
+
+            // $students = GroupStudent::whereIn('student_id', [239, 504])->pluck('student_id');
+            $students = GroupStudent::where('group_id', $request->group_id)->pluck('student_id');
+            if ($students->isEmpty()) {
+                $data['error'] = 'No Students Found.';
+
+                // Return the view with the $data array
+                return view('dashboard.reports.class.class_content_gap_report', $data);
+            }
+
+            // Fetch student tests and filter for valid test IDs
+            $student_tests = StudentTest::whereIn('student_id', $students)
+                ->whereIn('program_id', $selectedPrograms->pluck('id'))
+                ->when($request->filled('from_date'), function ($query) use ($request) {
+                    return $query->whereDate('created_at', '>=', $request->from_date);
+                })
+                ->when($request->filled('to_date'), function ($query) use ($request) {
+                    return $query->whereDate('created_at', '<=', $request->to_date);
+                })
+                ->whereNotNull('test_id')
+                ->get();
+            // dd($student_tests);
+
+            // Check if there are multiple students
+            if ($students->count() > 1) {
+                // Group the results by test_id
+                $grouped_tests = $student_tests->groupBy('test_id');
+                $common_tests = [];
+
+                foreach ($grouped_tests as $test) {
+                    $studentsTest = [];
+                    foreach ($test as $testStudent) {
+                        if (!in_array($testStudent->student_id, $studentsTest))
+                            $studentsTest[] = $testStudent->student_id;
+                    }
+                    if (count($studentsTest) == $students->count()) {
+                        $common_tests[] = $testStudent->test_id;
+                    }
+                }
+                // dd($common_tests);
+            } else {
+                // If there's only one student, skip filtering
+                $common_tests = $student_tests->pluck('test_id');
+            }
+
+
+            // Fetch the actual test records for the common tests
+            $student_assignments = Test::whereIn('id', $common_tests)->get();
+            // dd($student_assignments);
+
+            if ($student_assignments->isEmpty()) {
+                // Add an error message to the data array
+                $data['error'] = 'No Assignments Found for All Students';
+                return view('dashboard.reports.class.class_content_gap_report', $data);
             }
 
 
@@ -4009,13 +4893,13 @@ class ReportController extends Controller
                                 'lesson_id' => $lesson->id,
                                 'name' => $lesson->name,
                                 'games' => [],
-                                'usage_count' => 0,
+                                'assigned' => 0,
                                 'usage_percentage' => 0,
                             ];
                         }
 
-                        $gamesUsage = []; // Initialize gamesUsage for each lesson
-                        $skillsUsage = []; // Initialize skillsUsage for each game
+                        $gamesUsage = [];
+                        $skillsUsage = [];
 
                         foreach ($lesson->game as $game) {
                             if (!isset($gamesUsage[$game->game_type_id])) {
@@ -4024,7 +4908,7 @@ class ReportController extends Controller
                                     'game_type_id' => $game->game_type_id,
                                     'name' => $gameType->name,
                                     'skills' => [],
-                                    'usage_count' => 0,
+                                    'assigned' => 0,
                                     'usage_percentage' => 0,
                                 ];
 
@@ -4057,34 +4941,34 @@ class ReportController extends Controller
                 $programsUsage[$program->id]['units'] = $unitsUsage;
             }
 
-            // dd($student_assignments);
-            // dd($programsUsage);
             foreach ($student_assignments as $assignment) {
-                // increment program usage count
-                $programsUsage[$assignment->program_id]['usage_count']++;
-
+                $testGames = Game::whereIn('id', TestQuestion::where('test_id', $assignment->id)->pluck('game_id'))->get();
+                // dd($testGames);
                 $lesson = Lesson::find($assignment->lesson_id);
                 $unit_id = $lesson->unit_id;
+                $programsUsage[$assignment->program_id]['units'][$unit_id]['lessons'][$assignment->lesson_id]['assigned'] = 1;
 
-                // increment unit usage count
-                $programsUsage[$assignment->program_id]['units'][$unit_id]['usage_count']++;
+                foreach ($testGames as $game)
+                    $programsUsage[$assignment->program_id]['units'][$unit_id]['lessons'][$assignment->lesson_id]['games'][$game->game_type_id]['assigned'] = 1;
+            }
 
-                // increment lesson usage count
-                $programsUsage[$assignment->program_id]['units'][$unit_id]['lessons'][$assignment->lesson_id]['usage_count']++;
-
-                // $gameTypes = GameType::whereIn('id', $lesson->game->pluck('game_type_id'))->pluck('id');
-
-                // increment game usage count
-                foreach ($lesson->game as $game) {
-                    $gameType = GameType::find($game->game_type_id);
-                    $programsUsage[$assignment->program_id]['units'][$unit_id]['lessons'][$assignment->lesson_id]['games'][$game->game_type_id]['usage_count']++;
-
-                    // increment skill usage count
-                    foreach ($gameType->skills->where('lesson_id', $lesson->id)->unique('skill') as $gameSkill) {
-                        $skill = $gameSkill->skill;
-                        $programsUsage[$assignment->program_id]['units'][$unit_id]['lessons'][$assignment->lesson_id]['games'][$game->game_type_id]['skills'][$skill->id]['usage_count']++;
+            foreach ($programsUsage as $program) {
+                $totalUnitPercentage = 0;
+                foreach ($program['units'] as $unit) {
+                    $assignedCount = 0;
+                    foreach ($unit['lessons'] as $lesson) {
+                        if ($lesson['assigned'] == 1) {
+                            $assignedCount++;
+                        }
+                    }
+                    if (count($unit['lessons']) != 0) {
+                        $unitUsagePercentage =   round($assignedCount / count($unit['lessons']) * 100, 2);
+                        $programsUsage[$program['program_id']]['units'][$unit['unit_id']]['usage_percentage'] = $unitUsagePercentage;
+                        $totalUnitPercentage += $unitUsagePercentage;
                     }
                 }
+                if (count($program['units']) != 0)
+                    $programsUsage[$program['program_id']]['usage_percentage'] = round($totalUnitPercentage / (count($program['units'])), 2);
             }
             // dd($programsUsage);
 
@@ -4093,32 +4977,11 @@ class ReportController extends Controller
             $chartValues = [];
             if ($request->filled('filter') && $request->filled('program_id')) {
                 switch ($request->filter) {
-                    case 'Skill':
-                        $skillsData =  [];
-                        foreach ($programsUsage as $program) {
-                            foreach ($program['units'] as $unit) {
-                                foreach ($unit['lessons'] as $lesson) {
-                                    foreach ($lesson['games'] as $game) {
-                                        $chartLabels[] = '-';
-                                        $chartValues[] = '-';
-                                        foreach ($game['skills'] as $skill) {
-                                            $skillsData[] = $skill;
-                                            $chartLabels[] = $skill['name'];
-                                            $chartValues[] = $skill['usage_count'];
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                        $data['skillsUsage'] =  $programsUsage[$request->program_id]['units'];
-                        $data['chartLabels'] =  $chartLabels;
-                        $data['chartValues'] =  $chartValues;
-                        break;
                     case 'Unit':
                         foreach ($programsUsage as $program) {
                             foreach ($program['units'] as $unit) {
                                 $chartLabels[] = $unit['name'];
-                                $chartValues[] = $unit['usage_count'];
+                                $chartValues[] = $unit['usage_percentage'];
                             }
                         }
                         $data['unitsUsage'] =  $programsUsage[$request->program_id]['units'];
@@ -4134,7 +4997,7 @@ class ReportController extends Controller
                                 foreach ($unit['lessons'] as $lesson) {
                                     $lessonsData[] = $lesson;
                                     $chartLabels[] = $lesson['name'];
-                                    $chartValues[] = $lesson['usage_count'];
+                                    $chartValues[] = $lesson['assigned'];
                                 }
                             }
                         }
@@ -4143,44 +5006,137 @@ class ReportController extends Controller
                         $data['chartLabels'] =  $chartLabels;
                         $data['chartValues'] =  $chartValues;
                         break;
-                    case 'Game':
-                        $gameData = [];
-                        foreach ($programsUsage as $program) {
-                            foreach ($program['units'] as $unit) {
-                                foreach ($unit['lessons'] as $lesson) {
-                                    $chartLabels[] = '-';
-                                    $chartValues[] = '-';
-                                    foreach ($lesson['games'] as $game) {
-                                        $gameData[] = $game;
-                                        $chartLabels[] = $game['name'];
-                                        $chartValues[] = $game['usage_count'];
-                                    }
-                                }
-                            }
-                        }
-                        $data['gamesUsage'] =  $gameData;
-                        $data['chartLabels'] =  $chartLabels;
-                        $data['chartValues'] =  $chartValues;
-                        break;
+                        // case 'Game':
+                        //     $gameData = [];
+                        //     foreach ($programsUsage as $program) {
+                        //         foreach ($program['units'] as $unit) {
+                        //             foreach ($unit['lessons'] as $lesson) {
+                        //                 $chartLabels[] = '-';
+                        //                 $chartValues[] = '-';
+                        //                 foreach ($lesson['games'] as $game) {
+                        //                     $gameData[] = $game;
+                        //                     $chartLabels[] = $game['name'];
+                        //                     $chartValues[] = $game['usage_count'];
+                        //                 }
+                        //             }
+                        //         }
+                        //     }
+                        //     $data['gamesUsage'] =  $gameData;
+                        //     $data['chartLabels'] =  $chartLabels;
+                        //     $data['chartValues'] =  $chartValues;
+                        //     break;
                     default:
 
                         break;
                 }
             } else if ($request->filled('filter') && !$request->filled('program_id')) {
-                return redirect()->back()->with('error', 'Please Select a Program to Use filters')->withInput();
+                $data['error'] = 'Please Select a Program to Use filters';
+                return view('dashboard.reports.class.class_content_gap_report', $data);
             } elseif (!$request->filled('program_id')) {
                 foreach ($programsUsage as $program) {
                     $chartLabels[] = $program['name'];
-                    $chartValues[] = $program['usage_count'];
+                    $chartValues[] = $program['usage_percentage'];
                 }
                 $data['programsUsage'] =  $programsUsage;
                 $data['programOrUnitLabels'] =  $chartLabels;
                 $data['programOrUnitValues'] =  $chartValues;
+            } else {
+                $data['error'] = 'Please Select a Filter for this Program';
+                return view('dashboard.reports.class.class_content_gap_report', $data);
             }
         }
-        // dd($data);
-        return view('dashboard.reports.class.class_content_usage_report', $data);
+        return view('dashboard.reports.class.class_content_gap_report', $data);
     }
+
+    public function classHeatmapReport(Request $request)
+    {
+        if (Auth::user()->hasRole('school')) {
+            $groups = Group::when(Auth::user()->hasRole('school'), function ($query) {
+                return $query->where('school_id', Auth::user()->school_id);
+            })->get();
+        } else {
+            $groups = Group::all();
+        }
+
+        // Initialize $data array with defaults
+        $data = [
+            'groups' => $groups,
+            'request' => $request->all(),
+        ];
+
+        if ($request->has('group1_id') && $request->has('group2_id')) {
+            if ($request->filled('program_id')) {
+                $selectedPrograms = Program::where('id', $request->program_id)->get();
+            } else {
+                $selectedPrograms = Program::whereIn('id', Group::with(['groupCourses'])->findOrFail($request->group_id)->groupCourses->pluck('program_id'))->get();
+            }
+            $students1 = GroupStudent::where('group_id', $request->group1_id)->pluck('student_id');
+            $students2 = GroupStudent::where('group_id', $request->group2_id)->pluck('student_id');
+            // $students = GroupStudent::whereIn('student_id', [239, 504])->pluck('student_id');
+
+            if ($students1->isEmpty()) {
+                $groupName = Group::find($request->group1_id)->name;
+                $data['error'] = 'No Students Found in ' . $groupName . '.';
+                // Return the view with the $data array
+                return view('dashboard.reports.heatmap.class_heatmap_report', $data);
+            }
+            if ($students2->isEmpty()) {
+                $groupName = Group::find($request->group2_id)->name;
+                $data['error'] = 'No Students Found in ' . $groupName . '.';
+                // Return the view with the $data array
+                return view('dashboard.reports.heatmap.class_heatmap_report', $data);
+            }
+
+            // Fetch student tests and filter for valid test IDs
+            $student_tests1 = StudentTest::whereIn('student_id', $students1)
+                ->whereIn('program_id', $selectedPrograms->pluck('id'))
+                ->when($request->filled('from_date'), function ($query) use ($request) {
+                    return $query->whereDate('created_at', '>=', $request->from_date);
+                })
+                ->when($request->filled('to_date'), function ($query) use ($request) {
+                    return $query->whereDate('created_at', '<=', $request->to_date);
+                })
+                ->whereNotNull('test_id')
+                ->get();
+            // dd($student_tests);
+
+            // Check if there are multiple students
+            if ($students1->count() > 1) {
+                // Group the results by test_id
+                $grouped_tests1 = $student_tests1->groupBy('test_id');
+                $common_tests1 = [];
+
+                foreach ($grouped_tests1 as $test) {
+                    $studentsTest1 = [];
+                    foreach ($test as $testStudent) {
+                        if (!in_array($testStudent->student_id, $studentsTest1))
+                            $studentsTest1[] = $testStudent->student_id;
+                    }
+                    if (count($studentsTest1) == $students1->count()) {
+                        $common_tests1[] = $testStudent->test_id;
+                    }
+                }
+                // dd($common_tests);
+            } else {
+                // If there's only one student, skip filtering
+                $common_tests1 = $student_tests1->pluck('test_id');
+            }
+
+
+            // Fetch the actual test records for the common tests
+            $student_assignments1 = Test::whereIn('id', $common_tests1)->get();
+            // dd($student_assignments);
+
+            if ($student_assignments1->isEmpty()) {
+                // Add an error message to the data array
+                $groupName = Group::find($request->group1_id)->name;
+                $data['error'] = 'No Assignments Found for All Students in ' . $groupName . '.';
+                return view('dashboard.reports.heatmap.class_heatmap_report', $data);
+            }
+        }
+        return view('dashboard.reports.heatmap.class_heatmap_report', $data);
+    }
+
     public function getTeacherAssignments($teacherId)
     {
         $assignments_ids = StudentTest::where('teacher_id', $teacherId)

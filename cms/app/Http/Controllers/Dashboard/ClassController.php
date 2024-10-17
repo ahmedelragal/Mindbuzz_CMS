@@ -533,13 +533,37 @@ class ClassController extends Controller
         $programsData = $programs->map(function ($program) {
             return [
                 'id' => $program->id,
-                'program_details' => $program->course->name . ' - ' . $program->stage->name, // Assuming relationships for course and stage
+                'program_details' => $program->course->name . ' - ' . $program->stage->name,
             ];
         });
-
-        // Return the JSON response
         return response()->json($programsData);
     }
+    public function getCommonGroupsPrograms($groupId1, $groupId2)
+    {
+        $group1ProgramIds = Group::with('groupCourses')
+            ->findOrFail($groupId1)
+            ->groupCourses
+            ->pluck('program_id')
+            ->toArray();
+
+        $group2ProgramIds = Group::with('groupCourses')
+            ->findOrFail($groupId2)
+            ->groupCourses
+            ->pluck('program_id')
+            ->toArray();
+
+        $commonProgramIds = array_intersect($group1ProgramIds, $group2ProgramIds);
+        $programs = Program::whereIn('id', $commonProgramIds)->get();
+
+        $programsData = $programs->map(function ($program) {
+            return [
+                'id' => $program->id,
+                'program_details' => $program->course->name . ' - ' . $program->stage->name,
+            ];
+        });
+        return response()->json($programsData);
+    }
+
 
     public function store(Request $request)
     {

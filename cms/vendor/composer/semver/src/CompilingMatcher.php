@@ -64,7 +64,7 @@ class CompilingMatcher
      * @phpstan-param Constraint::OP_*  $operator
      * @param string              $version
      *
-     * @return bool
+     * @return mixed
      */
     public static function match(ConstraintInterface $constraint, $operator, $version)
     {

@@ -321,11 +321,11 @@
 </script>
 @endif
 
-@if(session('error'))
+@if(isset($error))
 <script>
     Swal.fire({
         title: 'Error!',
-        text: @json(session('error')),
+        text: @json($error),
         icon: 'error',
         confirmButtonText: 'Ok'
     });

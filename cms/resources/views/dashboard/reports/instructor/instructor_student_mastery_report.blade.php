@@ -252,6 +252,8 @@
 @endsection
 
 
+
+
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 @section('page_js')
 <!-- Include Chart.js -->

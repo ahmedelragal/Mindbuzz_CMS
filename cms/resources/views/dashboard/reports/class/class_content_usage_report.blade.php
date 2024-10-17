@@ -55,7 +55,7 @@
                                                     <option value="Unit" {{ old('filter', $request['filter'] ?? '') == 'Unit' ? 'selected' : '' }}>Unit</option>
                                                     <option value="Lesson" {{ old('filter', $request['filter'] ?? '') == 'Lesson' ? 'selected' : '' }}>Lesson</option>
                                                     <option value="Game" {{ old('filter', $request['filter'] ?? '') == 'Game' ? 'selected' : '' }}>Game</option>
-                                                    <option value="Skill" {{ old('filter', $request['filter'] ?? '') == 'Skill' ? 'selected' : '' }}>Skill</option>
+                                                    <!-- <option value="Skill" {{ old('filter', $request['filter'] ?? '') == 'Skill' ? 'selected' : '' }}>Skill</option>  -->
                                                 </select>
                                             </div>
                                         </div>
@@ -85,168 +85,175 @@
                             </div>
                             <!-- Report Section -->
                             @if (isset($programsUsage) || isset($unitsUsage) || isset($lessonsUsage) || isset($gamesUsage) || isset($skillsUsage))
-                            <div class="card mt-4">
-                                <div class="card-body">
-                                    <!-- Display Chart if Data is Available -->
-                                    <div class="chart-buttons" id="chart-buttons" style="display: none; justify-content: flex-end; gap: 10px; padding-top:20px">
-                                        <button class="btn btn-primary" id="prevBtn" onclick="previousPage()">Previous</button>
-                                        <button class="btn btn-primary" id="nextBtn" onclick="nextPage()">Next</span></button>
-                                    </div>
-                                    <div class="container mt-5">
-                                        <canvas id="usageChart" width="400" height="200"></canvas>
-                                    </div>
+                            <div id="report_container">
+                                <div class="card mt-4">
+                                    <div class="card-body">
+                                        <!-- Display Chart if Data is Available -->
+                                        <div class="container mt-5">
+                                            <div class="chart-buttons" id="chart-buttons" style="display: none; justify-content: flex-end; gap: 10px; padding-top:20px">
+                                                <button class="btn btn-primary" id="prevBtn" onclick="previousPage()">Previous Unit</button>
+                                                <button class="btn btn-primary" id="nextBtn" onclick="nextPage()">Next Unit</button>
+                                            </div>
+                                            <canvas id="usageChart" width="400" height="200"></canvas>
+                                        </div>
 
+                                    </div>
                                 </div>
-                            </div>
 
-                            <div class="card mt-4">
-                                <div class="card-body">
-                                    @if (isset($programsUsage) || isset($unitsUsage) || isset($lessonsUsage) || isset($gamesUsage) || isset($skillsUsage))
-                                    @if (isset($programsUsage))
-                                    <h5>Programs Usage</h5>
-                                    <table class="table">
-                                        <thead>
-                                            <tr>
-                                                <th>Program</th>
-                                                <th>Usage Count</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody>
-                                            @foreach ($programsUsage as $program)
-                                            <tr>
-                                                <td>{{ $program['name'] }}</td>
-                                                <td>{{ $program['usage_count'] }}</td>
-                                            </tr>
-                                            @endforeach
-                                        </tbody>
-                                    </table>
-                                    @endif
+                                <div class="card mt-4">
+                                    <div class="card-body">
+                                        @if (isset($programsUsage) || isset($unitsUsage) || isset($lessonsUsage) || isset($gamesUsage) || isset($skillsUsage))
+                                        @if (isset($programsUsage))
+                                        <h5>Programs Usage</h5>
+                                        <table class="table">
+                                            <thead>
+                                                <tr>
+                                                    <th>Program</th>
+                                                    <th>Usage Percentage(%)</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                @foreach ($programsUsage as $program)
+                                                <tr>
+                                                    <td>{{ $program['name'] }}</td>
+                                                    <td>{{ $program['usage_percentage'] }}%</td>
+                                                </tr>
+                                                @endforeach
+                                            </tbody>
+                                        </table>
+                                        @endif
 
-                                    @if (isset($unitsUsage))
-                                    <h5>Units Usage</h5>
-                                    <table class="table">
-                                        <thead>
-                                            <tr>
-                                                <th>Unit</th>
-                                                <th>Usage Count</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody>
-                                            @foreach ($unitsUsage as $unit)
-                                            <tr>
-                                                <td>{{ $unit['name'] }}</td>
-                                                <td>{{ $unit['usage_count'] }}</td>
-                                            </tr>
-                                            @endforeach
-                                        </tbody>
-                                    </table>
-                                    @endif
-
+                                        @if (isset($unitsUsage))
+                                        <h5>Units Usage</h5>
+                                        <table class="table">
+                                            <thead>
+                                                <tr>
+                                                    <th>Unit</th>
+                                                    <th>Usage Percentage(%)</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                @foreach ($unitsUsage as $unit)
+                                                <tr>
+                                                    <td>{{ $unit['name'] }}</td>
+                                                    <td>{{ $unit['usage_percentage'] }}%</td>
+                                                </tr>
+                                                @endforeach
+                                            </tbody>
+                                        </table>
+                                        @endif
 
 
-                                    @if (isset($lessonsUsage))
-                                    <h5>Lessons Usage</h5>
-                                    <table class="table">
-                                        <thead>
-                                            <tr>
-                                                <th>Unit</th>
-                                                <th>lesson</th>
-                                                <th>Usage Count</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody>
-                                            <?php $inc = 1; ?>
-                                            @foreach ($chartLabels as $index => $lesson)
-                                            <?php $lessonValue = $chartValues[$index]; ?>
-                                            @if ($lesson == "-" && $lessonValue == "-")
-                                            <td><strong>Unit {{$inc}}</strong></td>
-                                            <td> </td>
-                                            <td> </td>
-                                            <?php $inc++; ?>
-                                            @else
-                                            <tr>
-                                                <td></td>
-                                                <td>{{ $lesson }}</td>
-                                                <td>{{ $lessonValue }}</td>
-                                            </tr>
-                                            @endif
-                                            @endforeach
-                                        </tbody>
-                                    </table>
-                                    @endif
 
-                                    @if (isset($gamesUsage))
-                                    <h5>Games Usage</h5>
-                                    <table class="table">
-                                        <thead>
-                                            <tr>
-                                                <th>Lesson</th>
-                                                <th>Game</th>
-                                                <th>Usage Count</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody>
-                                            <?php $inc = 1; ?>
-                                            @foreach ($chartLabels as $index => $game)
-                                            <?php $gameValue = $chartValues[$index]; ?>
-                                            @if ($game == "-" && $gameValue == "-")
-                                            <td><strong>Lesson {{$inc}}</strong></td>
-                                            <td> </td>
-                                            <td> </td>
-                                            <?php $inc++; ?>
-                                            @else
-                                            <tr>
-                                                <td></td>
-                                                <td>{{ $game }}</td>
-                                                <td>{{ $gameValue }}</td>
-                                            </tr>
-                                            @endif
-                                            @endforeach
-                                        </tbody>
-                                    </table>
-                                    @endif
+                                        @if (isset($lessonsUsage))
+                                        <h5>Lessons Usage</h5>
+                                        <table class="table">
+                                            <thead>
+                                                <tr>
+                                                    <th>Unit</th>
+                                                    <th>lesson</th>
+                                                    <th>Usage Percentage</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                @foreach ($lessonsUsage as $unit)
+                                                <?php $inc = 0; ?>
+                                                @foreach ($unit['lessons'] as $lesson)
+                                                @if ($inc == 0)
+                                                <tr>
+                                                    <td>{{$unit['name']}}</td>
+                                                    <td>{{$lesson['name']}}</td>
+                                                    <td> {{$lesson['usage_percentage']}}%</td>
+                                                </tr>
+                                                <?php $inc = 1; ?>
+                                                @else
+                                                <tr>
+                                                    <td></td>
+                                                    <td>{{$lesson['name']}}</td>
+                                                    <td> {{$lesson['usage_percentage']}}%</td>
+                                                </tr>
+                                                @endif
 
-                                    @if (isset($skillsUsage))
+                                                @endforeach
+                                                @endforeach
+                                            </tbody>
+                                        </table>
+                                        @endif
 
-                                    <h5>Skill Usage</h5>
-                                    <table class="table">
-                                        <thead>
-                                            <tr>
-                                                <th>Unit</th>
-                                                <th>Lesson/Game</th>
-                                                <th>Skill</th>
-                                                <th>Usage Count</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody>
-                                            @foreach ($skillsUsage as $unit)
-                                            @foreach ($unit['lessons'] as $lesson)
-                                            @foreach ($lesson['games'] as $game)
-                                            <tr>
-                                                <td>{{$unit['name']}}</td>
-                                                <td>{{$lesson['name']}} / {{$game['name']}}</td>
-                                                <td></td>
-                                                <td></td>
-                                            </tr>
+                                        @if (isset($gamesUsage))
+                                        <h5>Games Usage</h5>
+                                        <table class="table">
+                                            <thead>
+                                                <tr>
+                                                    <th>Lesson</th>
+                                                    <th>Game</th>
+                                                    <th>Status</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                @foreach ($gamesUsage as $unit)
+                                                @foreach ($unit['lessons'] as $lesson)
 
-                                            @foreach ($game['skills'] as $skill)
-                                            <tr>
-                                                <td></td>
-                                                <td></td>
-                                                <td>{{ $skill['name'] != null ? $skill['name'] : 'No skill specified' }}</td>
-                                                <td>{{ $skill['usage_count'] != null ? $skill['usage_count'] : 0 }}</td>
-                                            </tr>
-                                            @endforeach
-                                            @endforeach
-                                            @endforeach
-                                            @endforeach
-                                        </tbody>
-                                    </table>
-                                    @endif
+                                                <tr>
+                                                    <td>{{$lesson['name']}}</td>
+                                                    <td></td>
+                                                    <td></td>
+                                                </tr>
+                                                @foreach ($lesson['games'] as $game)
+                                                <tr>
+                                                    <td></td>
+                                                    <td>{{$game['name']}}</td>
+                                                    <td> <?php echo $game['assigned'] == 1 ? 'Assigned' : 'Unassigned'; ?></td>
+                                                </tr>
+                                                @endforeach
+                                                @endforeach
+                                                @endforeach
+                                            </tbody>
+                                        </table>
+                                        @endif
 
-                                    @else
-                                    <p>No data available for the selected filters.</p>
-                                    @endif
+                                        @if (isset($skillsUsage))
+
+                                        <h5>Skill Usage</h5>
+                                        <table class="table">
+                                            <thead>
+                                                <tr>
+                                                    <th>Unit</th>
+                                                    <th>Lesson/Game</th>
+                                                    <th>Skill</th>
+                                                    <th>Usage Count</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                @foreach ($skillsUsage as $unit)
+                                                @foreach ($unit['lessons'] as $lesson)
+                                                @foreach ($lesson['games'] as $game)
+                                                <tr>
+                                                    <td>{{$unit['name']}}</td>
+                                                    <td>{{$lesson['name']}} / {{$game['name']}}</td>
+                                                    <td></td>
+                                                    <td></td>
+                                                </tr>
+
+                                                @foreach ($game['skills'] as $skill)
+                                                <tr>
+                                                    <td></td>
+                                                    <td></td>
+                                                    <td>{{ $skill['name'] != null ? $skill['name'] : 'No skill specified' }}</td>
+                                                    <td>{{ $skill['usage_count'] != null ? $skill['usage_count'] : 0 }}</td>
+                                                </tr>
+                                                @endforeach
+                                                @endforeach
+                                                @endforeach
+                                                @endforeach
+                                            </tbody>
+                                        </table>
+                                        @endif
+
+                                        @else
+                                        <p>No data available for the selected filters.</p>
+                                        @endif
+                                    </div>
                                 </div>
                             </div>
                             @endif
@@ -265,60 +272,130 @@
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 @section('page_js')
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-@if (isset($programOrUnitLabels) || isset($programOrUnitValues))
+@if (isset($gamesLabels) || isset($gamesValues))
 <script>
     document.addEventListener('DOMContentLoaded', function() {
-        // Data from your controller
-        var programOrUnitLabels = @json($programOrUnitLabels);
-        var programOrUnitValues = @json($programOrUnitValues);
-        // Create the bar chart
-        var ctx = document.getElementById('usageChart').getContext('2d');
+        // Data from controller
+        const gamesLabels = @json($gamesLabels);
+        const gamesValues = @json($gamesValues);
 
-        // Create the chart
-        var myChart = new Chart(ctx, {
-            type: 'bar',
-            data: {
-                labels: programOrUnitLabels,
-                datasets: [{
-                    label: 'Usage Count',
-                    data: programOrUnitValues,
-                    backgroundColor: '#E9C874',
-                    borderColor: '#E9C874',
-                    borderWidth: 1,
-                    maxBarThickness: 100
-                }]
-            },
-            options: {
-                scales: {
-                    x: {
-                        min: 0,
-                        max: programOrUnitLabels.length > 1 ? programOrUnitLabels.length - 1 : 1,
-                        grid: {
-                            display: false
-                        }
-                    },
-                    y: {
-                        beginAtZero: true,
-                    }
-                },
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: {
-                    legend: {
-                        display: true,
-                        position: 'top'
-                    },
-                },
-                layout: {
-                    padding: {
-                        left: 50,
-                        right: 50
-                    }
-                }
+        // Group lessons by unit using the "-" separator
+        const units = [];
+        let currentUnit = [];
+        gamesLabels.forEach((label, index) => {
+            if (label !== "-") {
+                currentUnit.push({
+                    label: label,
+                    value: gamesValues[index]
+                });
+            } else if (currentUnit.length > 0) {
+                units.push(currentUnit);
+                currentUnit = [];
             }
         });
+        // Push the last unit if it's not empty
+        if (currentUnit.length > 0) {
+            units.push(currentUnit);
+        }
+
+        // Initialize dynamic pagination variables
+        let currentPage = 0;
+
+        const ctx = document.getElementById('usageChart').getContext('2d');
+        const btnContainer = document.getElementById('chart-buttons').style.display = 'flex';
+        toggleButtons();
+        // Initialize the chart with the first unit's data
+        let usageChart = initializeChart(ctx, units[currentPage].map(item => item.label), units[currentPage].map(item => item.value));
+
+        // Function to initialize chart
+        function initializeChart(ctx, labels, data) {
+            return new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'Assigned Games',
+                        data: data, // Expecting values between 0 and 100
+                        backgroundColor: '#E9C874',
+                        borderColor: '#E9C874',
+                        borderWidth: 1,
+                        maxBarThickness: 120
+                    }]
+                },
+                options: {
+                    scales: {
+                        x: {
+                            grid: {
+                                display: false
+                            }
+                        },
+                        y: {
+                            beginAtZero: true,
+                            max: 1, // Set the max value to 100 for percentage
+                        }
+                    },
+                    responsive: true,
+                    maintainAspectRatio: true,
+                    plugins: {
+                        legend: {
+                            display: true,
+                            position: 'top'
+                        },
+                    },
+                    layout: {
+                        padding: {
+                            left: 50,
+                            right: 50
+                        }
+                    }
+                }
+            });
+        }
 
 
+
+        // Function to update the chart with the current page data (current unit)
+        function updateChart() {
+            const currentUnit = units[currentPage];
+            if (usageChart) {
+                usageChart.data.labels = currentUnit.map(item => item.label);
+                usageChart.data.datasets[0].data = currentUnit.map(item => item.value);
+                usageChart.update();
+            }
+            toggleButtons();
+        }
+
+        // Function to go to the previous unit (previous page)
+        window.previousPage = function() {
+            if (currentPage > 0) {
+                currentPage--;
+                updateChart(); // Call updateChart to refresh with new data
+            }
+        }
+
+        // Function to go to the next unit (next page)
+        window.nextPage = function() {
+            if (currentPage < units.length - 1) {
+                currentPage++;
+                updateChart(); // Call updateChart to refresh with new data
+            }
+        }
+
+        // Function to toggle the visibility of the previous and next buttons
+        function toggleButtons() {
+            const prevButton = document.getElementById('prevBtn');
+            const nextButton = document.getElementById('nextBtn');
+
+            // If only one page, hide both buttons
+            if (units.length <= 1) {
+                prevButton.style.display = 'none';
+                nextButton.style.display = 'none';
+            } else {
+                // Show or hide buttons based on the current page
+                prevButton.style.display = (currentPage === 0) ? 'none' : 'block';
+                nextButton.style.display = (currentPage === units.length - 1) ? 'none' : 'block';
+            }
+        }
     });
 </script>
 @endif
@@ -352,7 +429,6 @@
         // Initialize dynamic pagination variables
         let currentPage = 0;
 
-        // Initialize the student login chart
         const ctx = document.getElementById('usageChart').getContext('2d');
         const btnContainer = document.getElementById('chart-buttons').style.display = 'flex';
         toggleButtons();
@@ -366,8 +442,8 @@
                 data: {
                     labels: labels,
                     datasets: [{
-                        label: 'Usage Counts',
-                        data: data,
+                        label: 'Usage',
+                        data: data, // Expecting values between 0 and 100
                         backgroundColor: '#E9C874',
                         borderColor: '#E9C874',
                         borderWidth: 1,
@@ -383,8 +459,12 @@
                         },
                         y: {
                             beginAtZero: true,
+                            max: 100, // Set the max value to 100 for percentage
                             ticks: {
-                                stepSize: 1
+                                callback: function(value) {
+                                    return value + '%'; // Append '%' to each tick value
+                                },
+                                stepSize: 10 // Set the step size (optional)
                             }
                         }
                     },
@@ -394,6 +474,14 @@
                         legend: {
                             display: true,
                             position: 'top'
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(tooltipItem) {
+                                    let value = tooltipItem.raw; // Get the value from the tooltip item
+                                    return `${value}%`; // Append '%' to the tooltip value
+                                }
+                            }
                         }
                     },
                     layout: {
@@ -405,6 +493,8 @@
                 }
             });
         }
+
+
 
         // Function to update the chart with the current page data (current unit)
         function updateChart() {
@@ -475,14 +565,15 @@
 </script>
 @endif
 
-@if(session('error'))
+@if(isset($error))
 <script>
     Swal.fire({
         title: 'Error!',
-        text: @json(session('error')),
+        text: @json($error),
         icon: 'error',
         confirmButtonText: 'Ok'
     });
+    document.getElementById('report_container').style.display = 'none';
 </script>
 @endif
 
@@ -491,7 +582,7 @@
         $('.js-select2').select2();
 
         // Get previously selected program_id from localStorage if exists
-        var selectedProgramId = localStorage.getItem('selectedProgramId') || '';
+        var selectedProgramId = "{{$request['program_id'] ?? '' }}";
 
         // Trigger getProgramsByGroup on group change
         $('#group_id').change(function() {

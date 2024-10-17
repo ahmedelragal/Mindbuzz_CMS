@@ -46,7 +46,7 @@
                                                 <label for="teacher_id">Select Teacher</label>
                                                 <select class="form-select js-select2" name="teacher_id" id="teacher_id">
                                                     @role('Admin')
-                                                    <option value="" selected disabled>Choose a teacher</option>
+                                                    <option value="" selected disabled>Choose a Teacher</option>
                                                     @endrole
                                                     @role('school')
                                                     @php
@@ -300,77 +300,95 @@
     $(document).ready(function() {
         $('.js-select2').select2();
 
+        var selectedProgramId = "{{ $request['program_id'] ?? '' }}";
+        var selectedTeacherId = "{{ $request['teacher_id'] ?? '' }}";
+        var selectedAssignmentId = "{{ $request['assignment_id'] ?? '' }}";
+
         $('#sch_id').change(function() {
             var schoolId = $('#sch_id option:selected').data('school');
-            getSchoolTeachers(schoolId);
-            getProgramsBySchool(schoolId);
+            getSchoolTeachers(schoolId, selectedTeacherId);
+            getProgramsBySchool(schoolId, selectedProgramId);
         });
+
         $('#teacher_id').change(function() {
-            console.log("aaa");
             var teacherId = $('#teacher_id option:selected').val();
-            console.log(teacherId);
-            getAssignmentsByTeacher(teacherId);
+            getAssignmentsByTeacher(teacherId, selectedAssignmentId);
         });
+
         $('#sch_id').trigger('change');
     });
 
-    function getSchoolTeachers(teacherId) {
-        $.ajax({
-            url: '/get-teachers-school/' + teacherId,
-            type: "GET",
-            dataType: "json",
-            success: function(data) {
-                $('select[name="teacher_id"]').empty();
-                $('select[name="teacher_id"]').append(
-                    '<option value="">Choose a Teacher</option>');
-                $.each(data, function(key, value) {
-                    $('select[name="teacher_id"]').append('<option value="' +
-                        value.id + '">' +
-                        value.name + '</option>');
-                });
-            },
-            error: function(xhr, status, error) {
-                console.error('AJAX Error:', error);
-            }
-        });
-    }
-
-    function getProgramsBySchool(schoolId) {
+    function getProgramsBySchool(schoolId, selectedProgramId) {
         $.ajax({
             url: '/get-programs-school/' + schoolId,
             type: "GET",
             dataType: "json",
             success: function(data) {
+                // Clear the existing options
                 $('select[name="program_id"]').empty();
-                $('select[name="program_id"]').append(
-                    '<option value="">Select a Program</option>');
+
+                // Append the "Choose a Program" option
+                $('select[name="program_id"]').append('<option value="">Choose a Program</option>');
+
+                // Append the fetched program options
                 $.each(data, function(key, value) {
                     $('select[name="program_id"]').append('<option value="' +
-                        value.id + '">' +
-                        value.program_details + '</option>');
+                        value.id + '">' + value.program_details + '</option>');
                 });
+
+                // Re-select the program_id if it exists
+                if (selectedProgramId) {
+                    $('select[name="program_id"]').val(selectedProgramId).trigger('change');
+                }
             },
             error: function(xhr, status, error) {
-                console.error('AJAX Error:', error);
+                console.error('AJAX Error fetching programs:', error);
             }
         });
     }
 
-    function getAssignmentsByTeacher(teacherId) {
+    function getSchoolTeachers(schoolId, selectedTeacherId) {
+        $.ajax({
+            url: '/get-teachers-school/' + schoolId,
+            type: "GET",
+            dataType: "json",
+            success: function(data) {
+                $('select[name="teacher_id"]').empty();
+                $('select[name="teacher_id"]').append('<option value="" selected>Choose a Teacher</option>');
+
+                $.each(data, function(key, value) {
+                    $('select[name="teacher_id"]').append('<option value="' +
+                        value.id + '">' + value.name + '</option>');
+                });
+
+                // Re-select the teacher_id if it exists
+                if (selectedTeacherId) {
+                    $('select[name="teacher_id"]').val(selectedTeacherId).trigger('change');
+                }
+            },
+            error: function(xhr, status, error) {
+                console.error('AJAX Error fetching teachers:', error);
+            }
+        });
+    }
+
+    function getAssignmentsByTeacher(teacherId, selectedAssignmentId) {
         $.ajax({
             url: '/get-teacher-assignments/' + teacherId,
             type: "GET",
             dataType: "json",
             success: function(data) {
-                console.log(data);
                 $('select[name="assignment_id"]').empty();
-                $('select[name="assignment_id"]').append(
-                    '<option value="" selected >All Assignments</option>');
+                $('select[name="assignment_id"]').append('<option value="" selected >All Assignments</option>');
+
                 $.each(data, function(key, value) {
                     $('select[name="assignment_id"]').append('<option value="' +
-                        value.id + '">' +
-                        value.name + '</option>');
+                        value.id + '">' + value.name + '</option>');
                 });
+
+                if (selectedAssignmentId) {
+                    $('select[name="assignment_id"]').val(selectedAssignmentId).trigger('change');
+                }
             },
             error: function(xhr, status, error) {
                 console.error('AJAX Error:', error);

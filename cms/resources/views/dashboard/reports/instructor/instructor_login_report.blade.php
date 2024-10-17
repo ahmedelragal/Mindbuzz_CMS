@@ -25,7 +25,9 @@
                                                 <select class="form-select js-select2" name="school_id" id="sch_id">
                                                     <option value="" selected disabled>Choose a School</option>
                                                     @foreach ($schools as $school)
-                                                    <option value="{{ $school->id }}" data-school="{{ $school->id }}">{{ $school->name }}</option>
+                                                    <option value="{{ $school->id }}" data-school="{{ $school->id }}" {{ old('school_id', $request['school_id'] ?? '') == $school->id ? 'selected' : '' }}>
+                                                        {{ $school->name }}
+                                                    </option>
                                                     @endforeach
                                                 </select>
                                                 @endrole
@@ -120,7 +122,10 @@
                         }
                     },
                     y: {
-                        beginAtZero: true
+                        beginAtZero: true,
+                        ticks: {
+                            stepSize: 1
+                        }
                     }
                 },
                 responsive: true,
@@ -151,31 +156,38 @@
 
 <script>
     $(document).ready(function() {
+        $('.js-select2').select2();
+
+        var selectedTeacherId = "{{ $request['teacher_id'] ?? '' }}";
         $('#sch_id').change(function() {
             var schoolId = $('#sch_id option:selected').data('school');
-            var groupId = $('#sch_id').val();
-            // console.log(schoolId, groupId);
-            getSchoolTeachers(schoolId);
+            getSchoolTeachers(schoolId, selectedTeacherId);
         });
+
+        $('#sch_id').trigger('change');
     });
 
-    function getSchoolTeachers(schoolId) {
+    function getSchoolTeachers(schoolId, selectedTeacherId) {
         $.ajax({
             url: '/get-teachers-school/' + schoolId,
             type: "GET",
             dataType: "json",
             success: function(data) {
                 $('select[name="teacher_id"]').empty();
-                $('select[name="teacher_id"]').append(
-                    '<option value="">Choose a Teacher</option>');
+                $('select[name="teacher_id"]').append('<option value="" selected>Choose a Teacher</option>');
+
                 $.each(data, function(key, value) {
                     $('select[name="teacher_id"]').append('<option value="' +
-                        value.id + '">' +
-                        value.name + '</option>');
+                        value.id + '">' + value.name + '</option>');
                 });
+
+                // Re-select the teacher_id if it exists
+                if (selectedTeacherId) {
+                    $('select[name="teacher_id"]').val(selectedTeacherId).trigger('change');
+                }
             },
             error: function(xhr, status, error) {
-                console.error('AJAX Error:', error);
+                console.error('AJAX Error fetching teachers:', error);
             }
         });
     }

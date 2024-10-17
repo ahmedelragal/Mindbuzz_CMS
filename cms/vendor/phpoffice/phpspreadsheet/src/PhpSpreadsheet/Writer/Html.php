@@ -612,9 +612,6 @@ class Html extends BaseWriter
         [$rowMax, $colMax, $anyfound] = $this->extendRowsForCharts($worksheet, $row);
 
         foreach ($worksheet->getDrawingCollection() as $drawing) {
-            if ($drawing instanceof Drawing && $drawing->getPath() === '') {
-                continue;
-            }
             $anyfound = true;
             $imageTL = Coordinate::coordinateFromString($drawing->getCoordinates());
             $imageCol = Coordinate::columnIndexFromString($imageTL[0]);
@@ -690,7 +687,7 @@ class Html extends BaseWriter
             }
             $filedesc = $drawing->getDescription();
             $filedesc = $filedesc ? htmlspecialchars($filedesc, ENT_QUOTES) : 'Embedded image';
-            if ($drawing instanceof Drawing && $drawing->getPath() !== '') {
+            if ($drawing instanceof Drawing) {
                 $filename = $drawing->getPath();
 
                 // Strip off eventual '.'
@@ -709,15 +706,12 @@ class Html extends BaseWriter
                 $imageData = self::winFileToUrl($filename, $this->isMPdf);
 
                 if ($this->embedImages || substr($imageData, 0, 6) === 'zip://') {
-                    $imageData = 'data:,';
                     $picture = @file_get_contents($filename);
                     if ($picture !== false) {
-                        $mimeContentType = (string) @mime_content_type($filename);
-                        if (substr($mimeContentType, 0, 6) === 'image/') {
-                            // base64 encode the binary data
-                            $base64 = base64_encode($picture);
-                            $imageData = 'data:' . $mimeContentType . ';base64,' . $base64;
-                        }
+                        $imageDetails = getimagesize($filename) ?: [];
+                        // base64 encode the binary data
+                        $base64 = base64_encode($picture);
+                        $imageData = 'data:' . $imageDetails['mime'] . ';base64,' . $base64;
                     }
                 }
 
@@ -1075,7 +1069,7 @@ class Html extends BaseWriter
         }
 
         $css['color'] = '#' . $font->getColor()->getRGB();
-        $css['font-family'] = '\'' . htmlspecialchars((string) $font->getName(), ENT_QUOTES) . '\'';
+        $css['font-family'] = '\'' . $font->getName() . '\'';
         $css['font-size'] = $font->getSize() . 'pt';
 
         return $css;
@@ -1518,14 +1512,7 @@ class Html extends BaseWriter
 
             // Hyperlink?
             if ($worksheet->hyperlinkExists($coordinate) && !$worksheet->getHyperlink($coordinate)->isInternal()) {
-                $url = $worksheet->getHyperlink($coordinate)->getUrl();
-                $urldecode = strtolower(html_entity_decode(trim($url), ENT_QUOTES | ENT_SUBSTITUTE | ENT_HTML401, 'UTF-8'));
-                $parseScheme = preg_match('/^(\\w+):/', $urldecode, $matches);
-                if ($parseScheme === 1 && !in_array($matches[1], ['http', 'https', 'file', 'ftp', 's3'], true)) {
-                    $cellData = htmlspecialchars($url, Settings::htmlEntityFlags());
-                } else {
-                    $cellData = '<a href="' . htmlspecialchars($url, Settings::htmlEntityFlags()) . '" title="' . htmlspecialchars($worksheet->getHyperlink($coordinate)->getTooltip(), Settings::htmlEntityFlags()) . '">' . $cellData . '</a>';
-                }
+                $cellData = '<a href="' . htmlspecialchars($worksheet->getHyperlink($coordinate)->getUrl(), Settings::htmlEntityFlags()) . '" title="' . htmlspecialchars($worksheet->getHyperlink($coordinate)->getTooltip(), Settings::htmlEntityFlags()) . '">' . $cellData . '</a>';
             }
 
             // Should the cell be written or is it swallowed by a rowspan or colspan?

@@ -1,3 +1,4 @@
+
 <?php
 
 use App\Http\Controllers\Auth\AuthenticatedSessionController;
@@ -55,6 +56,7 @@ Route::get('/get-programs-school/{school_id}', [ClassController::class, 'getProg
 Route::get('/get-programs-group/{group_id}', [ClassController::class, 'getProgramsGroup']);
 Route::get('/get-students-school/{school_id}', [SchoolController::class, 'getStudentsSchool']);
 Route::get('/get-teachers-school/{school_id}', [SchoolController::class, 'getTeachersSchool']);
+Route::get('/get-common-programs-group/{group1_id}/{group2_id}', [ClassController::class, 'getCommonGroupsPrograms']);
 
 Route::get('get-groups/{school_id}', [InstructorController::class, 'getGroups'])->name('getGroups');
 Route::get('get-stages/{program_id}', [ClassController::class, 'getStages']);
@@ -97,6 +99,10 @@ Route::middleware('auth')->group(function () {
         Route::get('classContentEngagementReport', [ReportController::class, 'classContentEngagementReport'])->name('classContentEngagementReport');
         Route::get('studentContentEngagementReport', [ReportController::class, 'studentContentEngagementReport'])->name('studentContentEngagementReport');
         Route::get('classContentUsageReport', [ReportController::class, 'classContentUsageReport'])->name('classContentUsageReport');
+        Route::get('teacherContentCoverageReport', [ReportController::class, 'teacherContentCoverageReport'])->name('teacherContentCoverageReport');
+        Route::get('classContentGapReport', [ReportController::class, 'classContentGapReport'])->name('classContentGapReport');
+        Route::get('teacherContentEngagementReport', [ReportController::class, 'teacherContentEngagementReport'])->name('teacherContentEngagementReport');
+        Route::get('classHeatmapReport', [ReportController::class, 'classHeatmapReport'])->name('classHeatmapReport');
     });
     Route::get('/get-teacher-assignments/{teacherId}', [ReportController::class, 'getTeacherAssignments']);
     Route::get('/reports/fetch-mastery-data', [ReportController::class, 'fetchMasteryData'])->name('reports.fetchMasteryData');
