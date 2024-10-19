@@ -105,22 +105,22 @@
                                         <div class="row">
                                             <div class="col-lg-6 col-md-12 mb-4">
                                                 <div class="container mt-5">
-                                                    <h5>Class 1 Usage</h5>
+                                                    <h5>Class {{$groupName1}} Usage</h5>
                                                     <canvas id="usageChart1" width="400" height="200"></canvas>
                                                 </div>
                                             </div>
                                             <div class="col-lg-6 col-md-12 mb-4">
                                                 <div class="container mt-5">
-                                                    <h5>Class 2 Usage</h5>
+                                                    <h5>Class {{$groupName2}} Usage</h5>
                                                     <canvas id="usageChart2" width="400" height="200"></canvas>
                                                 </div>
                                             </div>
+                                            <div class="chart-buttons" id="chart-buttons" style="display: none; justify-content: flex-end; gap: 10px; padding-top:20px">
+                                                <button class="btn btn-primary" id="prevBtn" onclick="previousPage()">Previous</button>
+                                                <button class="btn btn-primary" id="nextBtn" onclick="nextPage()">Next</button>
+                                            </div>
                                         </div>
 
-                                        <div class="chart-buttons" id="chart-buttons" style="display: none; justify-content: flex-end; gap: 10px; padding-top:20px">
-                                            <button class="btn btn-primary" id="prevBtn" onclick="previousPage()">Previous</button>
-                                            <button class="btn btn-primary" id="nextBtn" onclick="nextPage()">Next</button>
-                                        </div>
 
                                     </div>
                                 </div>
@@ -291,151 +291,62 @@
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 @section('page_js')
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-@if (isset($programOrUnitLabels) || isset($programOrUnitValues))
+@if (isset($gamesLabels) || isset($gamesValues) || isset($gamesLabels2) || isset($gamesValues2))
 <script>
     document.addEventListener('DOMContentLoaded', function() {
-        // Data from your controller
-        var programOrUnitLabels = @json($programOrUnitLabels);
-        var programOrUnitValues = @json($programOrUnitValues);
-        // Create the bar chart
-        var ctx = document.getElementById('usageChart').getContext('2d');
+        // Data from controller for the two charts
+        const gamesLabels = @json($gamesLabels);
+        const gamesValues = @json($gamesValues);
+        const gamesLabels2 = @json($gamesLabels2);
+        const gamesValues2 = @json($gamesValues2);
 
-        // Create the chart
-        var myChart = new Chart(ctx, {
-            type: 'bar',
-            data: {
-                labels: programOrUnitLabels,
-                datasets: [{
-                    label: 'Usage Percentage',
-                    data: programOrUnitValues,
-                    backgroundColor: '#E9C874',
-                    borderColor: '#E9C874',
-                    borderWidth: 1,
-                    maxBarThickness: 120
-                }]
-            },
-            options: {
-                scales: {
-                    x: {
-                        grid: {
-                            display: false
-                        }
-                    },
-                    y: {
-                        beginAtZero: true,
-                        max: 100, // Set the max value to 100 for percentage
-                        ticks: {
-                            callback: function(value) {
-                                return value + '%'; // Append '%' to each tick value
-                            },
-                            stepSize: 10 // Set the step size (optional)
-                        }
-                    }
-                },
-                responsive: true,
-                maintainAspectRatio: true,
-                plugins: {
-                    legend: {
-                        display: true,
-                        position: 'top'
-                    }
-                },
-                layout: {
-                    padding: {
-                        left: 50,
-                        right: 50
-                    }
+        // Group lessons by unit using the "-" separator for both charts
+        function groupByUnit(labels, values) {
+            const units = [];
+            let currentUnit = [];
+            labels.forEach((label, index) => {
+                if (label !== "-") {
+                    currentUnit.push({
+                        label: label,
+                        value: values[index]
+                    });
+                } else if (currentUnit.length > 0) {
+                    units.push(currentUnit);
+                    currentUnit = [];
                 }
-            }
-        });
-
-
-    });
-</script>
-@endif
-<script>
-    const ctx1 = document.getElementById('usageChart1').getContext('2d');
-    const ctx2 = document.getElementById('usageChart2').getContext('2d');
-
-    const chart1 = new Chart(ctx1, {
-        type: 'bar',
-        data: {
-            labels: ['Program A', 'Program B', 'Program C'],
-            datasets: [{
-                label: 'Class 1 Usage',
-                data: [10, 20, 30],
-                backgroundColor: 'rgba(75, 192, 192, 0.2)',
-                borderColor: 'rgba(75, 192, 192, 1)',
-                borderWidth: 1
-            }]
-        },
-        options: {
-            responsive: true
-        }
-    });
-
-    const chart2 = new Chart(ctx2, {
-        type: 'bar',
-        data: {
-            labels: ['Program A', 'Program B', 'Program C'],
-            datasets: [{
-                label: 'Class 2 Usage',
-                data: [15, 25, 35],
-                backgroundColor: 'rgba(255, 99, 132, 0.2)',
-                borderColor: 'rgba(255, 99, 132, 1)',
-                borderWidth: 1
-            }]
-        },
-        options: {
-            responsive: true
-        }
-    });
-</script>
-@if (isset($chartLabels) || isset($chartValues))
-<script>
-    document.addEventListener('DOMContentLoaded', function() {
-        // Data from controller
-        const names = @json($chartLabels);
-        const usageCounts = @json($chartValues);
-
-        // Group lessons by unit using the "-" separator
-        const units = [];
-        let currentUnit = [];
-        names.forEach((label, index) => {
-            if (label !== "-") {
-                currentUnit.push({
-                    label: label,
-                    value: usageCounts[index]
-                });
-            } else if (currentUnit.length > 0) {
+            });
+            if (currentUnit.length > 0) {
                 units.push(currentUnit);
-                currentUnit = [];
             }
-        });
-        // Push the last unit if it's not empty
-        if (currentUnit.length > 0) {
-            units.push(currentUnit);
+            return units;
         }
+
+        // Group units for both charts
+        const units1 = groupByUnit(gamesLabels, gamesValues);
+        const units2 = groupByUnit(gamesLabels2, gamesValues2);
 
         // Initialize dynamic pagination variables
         let currentPage = 0;
 
-        // Initialize the student login chart
-        const ctx = document.getElementById('usageChart').getContext('2d');
+        // Initialize both charts
+        const ctx1 = document.getElementById('usageChart1').getContext('2d');
+        const ctx2 = document.getElementById('usageChart2').getContext('2d');
+
         const btnContainer = document.getElementById('chart-buttons').style.display = 'flex';
         toggleButtons();
-        // Initialize the chart with the first unit's data
-        let usageChart = initializeChart(ctx, units[currentPage].map(item => item.label), units[currentPage].map(item => item.value));
 
-        // Function to initialize chart
+        let usageChart1 = initializeChart(ctx1, units1[currentPage].map(item => item.label), units1[currentPage].map(item => item.value));
+        let usageChart2 = initializeChart(ctx2, units2[currentPage].map(item => item.label), units2[currentPage].map(item => item.value));
+
+        // Function to initialize a chart
         function initializeChart(ctx, labels, data) {
             return new Chart(ctx, {
                 type: 'bar',
                 data: {
                     labels: labels,
                     datasets: [{
-                        label: 'Assigned',
-                        data: data,
+                        label: 'Assigned Games',
+                        data: data, // Expecting values between 0 and 100
                         backgroundColor: '#E9C874',
                         borderColor: '#E9C874',
                         borderWidth: 1,
@@ -451,8 +362,159 @@
                         },
                         y: {
                             beginAtZero: true,
+                            max: 1, // Set the max value to 100 for percentage
+                        }
+                    },
+                    responsive: true,
+                    maintainAspectRatio: true,
+                    plugins: {
+                        legend: {
+                            display: true,
+                            position: 'top'
+                        },
+                    },
+                    layout: {
+                        padding: {
+                            left: 50,
+                            right: 50
+                        }
+                    }
+                }
+            });
+        }
+
+        // Function to update both charts with the current page data (current unit)
+        function updateCharts() {
+            const currentUnit1 = units1[currentPage];
+            const currentUnit2 = units2[currentPage];
+
+            if (usageChart1 && usageChart2) {
+                // Update the first chart
+                usageChart1.data.labels = currentUnit1.map(item => item.label);
+                usageChart1.data.datasets[0].data = currentUnit1.map(item => item.value);
+                usageChart1.update();
+
+                // Update the second chart
+                usageChart2.data.labels = currentUnit2.map(item => item.label);
+                usageChart2.data.datasets[0].data = currentUnit2.map(item => item.value);
+                usageChart2.update();
+            }
+
+            toggleButtons();
+        }
+
+        // Function to go to the previous unit (previous page) for both charts
+        window.previousPage = function() {
+            if (currentPage > 0) {
+                currentPage--;
+                updateCharts(); // Call updateCharts to refresh both charts with new data
+            }
+        };
+
+        // Function to go to the next unit (next page) for both charts
+        window.nextPage = function() {
+            if (currentPage < units1.length - 1 && currentPage < units2.length - 1) {
+                currentPage++;
+                updateCharts(); // Call updateCharts to refresh both charts with new data
+            }
+        };
+
+        // Function to toggle the visibility of the previous and next buttons
+        function toggleButtons() {
+            const prevButton = document.getElementById('prevBtn');
+            const nextButton = document.getElementById('nextBtn');
+
+            // If only one page, hide both buttons
+            if (units1.length <= 1 && units2.length <= 1) {
+                prevButton.style.display = 'none';
+                nextButton.style.display = 'none';
+            } else {
+                // Show or hide buttons based on the current page
+                prevButton.style.display = (currentPage === 0) ? 'none' : 'block';
+                nextButton.style.display = (currentPage === units1.length - 1 && currentPage === units2.length - 1) ? 'none' : 'block';
+            }
+        }
+    });
+</script>
+@endif
+
+@if (isset($chartLabels) || isset($chartValues) || isset($chartLabels2) || isset($chartValues2))
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Data from controller for the two charts
+        const names1 = @json($chartLabels);
+        const usageCounts1 = @json($chartValues);
+        const names2 = @json($chartLabels2);
+        const usageCounts2 = @json($chartValues2);
+
+        // Function to group lessons by unit using the "-" separator
+        function groupByUnit(names, usageCounts) {
+            const units = [];
+            let currentUnit = [];
+            names.forEach((label, index) => {
+                if (label !== "-") {
+                    currentUnit.push({
+                        label: label,
+                        value: usageCounts[index]
+                    });
+                } else if (currentUnit.length > 0) {
+                    units.push(currentUnit);
+                    currentUnit = [];
+                }
+            });
+            if (currentUnit.length > 0) {
+                units.push(currentUnit);
+            }
+            return units;
+        }
+
+        // Group lessons by units for both charts
+        const units1 = groupByUnit(names1, usageCounts1);
+        const units2 = groupByUnit(names2, usageCounts2);
+
+        // Initialize dynamic pagination variables
+        let currentPage = 0;
+
+        // Initialize both charts
+        const ctx1 = document.getElementById('usageChart1').getContext('2d');
+        const ctx2 = document.getElementById('usageChart2').getContext('2d');
+        const btnContainer = document.getElementById('chart-buttons').style.display = 'flex';
+
+        toggleButtons();
+
+        let usageChart1 = initializeChart(ctx1, units1[currentPage].map(item => item.label), units1[currentPage].map(item => item.value));
+        let usageChart2 = initializeChart(ctx2, units2[currentPage].map(item => item.label), units2[currentPage].map(item => item.value));
+
+        // Function to initialize chart
+        function initializeChart(ctx, labels, data) {
+            return new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'Usage',
+                        data: data, // Expecting values between 0 and 100
+                        backgroundColor: '#E9C874',
+                        borderColor: '#E9C874',
+                        borderWidth: 1,
+                        maxBarThickness: 120
+                    }]
+                },
+                options: {
+                    scales: {
+                        x: {
+                            grid: {
+                                display: false
+                            }
+                        },
+                        y: {
+                            beginAtZero: true,
+                            max: 100, // Set the max value to 100 for percentage
                             ticks: {
-                                stepSize: 1
+                                callback: function(value) {
+                                    return value + '%'; // Append '%' to each tick value
+                                },
+                                stepSize: 10 // Set the step size (optional)
                             }
                         }
                     },
@@ -462,6 +524,14 @@
                         legend: {
                             display: true,
                             position: 'top'
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(tooltipItem) {
+                                    let value = tooltipItem.raw; // Get the value from the tooltip item
+                                    return `${value}%`; // Append '%' to the tooltip value
+                                }
+                            }
                         }
                     },
                     layout: {
@@ -474,32 +544,39 @@
             });
         }
 
-        // Function to update the chart with the current page data (current unit)
-        function updateChart() {
-            const currentUnit = units[currentPage];
-            if (usageChart) {
-                usageChart.data.labels = currentUnit.map(item => item.label);
-                usageChart.data.datasets[0].data = currentUnit.map(item => item.value);
-                usageChart.update();
+        // Function to update both charts with the current page data (current unit)
+        function updateCharts() {
+            const currentUnit1 = units1[currentPage];
+            const currentUnit2 = units2[currentPage];
+
+            if (usageChart1 && usageChart2) {
+                usageChart1.data.labels = currentUnit1.map(item => item.label);
+                usageChart1.data.datasets[0].data = currentUnit1.map(item => item.value);
+                usageChart1.update();
+
+                usageChart2.data.labels = currentUnit2.map(item => item.label);
+                usageChart2.data.datasets[0].data = currentUnit2.map(item => item.value);
+                usageChart2.update();
             }
+
             toggleButtons();
         }
 
-        // Function to go to the previous unit (previous page)
+        // Function to go to the previous unit (previous page) for both charts
         window.previousPage = function() {
             if (currentPage > 0) {
                 currentPage--;
-                updateChart(); // Call updateChart to refresh with new data
+                updateCharts(); // Call updateCharts to refresh both charts with new data
             }
-        }
+        };
 
-        // Function to go to the next unit (next page)
+        // Function to go to the next unit (next page) for both charts
         window.nextPage = function() {
-            if (currentPage < units.length - 1) {
+            if (currentPage < units1.length - 1 && currentPage < units2.length - 1) {
                 currentPage++;
-                updateChart(); // Call updateChart to refresh with new data
+                updateCharts(); // Call updateCharts to refresh both charts with new data
             }
-        }
+        };
 
         // Function to toggle the visibility of the previous and next buttons
         function toggleButtons() {
@@ -507,17 +584,18 @@
             const nextButton = document.getElementById('nextBtn');
 
             // If only one page, hide both buttons
-            if (units.length <= 1) {
+            if (units1.length <= 1 && units2.length <= 1) {
                 prevButton.style.display = 'none';
                 nextButton.style.display = 'none';
             } else {
                 // Show or hide buttons based on the current page
                 prevButton.style.display = (currentPage === 0) ? 'none' : 'block';
-                nextButton.style.display = (currentPage === units.length - 1) ? 'none' : 'block';
+                nextButton.style.display = (currentPage === units1.length - 1 && currentPage === units2.length - 1) ? 'none' : 'block';
             }
         }
     });
 </script>
+
 @endif
 <!-- SweetAlert validation messages -->
 @if($errors->any())
