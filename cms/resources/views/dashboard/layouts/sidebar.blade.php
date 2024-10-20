@@ -281,6 +281,9 @@
                                                 <li class="nk-menu-item"><a href="{{ route('reports.classHeatmapReport') }}"
                                                                 class="nk-menu-link"><span class="nk-menu-text">Class Heatmap Report</span></a>
                                                 </li>
+                                                <li class="nk-menu-item"><a href="{{ route('reports.teacherHeatmapReport') }}"
+                                                                class="nk-menu-link"><span class="nk-menu-text">Teacher Heatmap Report</span></a>
+                                                </li>
                                                 <!-- <li class="nk-menu-item"><a href="{{ route('reports.schoolGenderReportWeb') }}"
                                                                 class="nk-menu-link"><span class="nk-menu-text">School Gender </span></a>
                                                 </li>

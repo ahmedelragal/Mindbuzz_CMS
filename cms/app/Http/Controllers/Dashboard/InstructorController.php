@@ -470,4 +470,21 @@ class InstructorController extends Controller
 
         return redirect()->route('instructors.index')->with('success', 'Teacher deleted successfully.');
     }
+
+    public function getCommonTeacherPrograms($teacherId1, $teacherId2)
+    {
+
+        $teacherPrograms1 = TeacherProgram::where('teacher_id', $teacherId1)->pluck('program_id')->toArray();
+
+        $teacherPrograms2 = TeacherProgram::where('teacher_id', $teacherId2)->pluck('program_id')->toArray();
+        $commonProgramIds = array_intersect($teacherPrograms1, $teacherPrograms2);
+        $programs = Program::whereIn('id', $commonProgramIds)->get();
+        $programsData = $programs->map(function ($program) {
+            return [
+                'id' => $program->id,
+                'program_details' => $program->course->name . ' - ' . $program->stage->name,
+            ];
+        });
+        return response()->json($programsData);
+    }
 }

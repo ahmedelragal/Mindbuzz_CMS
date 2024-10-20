@@ -57,6 +57,7 @@ Route::get('/get-programs-group/{group_id}', [ClassController::class, 'getProgra
 Route::get('/get-students-school/{school_id}', [SchoolController::class, 'getStudentsSchool']);
 Route::get('/get-teachers-school/{school_id}', [SchoolController::class, 'getTeachersSchool']);
 Route::get('/get-common-programs-group/{group1_id}/{group2_id}', [ClassController::class, 'getCommonGroupsPrograms']);
+Route::get('/get-common-programs-teacher/{teacher1_id}/{teacher2_id}', [InstructorController::class, 'getCommonTeacherPrograms']);
 
 Route::get('get-groups/{school_id}', [InstructorController::class, 'getGroups'])->name('getGroups');
 Route::get('get-stages/{program_id}', [ClassController::class, 'getStages']);
@@ -103,6 +104,7 @@ Route::middleware('auth')->group(function () {
         Route::get('classContentGapReport', [ReportController::class, 'classContentGapReport'])->name('classContentGapReport');
         Route::get('teacherContentEngagementReport', [ReportController::class, 'teacherContentEngagementReport'])->name('teacherContentEngagementReport');
         Route::get('classHeatmapReport', [ReportController::class, 'classHeatmapReport'])->name('classHeatmapReport');
+        Route::get('teacherHeatmapReport', [ReportController::class, 'teacherHeatmapReport'])->name('teacherHeatmapReport');
     });
     Route::get('/get-teacher-assignments/{teacherId}', [ReportController::class, 'getTeacherAssignments']);
     Route::get('/reports/fetch-mastery-data', [ReportController::class, 'fetchMasteryData'])->name('reports.fetchMasteryData');
