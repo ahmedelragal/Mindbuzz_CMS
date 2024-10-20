@@ -5086,8 +5086,8 @@ class ReportController extends Controller
             }
             $students1 = GroupStudent::where('group_id', $request->group1_id)->pluck('student_id');
             $students2 = GroupStudent::where('group_id', $request->group2_id)->pluck('student_id');
-            $students1 = GroupStudent::whereIn('student_id', [239, 504])->pluck('student_id');
-            $students2 = GroupStudent::whereIn('student_id', [239, 504])->pluck('student_id');
+            // $students1 = GroupStudent::whereIn('student_id', [239, 504])->pluck('student_id');
+            // $students2 = GroupStudent::whereIn('student_id', [239, 504])->pluck('student_id');
 
             if ($students1->isEmpty()) {
                 $groupName = Group::find($request->group1_id)->name;

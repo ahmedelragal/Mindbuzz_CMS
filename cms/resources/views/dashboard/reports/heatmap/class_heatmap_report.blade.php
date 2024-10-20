@@ -96,11 +96,12 @@
                                     </form>
                                 </div>
                             </div>
-                            <!-- Report Section -->
 
+                            <!-- Report Section -->
                             <div id="report_container">
                                 <div class="card mt-4">
                                     <div class="card-body">
+                                        @if (isset($programsUsage) || isset($unitsUsage) || isset($lessonsUsage) || isset($gamesUsage) || isset($skillsUsage))
                                         <!-- Display Chart if Data is Available -->
                                         <div class="row">
                                             <div class="col-lg-6 col-md-12 mb-4">
@@ -127,14 +128,15 @@
 
                                 <div class="card mt-4">
                                     <div class="card-body">
-                                        @if (isset($programsUsage) || isset($unitsUsage) || isset($lessonsUsage) || isset($gamesUsage) || isset($skillsUsage))
+
                                         @if (isset($programsUsage))
                                         <h5>Programs Usage</h5>
                                         <table class="table">
                                             <thead>
                                                 <tr>
                                                     <th>Program</th>
-                                                    <th>Usage Percentage(%)</th>
+                                                    <th>{{$groupName1}} Usage(%)</th>
+                                                    <th>{{$groupName2}} Usage(%)</th>
                                                 </tr>
                                             </thead>
                                             <tbody>
@@ -142,6 +144,7 @@
                                                 <tr>
                                                     <td>{{ $program['name'] }}</td>
                                                     <td>{{ $program['usage_percentage'] }}%</td>
+                                                    <td>{{ $programsUsage2[$program['program_id']]['usage_percentage'] }}%</td>
                                                 </tr>
                                                 @endforeach
                                             </tbody>
@@ -154,7 +157,8 @@
                                             <thead>
                                                 <tr>
                                                     <th>Unit</th>
-                                                    <th>Usage Percentage(%)</th>
+                                                    <th>{{$groupName1}} Usage(%)</th>
+                                                    <th>{{$groupName2}} Usage(%)</th>
                                                 </tr>
                                             </thead>
                                             <tbody>
@@ -162,6 +166,7 @@
                                                 <tr>
                                                     <td>{{ $unit['name'] }}</td>
                                                     <td>{{ $unit['usage_percentage'] }}%</td>
+                                                    <td>{{ $unitsUsage2[$unit['unit_id']]['usage_percentage'] }}%</td>
                                                 </tr>
                                                 @endforeach
                                             </tbody>
@@ -177,7 +182,8 @@
                                                 <tr>
                                                     <th>Unit</th>
                                                     <th>lesson</th>
-                                                    <th>Status</th>
+                                                    <th>{{$groupName1}} Usage(%)</th>
+                                                    <th>{{$groupName2}} Usage(%)</th>
                                                 </tr>
                                             </thead>
                                             <tbody>
@@ -186,12 +192,14 @@
                                                     <td>{{$unit['name']}}</td>
                                                     <td></td>
                                                     <td></td>
+                                                    <td></td>
                                                 </tr>
                                                 @foreach ($unit['lessons'] as $lesson)
                                                 <tr>
                                                     <td></td>
                                                     <td>{{$lesson['name']}}</td>
                                                     <td> <?php echo $lesson['assigned'] == 1 ? 'Assigned' : 'Unassigned'; ?></td>
+                                                    <td> <?php echo $lessonsUsage2[$unit['unit_id']]['lessons'][$lesson['lesson_id']]['assigned'] == 1 ? 'Assigned' : 'Unassigned'; ?></td>
                                                 </tr>
                                                 @endforeach
                                                 @endforeach
@@ -206,7 +214,8 @@
                                                 <tr>
                                                     <th>Lesson</th>
                                                     <th>Game</th>
-                                                    <th>Status</th>
+                                                    <th>{{$groupName1}} Status</th>
+                                                    <th>{{$groupName2}} Status</th>
                                                 </tr>
                                             </thead>
                                             <tbody>
@@ -217,12 +226,14 @@
                                                     <td>{{$lesson['name']}}</td>
                                                     <td></td>
                                                     <td></td>
+                                                    <td></td>
                                                 </tr>
                                                 @foreach ($lesson['games'] as $game)
                                                 <tr>
                                                     <td></td>
                                                     <td>{{$game['name']}}</td>
                                                     <td> <?php echo $game['assigned'] == 1 ? 'Assigned' : 'Unassigned'; ?></td>
+                                                    <td> <?php echo $gamesUsage2[$unit['unit_id']]['lessons'][$lesson['lesson_id']]['games'][$game['game_type_id']]['assigned'] == 1 ? 'Assigned' : 'Unassigned'; ?></td>
                                                 </tr>
                                                 @endforeach
                                                 @endforeach
