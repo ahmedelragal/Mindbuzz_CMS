@@ -24,29 +24,44 @@
                                         @csrf
                                         <div class="row">
                                             <!-- School Filter -->
-                                            <div class="col-md-6">
-                                                @role('Admin')
+                                            @role('Admin')
+                                            <div class="col-md-4">
                                                 <label for="sch_id">Select School</label>
-                                                <select class="form-select js-select2" name="school_id" id="sch_id">
-                                                    <option value="" selected disabled>Choose a School</option>
+                                                <select class="form-select js-select2" name="school_id" id="school_id" required>
+                                                    <option value="" disabled {{ old('school_id', $request['school_id'] ?? '') == '' ? 'selected' : '' }}>Choose a School</option>
                                                     @foreach ($schools as $school)
                                                     <option value="{{ $school->id }}" data-school="{{ $school->id }}" {{ old('school_id', $request['school_id'] ?? '') == $school->id ? 'selected' : '' }}>
                                                         {{ $school->name }}
                                                     </option>
                                                     @endforeach
                                                 </select>
-                                                @endrole
-
-                                                @role('school')
-                                                <input type="hidden" name="school_id" value="{{ auth()->user()->school_id }}">
-                                                @endrole
                                             </div>
+                                            @endrole
+
+                                            @role('school')
+                                            <input type="hidden" name="school_id" value="{{ auth()->user()->school_id }}">
+                                            @endrole
 
                                             <!-- Program Filter -->
                                             <div class="col-md-4">
                                                 <label for="program_id">Select Program</label>
-                                                <select class="form-select js-select2" name="program_id" id="program_id" required>
-                                                    <option value="" disabled selected>Choose a Program</option>
+                                                <select class="form-select js-select2" name="program_id" id="program_id">
+                                                    @role('Admin')
+                                                    <option value="" selected disabled>No Available Programs</option>
+                                                    @endrole
+                                                    @role('school')
+                                                    @if(!$programs->isEmpty())
+                                                    <option value="" selected disabled>Choose a Program</option>
+                                                    @foreach ($programs as $program)
+                                                    <option value="{{ $program->id }}">
+                                                        {{ $program->course ? $program->course->name : 'No Course' }} /
+                                                        {{ $program->stage ? $program->stage->name : 'No Stage' }}
+                                                    </option>
+                                                    @endforeach
+                                                    @else
+                                                    <option value="" selected disabled>No Available Programs</option>
+                                                    @endif
+                                                    @endrole
                                                 </select>
                                             </div>
 
@@ -262,32 +277,59 @@
 </script>
 @endif
 
+@role('school')
 <script>
     $(document).ready(function() {
         $('.js-select2').select2();
 
-        $('#sch_id').change(function() {
-            var schoolId = $('#sch_id option:selected').data('school');
-            getProgramsBySchool(schoolId);
+        var selectedProgramId = "{{$request['program_id'] ?? '' }}";
+
+        if (selectedProgramId) {
+            $('select[name="program_id"]').val(selectedProgramId).trigger('change');
+        }
+    });
+</script>
+@endrole
+
+<script>
+    $(document).ready(function() {
+        $('.js-select2').select2();
+
+        var selectedProgramId = "{{$request['program_id'] ?? '' }}";
+        $('#school_id').change(function() {
+            var schoolId = $('#school_id option:selected').data('school');
+            getProgramsBySchool(schoolId, selectedProgramId);
         });
-        $('#sch_id').trigger('change');
+        $('#school_id').trigger('change');
     });
 
-    function getProgramsBySchool(schoolId) {
+    function getProgramsBySchool(schoolId, selectedProgramId) {
         $.ajax({
             url: '/get-programs-school/' + schoolId,
             type: "GET",
             dataType: "json",
             success: function(data) {
-                console.log(data);
+                // Clear the existing options
                 $('select[name="program_id"]').empty();
-                $('select[name="program_id"]').append(
-                    '<option value="">Select a Program</option>');
-                $.each(data, function(key, value) {
-                    $('select[name="program_id"]').append('<option value="' +
-                        value.id + '">' +
-                        value.program_details + '</option>');
-                });
+
+                if (!data || data.length === 0) {
+                    $('select[name="program_id"]').append(
+                        '<option value="" selected disabled>No Available Programs</option>'
+                    );
+                } else {
+
+                    $('select[name="program_id"]').append(
+                        '<option value="" selected>All Programs</option>'
+                    );
+                    $.each(data, function(key, value) {
+                        $('select[name="program_id"]').append(
+                            '<option value="' + value.id + '">' + value.program_details + '</option>'
+                        );
+                    });
+                    if (selectedProgramId) {
+                        $('select[name="program_id"]').val(selectedProgramId).trigger('change');
+                    }
+                }
             },
             error: function(xhr, status, error) {
                 console.error('AJAX Error:', error);

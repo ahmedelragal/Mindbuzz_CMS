@@ -2492,10 +2492,14 @@ class ReportController extends Controller
     public function schoolCompletionReport(Request $request)
     {
         if (Auth::user()->hasRole('school')) {
-            // $students = User::where('role', '2')->where("school_id", Auth::user()->school_id)->get();
-            $programs = Program::when(Auth::user()->hasRole('school'), function ($query) {
-                return $query->where('school_id', Auth::user()->school_id);
-            })->get();
+            $id = Auth::user()->school_id;
+            $programs = Program::whereHas('schoolProgram', function ($query) use ($id) {
+                $query->where('school_id', $id);
+            })
+                ->with(['schoolProgram' => function ($query) use ($id) {
+                    $query->where('school_id', $id);
+                }])
+                ->get();
         } else {
             $programs = Program::all();
         }
@@ -3325,9 +3329,14 @@ class ReportController extends Controller
     {
 
         if (Auth::user()->hasRole('school')) {
-            $programs = Program::when(Auth::user()->hasRole('school'), function ($query) {
-                return $query->where('school_id', Auth::user()->school_id);
-            })->get();
+            $id = Auth::user()->school_id;
+            $programs = Program::whereHas('schoolProgram', function ($query) use ($id) {
+                $query->where('school_id', $id);
+            })
+                ->with(['schoolProgram' => function ($query) use ($id) {
+                    $query->where('school_id', $id);
+                }])
+                ->get();
         } else {
             $programs = Program::all();
         }
