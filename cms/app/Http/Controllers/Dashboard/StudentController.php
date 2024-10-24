@@ -318,4 +318,21 @@ class StudentController extends Controller
 
         return response()->json($courses);
     }
+
+    public function getCommonStudentPrograms($studentId1, $stundentId2)
+    {
+
+        $studentPrograms1 = UserCourse::where('user_id', $studentId1)->pluck('program_id')->toArray();
+        $studentPrograms2 = UserCourse::where('user_id', $stundentId2)->pluck('program_id')->toArray();
+
+        $commonProgramIds = array_intersect($studentPrograms1, $studentPrograms2);
+        $programs = Program::whereIn('id', $commonProgramIds)->get();
+        $programsData = $programs->map(function ($program) {
+            return [
+                'id' => $program->id,
+                'program_details' => $program->course->name . ' - ' . $program->stage->name,
+            ];
+        });
+        return response()->json($programsData);
+    }
 }

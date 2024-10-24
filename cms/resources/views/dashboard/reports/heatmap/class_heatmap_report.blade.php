@@ -117,8 +117,8 @@
                                                 </div>
                                             </div>
                                             <div class="chart-buttons" id="chart-buttons" style="display: none; justify-content: flex-end; gap: 10px; padding-top:20px">
-                                                <button class="btn btn-primary" id="prevBtn" onclick="previousPage()">Previous</button>
-                                                <button class="btn btn-primary" id="nextBtn" onclick="nextPage()">Next</button>
+                                                <button class="btn btn-primary" id="prevBtn" onclick="previousPage()">Previous Unit</button>
+                                                <button class="btn btn-primary" id="nextBtn" onclick="nextPage()">Next Unit</button>
                                             </div>
                                         </div>
 
@@ -198,8 +198,8 @@
                                                 <tr>
                                                     <td></td>
                                                     <td>{{$lesson['name']}}</td>
-                                                    <td> <?php echo $lesson['assigned'] == 1 ? 'Assigned' : 'Unassigned'; ?></td>
-                                                    <td> <?php echo $lessonsUsage2[$unit['unit_id']]['lessons'][$lesson['lesson_id']]['assigned'] == 1 ? 'Assigned' : 'Unassigned'; ?></td>
+                                                    <td> <?php echo $lesson['usage_percentage'] ?>%</td>
+                                                    <td> <?php echo $lessonsUsage2[$unit['unit_id']]['lessons'][$lesson['lesson_id']]['usage_percentage'] ?>%</td>
                                                 </tr>
                                                 @endforeach
                                                 @endforeach

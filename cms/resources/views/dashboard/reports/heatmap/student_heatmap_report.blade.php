@@ -16,11 +16,11 @@
                         <div class="nk-content-body">
                             <div class="card">
                                 <div class="card-header">
-                                    <h5 class="title">Teacher Heatmap Report</h5>
+                                    <h5 class="title">Student Heatmap Report</h5>
                                 </div>
                                 <!-- Form Section -->
                                 <div class="card-body">
-                                    <form method="GET" action="{{ route('reports.teacherHeatmapReport') }}">
+                                    <form method="GET" action="{{ route('reports.studentHeatmapReport') }}">
                                         <div class="row">
                                             <!-- School Filter -->
                                             <div class="col-md-4">
@@ -34,49 +34,42 @@
                                                     @endforeach
                                                 </select>
                                             </div>
-                                            <!-- Teacher Filter -->
+                                            <!-- Student Filter -->
                                             <div class="col-md-4">
-                                                <label for="teacher1_id">Select First Teacher</label>
-                                                <select class="form-select js-select2" name="teacher1_id" id="teacher1_id">
+                                                <label for="student1_id">Select First Student</label>
+                                                <select class="form-select js-select2" name="student1_id" id="student1_id" required>
                                                     @role('Admin')
-                                                    <option value="" disabled>Choose a Teacher</option>
+                                                    <option value="" selected disabled>Choose a Student</option>
                                                     @endrole
                                                     @role('school')
                                                     @php
-                                                    $schTeachers = App\Models\User::where('school_id', auth()->user()->school_id)
-                                                    ->where('role', 1)
-                                                    ->get();
+                                                    $schStudents = App\Models\User::where('school_id', auth()->user()->school_id)->where('role', 2)->where('is_student', 1)->get();
                                                     @endphp
-                                                    @foreach ($schTeachers as $teacher)
-                                                    <option value="{{ $teacher->id }}" {{ old('teacher1_id', $request['teacher1_id'] ?? '') == $teacher->id ? 'selected' : '' }}>
-                                                        {{ $teacher->name }}
+                                                    @foreach ($schStudents as $student)
+                                                    <option value="{{ $student->id }}">{{ $student->name }}
                                                     </option>
                                                     @endforeach
                                                     @endrole
                                                 </select>
                                             </div>
-                                            <!-- Teacher Filter -->
+                                            <!-- Student Filter -->
                                             <div class="col-md-4">
-                                                <label for="teacher2_id">Select Second Teacher</label>
-                                                <select class="form-select js-select2" name="teacher2_id" id="teacher2_id">
+                                                <label for="student2_id">Select Second Student</label>
+                                                <select class="form-select js-select2" name="student2_id" id="student2_id" required>
                                                     @role('Admin')
-                                                    <option value="" disabled>Choose a Teacher</option>
+                                                    <option value="" selected disabled>Choose a Student</option>
                                                     @endrole
                                                     @role('school')
                                                     @php
-                                                    $schTeachers = App\Models\User::where('school_id', auth()->user()->school_id)
-                                                    ->where('role', 1)
-                                                    ->get();
+                                                    $schStudents = App\Models\User::where('school_id', auth()->user()->school_id)->where('role', 2)->where('is_student', 1)->get();
                                                     @endphp
-                                                    @foreach ($schTeachers as $teacher)
-                                                    <option value="{{ $teacher->id }}" {{ old('teacher2_id', $request['teacher2_id'] ?? '') == $teacher->id ? 'selected' : '' }}>
-                                                        {{ $teacher->name }}
+                                                    @foreach ($schStudents as $student)
+                                                    <option value="{{ $student->id }}">{{ $student->name }}
                                                     </option>
                                                     @endforeach
                                                     @endrole
                                                 </select>
                                             </div>
-
                                         </div>
 
                                         <div class="row mt-3">
@@ -95,7 +88,6 @@
                                                     <option value="Unit" {{ old('filter', $request['filter'] ?? '') == 'Unit' ? 'selected' : '' }}>Unit</option>
                                                     <option value="Lesson" {{ old('filter', $request['filter'] ?? '') == 'Lesson' ? 'selected' : '' }}>Lesson</option>
                                                     <option value="Game" {{ old('filter', $request['filter'] ?? '') == 'Game' ? 'selected' : '' }}>Game</option>
-                                                    <!-- <option value="Skill" {{ old('filter', $request['filter'] ?? '') == 'Skill' ? 'selected' : '' }}>Skill</option>  -->
                                                 </select>
                                             </div>
                                             <!-- From Date Filter -->
@@ -130,13 +122,13 @@
                                         <div class="row">
                                             <div class="col-lg-6 col-md-12 mb-4">
                                                 <div class="container mt-5">
-                                                    <h5>Teacher {{$teacherName1}} Usage</h5>
+                                                    <h5>Student {{$studentName1}} Usage</h5>
                                                     <canvas id="usageChart1" width="400" height="200"></canvas>
                                                 </div>
                                             </div>
                                             <div class="col-lg-6 col-md-12 mb-4">
                                                 <div class="container mt-5">
-                                                    <h5>Teacher {{$teacherName2}} Usage</h5>
+                                                    <h5>Student {{$studentName2}} Usage</h5>
                                                     <canvas id="usageChart2" width="400" height="200"></canvas>
                                                 </div>
                                             </div>
@@ -159,8 +151,8 @@
                                             <thead>
                                                 <tr>
                                                     <th>Program</th>
-                                                    <th>{{$teacherName1}} Usage(%)</th>
-                                                    <th>{{$teacherName2}} Usage(%)</th>
+                                                    <th>{{$studentName1}} Usage(%)</th>
+                                                    <th>{{$studentName2}} Usage(%)</th>
                                                 </tr>
                                             </thead>
                                             <tbody>
@@ -181,8 +173,8 @@
                                             <thead>
                                                 <tr>
                                                     <th>Unit</th>
-                                                    <th>{{$teacherName1}} Usage(%)</th>
-                                                    <th>{{$teacherName2}} Usage(%)</th>
+                                                    <th>{{$studentName1}} Usage(%)</th>
+                                                    <th>{{$studentName2}} Usage(%)</th>
                                                 </tr>
                                             </thead>
                                             <tbody>
@@ -206,8 +198,8 @@
                                                 <tr>
                                                     <th>Unit</th>
                                                     <th>lesson</th>
-                                                    <th>{{$teacherName1}} Usage(%)</th>
-                                                    <th>{{$teacherName2}} Usage(%)</th>
+                                                    <th>{{$studentName1}} Usage(%)</th>
+                                                    <th>{{$studentName2}} Usage(%)</th>
                                                 </tr>
                                             </thead>
                                             <tbody>
@@ -238,8 +230,8 @@
                                                 <tr>
                                                     <th>Lesson</th>
                                                     <th>Game</th>
-                                                    <th>{{$teacherName1}} Status</th>
-                                                    <th>{{$teacherName2}} Status</th>
+                                                    <th>{{$studentName1}} Status</th>
+                                                    <th>{{$studentName2}} Status</th>
                                                 </tr>
                                             </thead>
                                             <tbody>
@@ -674,30 +666,29 @@
 
         // Get previously selected program_id from if exists
         var selectedProgramId = "{{$request['program_id'] ?? '' }}";
-        var selectedTeacherId = "{{ $request['teacher1_id']?? '' }}";
-        var selectedTeacherId2 = "{{ $request['teacher2_id']?? '' }}";
+        var selectedStudentId = "{{ $request['student1_id']?? '' }}";
+        var selectedStudentId2 = "{{ $request['student2_id']?? '' }}";
 
         $('#school_id').change(function() {
             var schoolId = $('#school_id').val();
-            getSchoolTeachers(schoolId, selectedTeacherId, selectedTeacherId2)
+            getSchoolStudent(schoolId, selectedStudentId, selectedStudentId2)
         });
 
-        // Trigger getCommonTeachersPrograms on group change
-        $('#teacher1_id').change(function() {
-            var teacher1Id = $('#teacher1_id').val();
-            var teacher2Id = $('#teacher2_id').val();
-            console.log(teacher1Id, teacher2Id);
-            getCommonTeachersPrograms(teacher1Id, teacher2Id, selectedProgramId);
+        // Trigger getCommonStudentsPrograms on group change
+        $('#student1_id').change(function() {
+            var student1Id = $('#student1_id').val();
+            var student2Id = $('#student2_id').val();
+            getCommonStudentsPrograms(student1Id, student2Id, selectedProgramId);
         });
-        $('#teacher2_id').change(function() {
-            var teacher1Id = $('#teacher1_id').val();
-            var teacher2Id = $('#teacher2_id').val();
-            getCommonTeachersPrograms(teacher1Id, teacher2Id, selectedProgramId);
+        $('#student2_id').change(function() {
+            var student1Id = $('#student1_id').val();
+            var student2Id = $('#student2_id').val();
+            getCommonStudentsPrograms(student1Id, student2Id, selectedProgramId);
         });
 
         // Trigger change on page load to fetch programs for the selected group
         $('#school_id').trigger('change');
-        $('#teacher2_id').trigger('change');
+        $('#student2_id').trigger('change');
 
         // Save the selected program_id to localStorage when it changes
         $('select[name="program_id"]').change(function() {
@@ -706,9 +697,9 @@
         });
     });
 
-    function getCommonTeachersPrograms(teacher1Id, teacher2Id, selectedProgramId) {
+    function getCommonStudentsPrograms(student1Id, student2Id, selectedProgramId) {
         $.ajax({
-            url: '/get-common-programs-teacher/' + teacher1Id + '/' + teacher2Id,
+            url: '/get-common-programs-student/' + student1Id + '/' + student2Id,
             type: "GET",
             dataType: "json",
             success: function(data) {
@@ -742,34 +733,34 @@
         });
     }
 
-    function getSchoolTeachers(schoolId, selectedTeacherId, selectedTeacherId2) {
+    function getSchoolStudent(schoolId, selectedStudentId, selectedStudentId2) {
         $.ajax({
-            url: '/get-teachers-school/' + schoolId,
+            url: '/get-students-school/' + schoolId,
             type: "GET",
             dataType: "json",
             success: function(data) {
-                $('select[name="teacher1_id"]').empty();
-                $('select[name="teacher2_id"]').empty();
-                $('select[name="teacher1_id"]').append('<option value="" selected>Choose a Teacher</option>');
-                $('select[name="teacher2_id"]').append('<option value="" selected>Choose a Teacher</option>');
+                $('select[name="student1_id"]').empty();
+                $('select[name="student2_id"]').empty();
+                $('select[name="student1_id"]').append('<option value="" selected>Choose a Student</option>');
+                $('select[name="student2_id"]').append('<option value="" selected>Choose a Student</option>');
 
                 $.each(data, function(key, value) {
-                    $('select[name="teacher1_id"]').append('<option value="' +
+                    $('select[name="student1_id"]').append('<option value="' +
                         value.id + '">' + value.name + '</option>');
-                    $('select[name="teacher2_id"]').append('<option value="' +
+                    $('select[name="student2_id"]').append('<option value="' +
                         value.id + '">' + value.name + '</option>');
                 });
 
-                // Re-select the teacher_id if it exists
-                if (selectedTeacherId) {
-                    $('select[name="teacher1_id"]').val(selectedTeacherId).trigger('change');
+                // Re-select the student_id if it exists
+                if (selectedStudentId) {
+                    $('select[name="student1_id"]').val(selectedStudentId).trigger('change');
                 }
-                if (selectedTeacherId2) {
-                    $('select[name="teacher2_id"]').val(selectedTeacherId2).trigger('change');
+                if (selectedStudentId2) {
+                    $('select[name="student2_id"]').val(selectedStudentId2).trigger('change');
                 }
             },
             error: function(xhr, status, error) {
-                console.error('AJAX Error fetching teachers:', error);
+                console.error('AJAX Error fetching student:', error);
             }
         });
     }

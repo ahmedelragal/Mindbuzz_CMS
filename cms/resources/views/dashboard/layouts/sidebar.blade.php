@@ -263,6 +263,9 @@
                                                 <li class="nk-menu-item"><a href="{{ route('reports.schoolContentEngagementReport') }}"
                                                                 class="nk-menu-link"><span class="nk-menu-text">Content Engagement Report</span></a>
                                                 </li>
+                                                <li class="nk-menu-item"><a href="{{ route('reports.schoolContentGapReport') }}"
+                                                                class="nk-menu-link"><span class="nk-menu-text">Content Gap Report</span></a>
+                                                </li>
                                                 <li class="nk-menu-item"><a href="{{ route('reports.schoolLoginReport') }}"
                                                                 class="nk-menu-link"><span class="nk-menu-text">Number of Logins Report</span></a>
                                                 </li>
@@ -283,6 +286,9 @@
                                                 </li>
                                                 <li class="nk-menu-item"><a href="{{ route('reports.teacherHeatmapReport') }}"
                                                                 class="nk-menu-link"><span class="nk-menu-text">Teacher Heatmap Report</span></a>
+                                                </li>
+                                                <li class="nk-menu-item"><a href="{{ route('reports.studentHeatmapReport') }}"
+                                                                class="nk-menu-link"><span class="nk-menu-text">Student Heatmap Report</span></a>
                                                 </li>
                                                 <!-- <li class="nk-menu-item"><a href="{{ route('reports.schoolGenderReportWeb') }}"
                                                                 class="nk-menu-link"><span class="nk-menu-text">School Gender </span></a>

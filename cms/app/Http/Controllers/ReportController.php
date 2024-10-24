@@ -19,6 +19,7 @@ use App\Models\Test;
 use App\Models\StudentProgress;
 use App\Models\GroupTeachers;
 use App\Models\TeacherProgram;
+use App\Models\UserCourse;
 use App\Models\TestTypes;
 use App\Models\User;
 use App\Models\TestQuestion;
@@ -4790,7 +4791,6 @@ class ReportController extends Controller
         // Initialize $data array with defaults
         $data = [
             'groups' => $groups,
-            // 'programs' => $programs,
             'request' => $request->all(),
         ];
         if ($request->has('group_id')) {
@@ -4804,7 +4804,6 @@ class ReportController extends Controller
             $students = GroupStudent::where('group_id', $request->group_id)->pluck('student_id');
             if ($students->isEmpty()) {
                 $data['error'] = 'No Students Found.';
-
                 // Return the view with the $data array
                 return view('dashboard.reports.class.class_content_gap_report', $data);
             }
@@ -4819,34 +4818,11 @@ class ReportController extends Controller
                     return $query->whereDate('created_at', '<=', $request->to_date);
                 })
                 ->whereNotNull('test_id')
-                ->get();
-            // dd($student_tests);
-
-            // Check if there are multiple students
-            if ($students->count() > 1) {
-                // Group the results by test_id
-                $grouped_tests = $student_tests->groupBy('test_id');
-                $common_tests = [];
-
-                foreach ($grouped_tests as $test) {
-                    $studentsTest = [];
-                    foreach ($test as $testStudent) {
-                        if (!in_array($testStudent->student_id, $studentsTest))
-                            $studentsTest[] = $testStudent->student_id;
-                    }
-                    if (count($studentsTest) == $students->count()) {
-                        $common_tests[] = $testStudent->test_id;
-                    }
-                }
-                // dd($common_tests);
-            } else {
-                // If there's only one student, skip filtering
-                $common_tests = $student_tests->pluck('test_id');
-            }
+                ->pluck('test_id');
 
 
             // Fetch the actual test records for the common tests
-            $student_assignments = Test::whereIn('id', $common_tests)->get();
+            $student_assignments = Test::whereIn('id', $student_tests)->get();
             // dd($student_assignments);
 
             if ($student_assignments->isEmpty()) {
@@ -4863,39 +4839,52 @@ class ReportController extends Controller
             $programsUsage = [];
 
             foreach ($selectedPrograms as $program) {
+                $totalProgramGames = 0;
                 if (!isset($programsUsage[$program->id])) {
+
                     $programsUsage[$program->id] = [
                         'program_id' => $program->id,
                         'name' => $program->course->name . ' - ' . $program->stage->name,
                         'units' => [],
                         'usage_count' => 0,
-                        'usage_percentage' => 0,
+                        'gap_percentage' => 100,
+                        'total_games' => 0,
+                        'total_assigned_games' => 0,
                     ];
                 }
 
                 $unitsUsage = []; // Initialize unitsUsage for each program
 
                 foreach ($program->units as $unit) {
+                    $totalUnitGames = 0;
                     if (!isset($unitsUsage[$unit->id])) {
                         $unitsUsage[$unit->id] = [
                             'unit_id' => $unit->id,
                             'name' => $unit->name,
                             'lessons' => [],
                             'usage_count' => 0,
-                            'usage_percentage' => 0,
+                            'gap_percentage' => 100,
+                            'total_games' => 0,
+                            'total_assigned_games' => 0,
                         ];
                     }
 
                     $lessonsUsage = []; // Initialize lessonsUsage for each unit
 
                     foreach ($unit->lessons as $lesson) {
+                        $gamesCount = Game::where('lesson_id', $lesson->id)->get()->count();
+                        $totalProgramGames += $gamesCount;
+                        $totalUnitGames += $gamesCount;
                         if (!isset($lessonsUsage[$lesson->id])) {
                             $lessonsUsage[$lesson->id] = [
                                 'lesson_id' => $lesson->id,
                                 'name' => $lesson->name,
                                 'games' => [],
                                 'assigned' => 0,
-                                'usage_percentage' => 0,
+                                'gap_percentage' => 100,
+                                'total_games' => $gamesCount,
+                                'assigned_games' => [],
+                                'total_assigned_games' => 0,
                             ];
                         }
 
@@ -4910,7 +4899,7 @@ class ReportController extends Controller
                                     'name' => $gameType->name,
                                     'skills' => [],
                                     'assigned' => 0,
-                                    'usage_percentage' => 0,
+                                    'gap_percentage' => 100,
                                 ];
 
                                 // Assign skills to the game type using skill IDs as keys
@@ -4923,7 +4912,7 @@ class ReportController extends Controller
                                                 'skill_id' => $skill->id,
                                                 'name' => $skill->skill,
                                                 'usage_count' => 0,
-                                                'usage_percentage' => 0,
+                                                'gap_percentage' => 100,
                                             ];
                                         }
                                     }
@@ -4937,42 +4926,55 @@ class ReportController extends Controller
                     }
                     // Assign the collected lessons to the unit's 'lessons'
                     $unitsUsage[$unit->id]['lessons'] = $lessonsUsage;
+                    $unitsUsage[$unit->id]['total_games'] = $totalUnitGames;
                 }
                 // Assign the collected units to the program's 'units'
                 $programsUsage[$program->id]['units'] = $unitsUsage;
+                $programsUsage[$program->id]['total_games'] = $totalProgramGames;
             }
 
             foreach ($student_assignments as $assignment) {
-                $testGames = Game::whereIn('id', TestQuestion::where('test_id', $assignment->id)->pluck('game_id'))->get();
-                // dd($testGames);
-                $lesson = Lesson::find($assignment->lesson_id);
-                $unit_id = $lesson->unit_id;
-                $programsUsage[$assignment->program_id]['units'][$unit_id]['lessons'][$assignment->lesson_id]['assigned'] = 1;
+                if (isset($programsUsage[$assignment->program_id])) {
+                    $testGame = Game::find($assignment->game_id);
 
-                foreach ($testGames as $game)
-                    $programsUsage[$assignment->program_id]['units'][$unit_id]['lessons'][$assignment->lesson_id]['games'][$game->game_type_id]['assigned'] = 1;
+                    $lesson = Lesson::find($assignment->lesson_id);
+                    $unit_id = $lesson->unit_id;
+                    $programsUsage[$assignment->program_id]['units'][$unit_id]['lessons'][$assignment->lesson_id]['assigned'] = 1;
+                    $programsUsage[$assignment->program_id]['units'][$unit_id]['lessons'][$assignment->lesson_id]['games'][$testGame->game_type_id]['assigned'] = 1;
+
+                    if (!in_array($testGame->id,    $programsUsage[$assignment->program_id]['units'][$unit_id]['lessons'][$assignment->lesson_id]['assigned_games'])) {
+                        $programsUsage[$assignment->program_id]['units'][$unit_id]['lessons'][$assignment->lesson_id]['assigned_games'][] = $testGame->id;
+                    }
+                }
             }
 
             foreach ($programsUsage as $program) {
-                $totalUnitPercentage = 0;
+                $programAssignedGames = 0;
                 foreach ($program['units'] as $unit) {
                     $assignedCount = 0;
+                    $unitAssignedGames = 0;
                     foreach ($unit['lessons'] as $lesson) {
                         if ($lesson['assigned'] == 1) {
                             $assignedCount++;
+                            $totalGamesCount  = $programsUsage[$program['program_id']]['units'][$unit['unit_id']]['lessons'][$lesson['lesson_id']]['total_games'];
+                            $assignedGamesCount = count($programsUsage[$program['program_id']]['units'][$unit['unit_id']]['lessons'][$lesson['lesson_id']]['assigned_games']);
+                            $programsUsage[$program['program_id']]['units'][$unit['unit_id']]['lessons'][$lesson['lesson_id']]['gap_percentage'] = $programsUsage[$program['program_id']]['units'][$unit['unit_id']]['lessons'][$lesson['lesson_id']]['gap_percentage'] - round(($assignedGamesCount / $totalGamesCount) * 100, 2);
+                            $unitAssignedGames += $assignedGamesCount;
+                            $programsUsage[$program['program_id']]['units'][$unit['unit_id']]['lessons'][$lesson['lesson_id']]['total_assigned_games'] = $assignedGamesCount;
                         }
                     }
-                    if (count($unit['lessons']) != 0) {
-                        $unitUsagePercentage =   round($assignedCount / count($unit['lessons']) * 100, 2);
-                        $programsUsage[$program['program_id']]['units'][$unit['unit_id']]['usage_percentage'] = $unitUsagePercentage;
-                        $totalUnitPercentage += $unitUsagePercentage;
+                    if ($programsUsage[$program['program_id']]['units'][$unit['unit_id']]['total_games']  != 0) {
+                        $programAssignedGames += $unitAssignedGames;
+                        $programsUsage[$program['program_id']]['units'][$unit['unit_id']]['total_assigned_games'] = $unitAssignedGames;
+                        $programsUsage[$program['program_id']]['units'][$unit['unit_id']]['gap_percentage'] = $programsUsage[$program['program_id']]['units'][$unit['unit_id']]['gap_percentage'] - round($unitAssignedGames /  $programsUsage[$program['program_id']]['units'][$unit['unit_id']]['total_games'] * 100, 2);
                     }
                 }
-                if (count($program['units']) != 0)
-                    $programsUsage[$program['program_id']]['usage_percentage'] = round($totalUnitPercentage / (count($program['units'])), 2);
-            }
-            // dd($programsUsage);
 
+                $programsUsage[$program['program_id']]['total_assigned_games'] = $programAssignedGames;
+                if ($programsUsage[$program['program_id']]['total_games'] != 0) {
+                    $programsUsage[$program['program_id']]['gap_percentage'] = $programsUsage[$program['program_id']]['gap_percentage'] - round($programAssignedGames / $programsUsage[$program['program_id']]['total_games'] * 100, 2);
+                }
+            }
 
             $chartLabels = [];
             $chartValues = [];
@@ -4982,12 +4984,14 @@ class ReportController extends Controller
                         foreach ($programsUsage as $program) {
                             foreach ($program['units'] as $unit) {
                                 $chartLabels[] = $unit['name'];
-                                $chartValues[] = $unit['usage_percentage'];
+                                $chartValues[] = $unit['gap_percentage'];
                             }
                         }
+
                         $data['unitsUsage'] =  $programsUsage[$request->program_id]['units'];
-                        $data['programOrUnitLabels'] =  $chartLabels;
-                        $data['programOrUnitValues'] =  $chartValues;
+                        $data['chartLabels'] =  $chartLabels;
+                        $data['chartValues'] =  $chartValues;
+
                         break;
                     case 'Lesson':
                         $lessonsData =  [];
@@ -4996,36 +5000,38 @@ class ReportController extends Controller
                                 $chartLabels[] = '-';
                                 $chartValues[] = '-';
                                 foreach ($unit['lessons'] as $lesson) {
-                                    $lessonsData[] = $lesson;
                                     $chartLabels[] = $lesson['name'];
-                                    $chartValues[] = $lesson['assigned'];
+                                    $chartValues[] = $lesson['gap_percentage'];
+                                    if ($lesson['assigned'] == 1) {
+                                        $assignedCount++;
+                                    }
                                 }
                             }
                         }
 
-                        $data['lessonsUsage'] =  $lessonsData;
+                        $data['lessonsUsage'] =  $programsUsage[$request->program_id]['units'];
                         $data['chartLabels'] =  $chartLabels;
                         $data['chartValues'] =  $chartValues;
                         break;
-                        // case 'Game':
-                        //     $gameData = [];
-                        //     foreach ($programsUsage as $program) {
-                        //         foreach ($program['units'] as $unit) {
-                        //             foreach ($unit['lessons'] as $lesson) {
-                        //                 $chartLabels[] = '-';
-                        //                 $chartValues[] = '-';
-                        //                 foreach ($lesson['games'] as $game) {
-                        //                     $gameData[] = $game;
-                        //                     $chartLabels[] = $game['name'];
-                        //                     $chartValues[] = $game['usage_count'];
-                        //                 }
-                        //             }
-                        //         }
-                        //     }
-                        //     $data['gamesUsage'] =  $gameData;
-                        //     $data['chartLabels'] =  $chartLabels;
-                        //     $data['chartValues'] =  $chartValues;
-                        //     break;
+                    case 'Game':
+                        $gameData = [];
+                        foreach ($programsUsage as $program) {
+                            foreach ($program['units'] as $unit) {
+                                foreach ($unit['lessons'] as $lesson) {
+                                    $chartLabels[] = '-';
+                                    $chartValues[] = '-';
+                                    foreach ($lesson['games'] as $game) {
+                                        $gameData[] = $game;
+                                        $chartLabels[] = $game['name'];
+                                        $chartValues[] = $game['assigned'];
+                                    }
+                                }
+                            }
+                        }
+                        $data['gamesUsage'] =  $programsUsage[$request->program_id]['units'];
+                        $data['gamesLabels'] =  $chartLabels;
+                        $data['gamesValues'] =  $chartValues;
+                        break;
                     default:
 
                         break;
@@ -5036,17 +5042,284 @@ class ReportController extends Controller
             } elseif (!$request->filled('program_id')) {
                 foreach ($programsUsage as $program) {
                     $chartLabels[] = $program['name'];
-                    $chartValues[] = $program['usage_percentage'];
+                    $chartValues[] = $program['gap_percentage'];
                 }
                 $data['programsUsage'] =  $programsUsage;
-                $data['programOrUnitLabels'] =  $chartLabels;
-                $data['programOrUnitValues'] =  $chartValues;
+                $data['chartLabels'] =  $chartLabels;
+                $data['chartValues'] =  $chartValues;
             } else {
                 $data['error'] = 'Please Select a Filter for this Program';
                 return view('dashboard.reports.class.class_content_gap_report', $data);
             }
         }
         return view('dashboard.reports.class.class_content_gap_report', $data);
+    }
+    public function schoolContentGapReport(Request $request)
+    {
+        $schools = School::all();
+        $data = [
+            'schools' => $schools,
+            'request' => $request->all(),
+        ];
+        if ($request->filled('school_id')) {
+            $schoolId = $request->school_id;
+            if ($request->filled('program_id')) {
+                $selectedPrograms = Program::where('id', $request->program_id)->get();
+            } else {
+                $selectedPrograms = Program::whereHas('schoolProgram', function ($query) use ($schoolId) {
+                    $query->where('school_id', $schoolId);
+                })
+                    ->with(['schoolProgram' => function ($query) use ($schoolId) {
+                        $query->where('school_id', $schoolId);
+                    }])
+                    ->get();
+            }
+            // dd($selectedPrograms->pluck('id'));
+
+            $students = User::where('role', '2')->where("school_id", $schoolId)->pluck('id');
+
+            $student_tests = StudentTest::whereIn('student_id', $students)
+                ->whereIn('program_id', $selectedPrograms->pluck('id'))
+                ->when($request->filled('from_date'), function ($query) use ($request) {
+                    return $query->whereDate('created_at', '>=', $request->from_date);
+                })
+                ->when($request->filled('to_date'), function ($query) use ($request) {
+                    return $query->whereDate('created_at', '<=', $request->to_date);
+                })
+                ->pluck('test_id');
+
+            $student_assignments = Test::whereIn('id', $student_tests)->get();
+            // dd($student_assignments);
+
+            if ($student_assignments->isEmpty()) {
+                // Add an error message to the data array
+                $data['error'] = 'No Assignments Found for All Students';
+                return view('dashboard.reports.school.school_content_gap_report', $data);
+            }
+
+            $unitsUsage = [];
+            $lessonsUsage = [];
+            $gamesUsage = [];
+            $skillsUsage = [];
+            $programsUsage = [];
+
+            foreach ($selectedPrograms as $program) {
+                $totalProgramGames = 0;
+                if (!isset($programsUsage[$program->id])) {
+
+                    $programsUsage[$program->id] = [
+                        'program_id' => $program->id,
+                        'name' => $program->course->name . ' - ' . $program->stage->name,
+                        'units' => [],
+                        'usage_count' => 0,
+                        'gap_percentage' => 100,
+                        'total_games' => 0,
+                        'total_assigned_games' => 0,
+                    ];
+                }
+
+                $unitsUsage = []; // Initialize unitsUsage for each program
+
+                foreach ($program->units as $unit) {
+                    $totalUnitGames = 0;
+                    if (!isset($unitsUsage[$unit->id])) {
+                        $unitsUsage[$unit->id] = [
+                            'unit_id' => $unit->id,
+                            'name' => $unit->name,
+                            'lessons' => [],
+                            'usage_count' => 0,
+                            'gap_percentage' => 100,
+                            'total_games' => 0,
+                            'total_assigned_games' => 0,
+                        ];
+                    }
+
+                    $lessonsUsage = []; // Initialize lessonsUsage for each unit
+
+                    foreach ($unit->lessons as $lesson) {
+                        $gamesCount = Game::where('lesson_id', $lesson->id)->get()->count();
+                        $totalProgramGames += $gamesCount;
+                        $totalUnitGames += $gamesCount;
+                        if (!isset($lessonsUsage[$lesson->id])) {
+                            $lessonsUsage[$lesson->id] = [
+                                'lesson_id' => $lesson->id,
+                                'name' => $lesson->name,
+                                'games' => [],
+                                'assigned' => 0,
+                                'gap_percentage' => 100,
+                                'total_games' => $gamesCount,
+                                'assigned_games' => [],
+                                'total_assigned_games' => 0,
+                            ];
+                        }
+
+                        $gamesUsage = [];
+                        $skillsUsage = [];
+
+                        foreach ($lesson->game as $game) {
+                            if (!isset($gamesUsage[$game->game_type_id])) {
+                                $gameType = GameType::find($game->game_type_id);
+                                $gamesUsage[$game->game_type_id] = [
+                                    'game_type_id' => $game->game_type_id,
+                                    'name' => $gameType->name,
+                                    'skills' => [],
+                                    'assigned' => 0,
+                                    'gap_percentage' => 100,
+                                ];
+
+                                // Assign skills to the game type using skill IDs as keys
+                                if ($gameType->skills) {
+                                    foreach ($gameType->skills->where('lesson_id', $lesson->id)->unique('skill') as $gameSkill) {
+                                        $skill = $gameSkill->skill;
+
+                                        if (!isset($skillsUsage[$skill->id])) {
+                                            $skillsUsage[$skill->id] = [
+                                                'skill_id' => $skill->id,
+                                                'name' => $skill->skill,
+                                                'usage_count' => 0,
+                                                'gap_percentage' => 100,
+                                            ];
+                                        }
+                                    }
+                                    // Assign the collected skills to the game's 'skills'
+                                    $gamesUsage[$game->game_type_id]['skills'] = $skillsUsage;
+                                }
+                            }
+                        }
+                        // Assign the collected games to the lesson's 'games'
+                        $lessonsUsage[$lesson->id]['games'] = $gamesUsage;
+                    }
+                    // Assign the collected lessons to the unit's 'lessons'
+                    $unitsUsage[$unit->id]['lessons'] = $lessonsUsage;
+                    $unitsUsage[$unit->id]['total_games'] = $totalUnitGames;
+                }
+                // Assign the collected units to the program's 'units'
+                $programsUsage[$program->id]['units'] = $unitsUsage;
+                $programsUsage[$program->id]['total_games'] = $totalProgramGames;
+            }
+
+            foreach ($student_assignments as $assignment) {
+                if (isset($programsUsage[$assignment->program_id])) {
+                    $testGame = Game::find($assignment->game_id);
+
+                    $lesson = Lesson::find($assignment->lesson_id);
+                    $unit_id = $lesson->unit_id;
+                    $programsUsage[$assignment->program_id]['units'][$unit_id]['lessons'][$assignment->lesson_id]['assigned'] = 1;
+                    $programsUsage[$assignment->program_id]['units'][$unit_id]['lessons'][$assignment->lesson_id]['games'][$testGame->game_type_id]['assigned'] = 1;
+
+                    if (!in_array($testGame->id,    $programsUsage[$assignment->program_id]['units'][$unit_id]['lessons'][$assignment->lesson_id]['assigned_games'])) {
+                        $programsUsage[$assignment->program_id]['units'][$unit_id]['lessons'][$assignment->lesson_id]['assigned_games'][] = $testGame->id;
+                    }
+                }
+            }
+
+            foreach ($programsUsage as $program) {
+                $programAssignedGames = 0;
+                foreach ($program['units'] as $unit) {
+                    $assignedCount = 0;
+                    $unitAssignedGames = 0;
+                    foreach ($unit['lessons'] as $lesson) {
+                        if ($lesson['assigned'] == 1) {
+                            $assignedCount++;
+                            $totalGamesCount  = $programsUsage[$program['program_id']]['units'][$unit['unit_id']]['lessons'][$lesson['lesson_id']]['total_games'];
+                            $assignedGamesCount = count($programsUsage[$program['program_id']]['units'][$unit['unit_id']]['lessons'][$lesson['lesson_id']]['assigned_games']);
+                            $programsUsage[$program['program_id']]['units'][$unit['unit_id']]['lessons'][$lesson['lesson_id']]['gap_percentage'] = $programsUsage[$program['program_id']]['units'][$unit['unit_id']]['lessons'][$lesson['lesson_id']]['gap_percentage'] - round(($assignedGamesCount / $totalGamesCount) * 100, 2);
+                            $unitAssignedGames += $assignedGamesCount;
+                            $programsUsage[$program['program_id']]['units'][$unit['unit_id']]['lessons'][$lesson['lesson_id']]['total_assigned_games'] = $assignedGamesCount;
+                        }
+                    }
+                    if ($programsUsage[$program['program_id']]['units'][$unit['unit_id']]['total_games']  != 0) {
+                        $programAssignedGames += $unitAssignedGames;
+                        $programsUsage[$program['program_id']]['units'][$unit['unit_id']]['total_assigned_games'] = $unitAssignedGames;
+                        $programsUsage[$program['program_id']]['units'][$unit['unit_id']]['gap_percentage'] = $programsUsage[$program['program_id']]['units'][$unit['unit_id']]['gap_percentage'] - round($unitAssignedGames /  $programsUsage[$program['program_id']]['units'][$unit['unit_id']]['total_games'] * 100, 2);
+                    }
+                }
+
+                $programsUsage[$program['program_id']]['total_assigned_games'] = $programAssignedGames;
+                if ($programsUsage[$program['program_id']]['total_games'] != 0) {
+                    $programsUsage[$program['program_id']]['gap_percentage'] = $programsUsage[$program['program_id']]['gap_percentage'] - round($programAssignedGames / $programsUsage[$program['program_id']]['total_games'] * 100, 2);
+                }
+            }
+
+            $chartLabels = [];
+            $chartValues = [];
+            if ($request->filled('filter') && $request->filled('program_id')) {
+                switch ($request->filter) {
+                    case 'Unit':
+                        foreach ($programsUsage as $program) {
+                            foreach ($program['units'] as $unit) {
+                                $chartLabels[] = $unit['name'];
+                                $chartValues[] = $unit['gap_percentage'];
+                            }
+                        }
+
+                        $data['unitsUsage'] =  $programsUsage[$request->program_id]['units'];
+                        $data['chartLabels'] =  $chartLabels;
+                        $data['chartValues'] =  $chartValues;
+
+                        break;
+                    case 'Lesson':
+                        $lessonsData =  [];
+                        foreach ($programsUsage as $program) {
+                            foreach ($program['units'] as $unit) {
+                                $chartLabels[] = '-';
+                                $chartValues[] = '-';
+                                foreach ($unit['lessons'] as $lesson) {
+                                    $chartLabels[] = $lesson['name'];
+                                    $chartValues[] = $lesson['gap_percentage'];
+                                    if ($lesson['assigned'] == 1) {
+                                        $assignedCount++;
+                                    }
+                                }
+                            }
+                        }
+
+                        $data['lessonsUsage'] =  $programsUsage[$request->program_id]['units'];
+                        $data['chartLabels'] =  $chartLabels;
+                        $data['chartValues'] =  $chartValues;
+                        break;
+                    case 'Game':
+                        $gameData = [];
+                        foreach ($programsUsage as $program) {
+                            foreach ($program['units'] as $unit) {
+                                foreach ($unit['lessons'] as $lesson) {
+                                    $chartLabels[] = '-';
+                                    $chartValues[] = '-';
+                                    foreach ($lesson['games'] as $game) {
+                                        $gameData[] = $game;
+                                        $chartLabels[] = $game['name'];
+                                        $chartValues[] = $game['assigned'];
+                                    }
+                                }
+                            }
+                        }
+                        $data['gamesUsage'] =  $programsUsage[$request->program_id]['units'];
+                        $data['gamesLabels'] =  $chartLabels;
+                        $data['gamesValues'] =  $chartValues;
+                        break;
+                    default:
+
+                        break;
+                }
+            } else if ($request->filled('filter') && !$request->filled('program_id')) {
+                $data['error'] = 'Please Select a Program to Use filters';
+                return view('dashboard.reports.school.school_content_gap_report', $data);
+            } elseif (!$request->filled('program_id')) {
+                foreach ($programsUsage as $program) {
+                    $chartLabels[] = $program['name'];
+                    $chartValues[] = $program['gap_percentage'];
+                }
+                $data['programsUsage'] =  $programsUsage;
+                $data['chartLabels'] =  $chartLabels;
+                $data['chartValues'] =  $chartValues;
+            } else {
+                $data['error'] = 'Please Select a Filter for this Program';
+                return view('dashboard.reports.school.school_content_gap_report', $data);
+            }
+        }
+
+
+        return view('dashboard.reports.school.school_content_gap_report', $data);
     }
 
     public function classHeatmapReport(Request $request)
@@ -5092,13 +5365,13 @@ class ReportController extends Controller
 
             if ($students1->isEmpty()) {
                 $groupName = Group::find($request->group1_id)->name;
-                $data['error'] = 'No Students Found in Class ' . $groupName . '.';
+                $data['error'] = 'No Students Found in Class: ' . $groupName . '.';
                 // Return the view with the $data array
                 return view('dashboard.reports.heatmap.class_heatmap_report', $data);
             }
             if ($students2->isEmpty()) {
                 $groupName = Group::find($request->group2_id)->name;
-                $data['error'] = 'No Students Found in Class ' . $groupName . '.';
+                $data['error'] = 'No Students Found in Class: ' . $groupName . '.';
                 // Return the view with the $data array
                 return view('dashboard.reports.heatmap.class_heatmap_report', $data);
             }
@@ -5471,8 +5744,8 @@ class ReportController extends Controller
                         foreach ($programsUsage2 as $program) {
                             foreach ($program['units'] as $unit) {
                                 foreach ($unit['lessons'] as $lesson) {
-                                    $chartLabels[] = '-';
-                                    $chartValues[] = '-';
+                                    $chartLabels2[] = '-';
+                                    $chartValues2[] = '-';
                                     foreach ($lesson['games'] as $game) {
                                         $gameData[] = $game;
                                         $chartLabels2[] = $game['name'];
@@ -5485,8 +5758,8 @@ class ReportController extends Controller
                         $data['gamesUsage2'] =  $programsUsage2[$request->program_id]['units'];
                         $data['gamesLabels'] =  $chartLabels;
                         $data['gamesValues'] =  $chartValues;
-                        $data['gamesLabels2'] =  $chartLabels;
-                        $data['gamesValues2'] =  $chartValues;
+                        $data['gamesLabels2'] =  $chartLabels2;
+                        $data['gamesValues2'] =  $chartValues2;
                         $data['groupName1'] = Group::find($request->group1_id)->name;
                         $data['groupName2'] = Group::find($request->group2_id)->name;
                         break;
@@ -5509,8 +5782,8 @@ class ReportController extends Controller
                 $data['programsUsage2'] =  $programsUsage2;
                 $data['chartLabels'] =  $chartLabels;
                 $data['chartValues'] =  $chartValues;
-                $data['chartLabels2'] =  $chartLabels;
-                $data['chartValues2'] =  $chartValues;
+                $data['chartLabels2'] =  $chartLabels2;
+                $data['chartValues2'] =  $chartValues2;
                 $data['groupName1'] = Group::find($request->group1_id)->name;
                 $data['groupName2'] = Group::find($request->group2_id)->name;
             } else {
@@ -5543,7 +5816,44 @@ class ReportController extends Controller
             }
 
             ##################################
+            $teacherStudentTests1 = StudentTest::where('teacher_id', $request->teacher1_id)
+                ->whereIn('program_id', $selectedPrograms->pluck('id'))
+                ->when($request->filled('from_date'), function ($query) use ($request) {
+                    return $query->whereDate('created_at', '>=', $request->from_date);
+                })
+                ->when($request->filled('to_date'), function ($query) use ($request) {
+                    return $query->whereDate('created_at', '<=', $request->to_date);
+                })
+                ->distinct()
+                ->pluck('test_id');
 
+
+            if ($teacherStudentTests1->isEmpty()) {
+                // Add an error message to the data array
+                $teacherName = User::find($request->teacher1_id)->name;
+                $data['error'] = "No Assignments Found for teacher " . $teacherName . " Students";
+                return view('dashboard.reports.heatmap.teacher_heatmap_report', $data);
+            }
+            $teacherStudentTests2 = StudentTest::where('teacher_id', $request->teacher2_id)
+                ->whereIn('program_id', $selectedPrograms->pluck('id'))
+                ->when($request->filled('from_date'), function ($query) use ($request) {
+                    return $query->whereDate('created_at', '>=', $request->from_date);
+                })
+                ->when($request->filled('to_date'), function ($query) use ($request) {
+                    return $query->whereDate('created_at', '<=', $request->to_date);
+                })
+                ->distinct()
+                ->pluck('test_id');
+
+            if ($teacherStudentTests2->isEmpty()) {
+                // Add an error message to the data array
+                $teacherName = User::find($request->teacher2_id)->name;
+                $data['error'] = "No Assignments Found for teacher " . $teacherName . " Students";
+                return view('dashboard.reports.heatmap.teacher_heatmap_report', $data);
+            }
+
+            $student_assignments1 = Test::whereIn('id', $teacherStudentTests1)->get();
+            $student_assignments2 = Test::whereIn('id', $teacherStudentTests2)->get();
 
 
             ##################################
@@ -5735,6 +6045,7 @@ class ReportController extends Controller
                 }
             }
 
+
             $chartLabels = [];
             $chartValues = [];
             $chartLabels2 = [];
@@ -5760,8 +6071,10 @@ class ReportController extends Controller
                         $data['chartValues'] =  $chartValues;
                         $data['chartLabels2'] =  $chartLabels2;
                         $data['chartValues2'] =  $chartValues2;
-                        $data['groupName1'] = Group::find($request->group1_id)->name;
-                        $data['groupName2'] = Group::find($request->group2_id)->name;
+
+                        $data['teacherName1'] = User::find($request->teacher1_id)->name;
+                        $data['teacherName2'] = User::find($request->teacher2_id)->name;
+
                         break;
                     case 'Lesson':
                         $lessonsData =  [];
@@ -5800,8 +6113,8 @@ class ReportController extends Controller
                         $data['chartValues'] =  $chartValues;
                         $data['chartLabels2'] =  $chartLabels2;
                         $data['chartValues2'] =  $chartValues2;
-                        $data['groupName1'] = Group::find($request->group1_id)->name;
-                        $data['groupName2'] = Group::find($request->group2_id)->name;
+                        $data['teacherName1'] = User::find($request->teacher1_id)->name;
+                        $data['teacherName2'] = User::find($request->teacher2_id)->name;
                         break;
                     case 'Game':
                         $gameData = [];
@@ -5821,8 +6134,8 @@ class ReportController extends Controller
                         foreach ($programsUsage2 as $program) {
                             foreach ($program['units'] as $unit) {
                                 foreach ($unit['lessons'] as $lesson) {
-                                    $chartLabels[] = '-';
-                                    $chartValues[] = '-';
+                                    $chartLabels2[] = '-';
+                                    $chartValues2[] = '-';
                                     foreach ($lesson['games'] as $game) {
                                         $gameData[] = $game;
                                         $chartLabels2[] = $game['name'];
@@ -5835,10 +6148,10 @@ class ReportController extends Controller
                         $data['gamesUsage2'] =  $programsUsage2[$request->program_id]['units'];
                         $data['gamesLabels'] =  $chartLabels;
                         $data['gamesValues'] =  $chartValues;
-                        $data['gamesLabels2'] =  $chartLabels;
-                        $data['gamesValues2'] =  $chartValues;
-                        $data['groupName1'] = Group::find($request->group1_id)->name;
-                        $data['groupName2'] = Group::find($request->group2_id)->name;
+                        $data['gamesLabels2'] =  $chartLabels2;
+                        $data['gamesValues2'] =  $chartValues2;
+                        $data['teacherName1'] = User::find($request->teacher1_id)->name;
+                        $data['teacherName2'] = User::find($request->teacher2_id)->name;
                         break;
                     default:
                         break;
@@ -5859,10 +6172,10 @@ class ReportController extends Controller
                 $data['programsUsage2'] =  $programsUsage2;
                 $data['chartLabels'] =  $chartLabels;
                 $data['chartValues'] =  $chartValues;
-                $data['chartLabels2'] =  $chartLabels;
-                $data['chartValues2'] =  $chartValues;
-                $data['groupName1'] = Group::find($request->group1_id)->name;
-                $data['groupName2'] = Group::find($request->group2_id)->name;
+                $data['chartLabels2'] =  $chartLabels2;
+                $data['chartValues2'] =  $chartValues2;
+                $data['teacherName1'] = User::find($request->teacher1_id)->name;
+                $data['teacherName2'] = User::find($request->teacher2_id)->name;
             } else {
                 $data['error'] = 'Please Select a Filter for this Program';
                 return view('dashboard.reports.heatmap.teacher_heatmap_report', $data);
@@ -5870,7 +6183,390 @@ class ReportController extends Controller
         }
         return view('dashboard.reports.heatmap.teacher_heatmap_report', $data);
     }
+    public function studentHeatmapReport(Request $request)
+    {
+        $schools = School::all();
+        // Initialize $data array with defaults
+        $data = [
+            'schools' => $schools,
+            'request' => $request->all(),
+        ];
+        if ($request->has('student1_id') && $request->has('student2_id')) {
+            if ($request->filled('program_id')) {
+                $selectedPrograms = Program::where('id', $request->program_id)->get();
+            } else {
+                $studentPrograms1 = UserCourse::where('user_id', $request->student1_id)->pluck('program_id')->toArray();
+                $studentPrograms2 = UserCourse::where('user_id', $request->student2_id)->pluck('program_id')->toArray();
 
+                $commonProgramIds = array_intersect($studentPrograms1, $studentPrograms2);
+                $selectedPrograms = Program::whereIn('id', $commonProgramIds)->get();
+            }
+
+            ##################################
+            $studentTests1 = StudentTest::where('student_id', $request->student1_id)
+                ->whereIn('program_id', $selectedPrograms->pluck('id'))
+                ->when($request->filled('from_date'), function ($query) use ($request) {
+                    return $query->whereDate('created_at', '>=', $request->from_date);
+                })
+                ->when($request->filled('to_date'), function ($query) use ($request) {
+                    return $query->whereDate('created_at', '<=', $request->to_date);
+                })
+                ->pluck('test_id');
+
+
+            if ($studentTests1->isEmpty()) {
+                // Add an error message to the data array
+                $studentName = User::find($request->student1_id)->name;
+                $data['error'] = "No Assignments Found for student: " . $studentName;
+                return view('dashboard.reports.heatmap.student_heatmap_report', $data);
+            }
+            $studentTests2 = StudentTest::where('student_id', $request->student2_id)
+                ->whereIn('program_id', $selectedPrograms->pluck('id'))
+                ->when($request->filled('from_date'), function ($query) use ($request) {
+                    return $query->whereDate('created_at', '>=', $request->from_date);
+                })
+                ->when($request->filled('to_date'), function ($query) use ($request) {
+                    return $query->whereDate('created_at', '<=', $request->to_date);
+                })
+                ->pluck('test_id');
+            if ($studentTests2->isEmpty()) {
+                // Add an error message to the data array
+                $studentName = User::find($request->student2_id)->name;
+                $data['error'] = "No Assignments Found for student: " . $studentName;
+                return view('dashboard.reports.heatmap.student_heatmap_report', $data);
+            }
+
+            $student_assignments1 = Test::whereIn('id', $studentTests1)->get();
+            $student_assignments2 = Test::whereIn('id', $studentTests2)->get();
+
+
+            ##################################
+
+            $unitsUsage = [];
+            $lessonsUsage = [];
+            $gamesUsage = [];
+            $skillsUsage = [];
+            $programsUsage = [];
+
+            foreach ($selectedPrograms as $program) {
+                $totalProgramGames = 0;
+                if (!isset($programsUsage[$program->id])) {
+                    $programsUsage[$program->id] = [
+                        'program_id' => $program->id,
+                        'name' => $program->course->name . ' - ' . $program->stage->name,
+                        'units' => [],
+                        'usage_count' => 0,
+                        'usage_percentage' => 0,
+                        'total_games' => 0,
+                        'total_assigned_games' => 0,
+                    ];
+                }
+
+                $unitsUsage = []; // Initialize unitsUsage for each program
+
+                foreach ($program->units as $unit) {
+                    $totalUnitGames = 0;
+                    if (!isset($unitsUsage[$unit->id])) {
+                        $unitsUsage[$unit->id] = [
+                            'unit_id' => $unit->id,
+                            'name' => $unit->name,
+                            'lessons' => [],
+                            'usage_count' => 0,
+                            'usage_percentage' => 0,
+                            'total_games' => 0,
+                            'total_assigned_games' => 0,
+                        ];
+                    }
+
+                    $lessonsUsage = []; // Initialize lessonsUsage for each unit
+
+                    foreach ($unit->lessons as $lesson) {
+                        $gamesCount = Game::where('lesson_id', $lesson->id)->get()->count();
+                        $totalProgramGames += $gamesCount;
+                        $totalUnitGames += $gamesCount;
+                        if (!isset($lessonsUsage[$lesson->id])) {
+                            $lessonsUsage[$lesson->id] = [
+                                'lesson_id' => $lesson->id,
+                                'name' => $lesson->name,
+                                'games' => [],
+                                'assigned' => 0,
+                                'usage_percentage' => 0,
+                                'total_games' => $gamesCount,
+                                'assigned_games' => [],
+                                'total_assigned_games' => 0,
+                            ];
+                        }
+
+                        $gamesUsage = [];
+                        $skillsUsage = [];
+
+                        foreach ($lesson->game as $game) {
+                            if (!isset($gamesUsage[$game->game_type_id])) {
+                                $gameType = GameType::find($game->game_type_id);
+                                $gamesUsage[$game->game_type_id] = [
+                                    'game_type_id' => $game->game_type_id,
+                                    'name' => $gameType->name,
+                                    'skills' => [],
+                                    'assigned' => 0,
+                                    'usage_percentage' => 0,
+                                ];
+
+                                // Assign skills to the game type using skill IDs as keys
+                                if ($gameType->skills) {
+                                    foreach ($gameType->skills->where('lesson_id', $lesson->id)->unique('skill') as $gameSkill) {
+                                        $skill = $gameSkill->skill;
+
+                                        if (!isset($skillsUsage[$skill->id])) {
+                                            $skillsUsage[$skill->id] = [
+                                                'skill_id' => $skill->id,
+                                                'name' => $skill->skill,
+                                                'usage_count' => 0,
+                                                'usage_percentage' => 0,
+                                            ];
+                                        }
+                                    }
+                                    // Assign the collected skills to the game's 'skills'
+                                    $gamesUsage[$game->game_type_id]['skills'] = $skillsUsage;
+                                }
+                            }
+                        }
+                        // Assign the collected games to the lesson's 'games'
+                        $lessonsUsage[$lesson->id]['games'] = $gamesUsage;
+                    }
+                    // Assign the collected lessons to the unit's 'lessons'
+                    $unitsUsage[$unit->id]['lessons'] = $lessonsUsage;
+                    $unitsUsage[$unit->id]['total_games'] = $totalUnitGames;
+                }
+                // Assign the collected units to the program's 'units'
+                $programsUsage[$program->id]['units'] = $unitsUsage;
+                $programsUsage[$program->id]['total_games'] = $totalProgramGames;
+            }
+            $programsUsage2 = $programsUsage;
+
+            // Group 1 Usage Calculations
+            foreach ($student_assignments1 as $assignment) {
+                if (isset($programsUsage[$assignment->program_id])) {
+                    $testGame = Game::find($assignment->game_id);
+                    // dd($testGames);
+                    $lesson = Lesson::find($assignment->lesson_id);
+                    $unit_id = $lesson->unit_id;
+                    $programsUsage[$assignment->program_id]['units'][$unit_id]['lessons'][$assignment->lesson_id]['assigned'] = 1;
+                    $programsUsage[$assignment->program_id]['units'][$unit_id]['lessons'][$assignment->lesson_id]['games'][$testGame->game_type_id]['assigned'] = 1;
+
+                    if (!in_array($testGame->id,    $programsUsage[$assignment->program_id]['units'][$unit_id]['lessons'][$assignment->lesson_id]['assigned_games'])) {
+                        $programsUsage[$assignment->program_id]['units'][$unit_id]['lessons'][$assignment->lesson_id]['assigned_games'][] = $testGame->id;
+                    }
+                }
+            }
+
+            foreach ($programsUsage as $program) {
+                $programAssignedGames = 0;
+                foreach ($program['units'] as $unit) {
+                    $assignedCount = 0;
+                    $unitAssignedGames = 0;
+                    foreach ($unit['lessons'] as $lesson) {
+                        if ($lesson['assigned'] == 1) {
+                            $assignedCount++;
+                            $totalGamesCount  = $programsUsage[$program['program_id']]['units'][$unit['unit_id']]['lessons'][$lesson['lesson_id']]['total_games'];
+                            $assignedGamesCount = count($programsUsage[$program['program_id']]['units'][$unit['unit_id']]['lessons'][$lesson['lesson_id']]['assigned_games']);
+                            $programsUsage[$program['program_id']]['units'][$unit['unit_id']]['lessons'][$lesson['lesson_id']]['usage_percentage'] = round(($assignedGamesCount / $totalGamesCount) * 100, 2);
+                            $unitAssignedGames += $assignedGamesCount;
+                            $programsUsage[$program['program_id']]['units'][$unit['unit_id']]['lessons'][$lesson['lesson_id']]['total_assigned_games'] = $assignedGamesCount;
+                        }
+                    }
+                    if ($programsUsage[$program['program_id']]['units'][$unit['unit_id']]['total_games']  != 0) {
+                        $programAssignedGames += $unitAssignedGames;
+                        $programsUsage[$program['program_id']]['units'][$unit['unit_id']]['total_assigned_games'] = $unitAssignedGames;
+                        $programsUsage[$program['program_id']]['units'][$unit['unit_id']]['usage_percentage'] = round($unitAssignedGames /  $programsUsage[$program['program_id']]['units'][$unit['unit_id']]['total_games'] * 100, 2);
+                    }
+                }
+
+                $programsUsage[$program['program_id']]['total_assigned_games'] = $programAssignedGames;
+                if ($programsUsage[$program['program_id']]['total_games'] != 0) {
+                    $programsUsage[$program['program_id']]['usage_percentage'] = round($programAssignedGames / $programsUsage[$program['program_id']]['total_games'] * 100, 2);
+                }
+            }
+
+            // Group 2 Usage Calculations
+            foreach ($student_assignments2 as $assignment) {
+                // $testGames = Game::whereIn('id', TestQuestion::where('test_id', $assignment->id)->pluck('game_id'))->get();
+                $testGame = Game::find($assignment->game_id);
+                // dd($testGames);
+                $lesson = Lesson::find($assignment->lesson_id);
+                $unit_id = $lesson->unit_id;
+                $programsUsage2[$assignment->program_id]['units'][$unit_id]['lessons'][$assignment->lesson_id]['assigned'] = 1;
+                $programsUsage2[$assignment->program_id]['units'][$unit_id]['lessons'][$assignment->lesson_id]['games'][$testGame->game_type_id]['assigned'] = 1;
+
+                if (!in_array($testGame->id,    $programsUsage2[$assignment->program_id]['units'][$unit_id]['lessons'][$assignment->lesson_id]['assigned_games'])) {
+                    $programsUsage2[$assignment->program_id]['units'][$unit_id]['lessons'][$assignment->lesson_id]['assigned_games'][] = $testGame->id;
+                }
+            }
+
+            foreach ($programsUsage2 as $program) {
+                $programAssignedGames = 0;
+                foreach ($program['units'] as $unit) {
+                    $assignedCount = 0;
+                    $unitAssignedGames = 0;
+                    foreach ($unit['lessons'] as $lesson) {
+                        if ($lesson['assigned'] == 1) {
+                            $assignedCount++;
+                            $totalGamesCount  = $programsUsage2[$program['program_id']]['units'][$unit['unit_id']]['lessons'][$lesson['lesson_id']]['total_games'];
+                            $assignedGamesCount = count($programsUsage2[$program['program_id']]['units'][$unit['unit_id']]['lessons'][$lesson['lesson_id']]['assigned_games']);
+                            $programsUsage2[$program['program_id']]['units'][$unit['unit_id']]['lessons'][$lesson['lesson_id']]['usage_percentage'] = round(($assignedGamesCount / $totalGamesCount) * 100, 2);
+                            $unitAssignedGames += $assignedGamesCount;
+                            $programsUsage2[$program['program_id']]['units'][$unit['unit_id']]['lessons'][$lesson['lesson_id']]['total_assigned_games'] = $assignedGamesCount;
+                        }
+                    }
+                    if ($programsUsage2[$program['program_id']]['units'][$unit['unit_id']]['total_games']  != 0) {
+                        $programAssignedGames += $unitAssignedGames;
+                        $programsUsage2[$program['program_id']]['units'][$unit['unit_id']]['total_assigned_games'] = $unitAssignedGames;
+                        $programsUsage2[$program['program_id']]['units'][$unit['unit_id']]['usage_percentage'] = round($unitAssignedGames /  $programsUsage2[$program['program_id']]['units'][$unit['unit_id']]['total_games'] * 100, 2);
+                    }
+                }
+
+                $programsUsage2[$program['program_id']]['total_assigned_games'] = $programAssignedGames;
+                if ($programsUsage2[$program['program_id']]['total_games'] != 0) {
+                    $programsUsage2[$program['program_id']]['usage_percentage'] = round($programAssignedGames / $programsUsage2[$program['program_id']]['total_games'] * 100, 2);
+                }
+            }
+
+            $chartLabels = [];
+            $chartValues = [];
+            $chartLabels2 = [];
+            $chartValues2 = [];
+            if ($request->filled('filter') && $request->filled('program_id')) {
+                switch ($request->filter) {
+                    case 'Unit':
+                        foreach ($programsUsage as $program) {
+                            foreach ($program['units'] as $unit) {
+                                $chartLabels[] = $unit['name'];
+                                $chartValues[] = $unit['usage_percentage'];
+                            }
+                        }
+                        foreach ($programsUsage2 as $program) {
+                            foreach ($program['units'] as $unit) {
+                                $chartLabels2[] = $unit['name'];
+                                $chartValues2[] = $unit['usage_percentage'];
+                            }
+                        }
+                        $data['unitsUsage'] =  $programsUsage[$request->program_id]['units'];
+                        $data['unitsUsage2'] =  $programsUsage2[$request->program_id]['units'];
+                        $data['chartLabels'] =  $chartLabels;
+                        $data['chartValues'] =  $chartValues;
+                        $data['chartLabels2'] =  $chartLabels2;
+                        $data['chartValues2'] =  $chartValues2;
+
+                        $data['studentName1'] = User::find($request->student1_id)->name;
+                        $data['studentName2'] = User::find($request->student2_id)->name;
+
+                        break;
+                    case 'Lesson':
+                        $lessonsData =  [];
+                        $assignedCount = 0;
+                        foreach ($programsUsage as $program) {
+                            foreach ($program['units'] as $unit) {
+                                $chartLabels[] = '-';
+                                $chartValues[] = '-';
+                                foreach ($unit['lessons'] as $lesson) {
+                                    $chartLabels[] = $lesson['name'];
+                                    $chartValues[] = $lesson['usage_percentage'];
+                                    if ($lesson['assigned'] == 1) {
+                                        $assignedCount++;
+                                    }
+                                }
+                            }
+                        }
+                        $assignedCount = 0;
+                        foreach ($programsUsage2 as $program) {
+                            foreach ($program['units'] as $unit) {
+                                $chartLabels2[] = '-';
+                                $chartValues2[] = '-';
+                                foreach ($unit['lessons'] as $lesson) {
+                                    $chartLabels2[] = $lesson['name'];
+                                    $chartValues2[] = $lesson['usage_percentage'];
+                                    if ($lesson['assigned'] == 1) {
+                                        $assignedCount++;
+                                    }
+                                }
+                            }
+                        }
+
+                        $data['lessonsUsage'] =  $programsUsage[$request->program_id]['units'];
+                        $data['lessonsUsage2'] =  $programsUsage2[$request->program_id]['units'];
+                        $data['chartLabels'] =  $chartLabels;
+                        $data['chartValues'] =  $chartValues;
+                        $data['chartLabels2'] =  $chartLabels2;
+                        $data['chartValues2'] =  $chartValues2;
+                        $data['studentName1'] = User::find($request->student1_id)->name;
+                        $data['studentName2'] = User::find($request->student2_id)->name;
+                        break;
+                    case 'Game':
+                        $gameData = [];
+                        foreach ($programsUsage as $program) {
+                            foreach ($program['units'] as $unit) {
+                                foreach ($unit['lessons'] as $lesson) {
+                                    $chartLabels[] = '-';
+                                    $chartValues[] = '-';
+                                    foreach ($lesson['games'] as $game) {
+                                        $gameData[] = $game;
+                                        $chartLabels[] = $game['name'];
+                                        $chartValues[] = $game['assigned'];
+                                    }
+                                }
+                            }
+                        }
+                        foreach ($programsUsage2 as $program) {
+                            foreach ($program['units'] as $unit) {
+                                foreach ($unit['lessons'] as $lesson) {
+                                    $chartLabels2[] = '-';
+                                    $chartValues2[] = '-';
+                                    foreach ($lesson['games'] as $game) {
+                                        $gameData[] = $game;
+                                        $chartLabels2[] = $game['name'];
+                                        $chartValues2[] = $game['assigned'];
+                                    }
+                                }
+                            }
+                        }
+                        $data['gamesUsage'] =  $programsUsage[$request->program_id]['units'];
+                        $data['gamesUsage2'] =  $programsUsage2[$request->program_id]['units'];
+                        $data['gamesLabels'] =  $chartLabels;
+                        $data['gamesValues'] =  $chartValues;
+                        $data['gamesLabels2'] =  $chartLabels2;
+                        $data['gamesValues2'] =  $chartValues2;
+                        $data['studentName1'] = User::find($request->student1_id)->name;
+                        $data['studentName2'] = User::find($request->student2_id)->name;
+                        break;
+                    default:
+                        break;
+                }
+            } else if ($request->filled('filter') && !$request->filled('program_id')) {
+                $data['error'] = 'Please Select a Program to Use filters';
+                return view('dashboard.reports.heatmap.student_heatmap_report', $data);
+            } elseif (!$request->filled('program_id')) {
+                foreach ($programsUsage as $program) {
+                    $chartLabels[] = $program['name'];
+                    $chartValues[] = $program['usage_percentage'];
+                }
+                foreach ($programsUsage2 as $program) {
+                    $chartLabels2[] = $program['name'];
+                    $chartValues2[] = $program['usage_percentage'];
+                }
+                $data['programsUsage'] =  $programsUsage;
+                $data['programsUsage2'] =  $programsUsage2;
+                $data['chartLabels'] =  $chartLabels;
+                $data['chartValues'] =  $chartValues;
+                $data['chartLabels2'] =  $chartLabels2;
+                $data['chartValues2'] =  $chartValues2;
+                $data['studentName1'] = User::find($request->student1_id)->name;
+                $data['studentName2'] = User::find($request->student2_id)->name;
+            } else {
+                $data['error'] = 'Please Select a Filter for this Program';
+                return view('dashboard.reports.heatmap.student_heatmap_report', $data);
+            }
+        }
+        return view('dashboard.reports.heatmap.student_heatmap_report', $data);
+    }
     public function getTeacherAssignments($teacherId)
     {
         $assignments_ids = StudentTest::where('teacher_id', $teacherId)
