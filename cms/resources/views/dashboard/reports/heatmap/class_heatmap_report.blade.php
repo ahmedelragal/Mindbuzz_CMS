@@ -24,8 +24,9 @@
                                         <div class="row">
                                             <!-- Group 1 Filter -->
                                             <div class="col-md-4">
-                                                <label for="group1_id">Select school/class</label>
+                                                <label for="group1_id">Select First Class</label>
                                                 <select class="form-select js-select2" name="group1_id" id="group1_id" required>
+                                                    @role('Admin')
                                                     <option value="" disabled {{ old('group1_id', $request['group1_id'] ?? '') == '' ? 'selected' : '' }}>Choose a school/class</option>
                                                     @foreach ($groups as $group)
                                                     @php
@@ -36,11 +37,27 @@
                                                         {{ $sch->name }} / {{ $group->name }}
                                                     </option>
                                                     @endforeach
+                                                    @endrole
+                                                    @role('school')
+                                                    <option value="" disabled {{ old('group1_id', $request['group1_id'] ?? '') == '' ? 'selected' : '' }}>Choose a Class</option>
+
+                                                    @foreach ($groups as $group)
+                                                    @php
+                                                    $sch = App\Models\School::where('id', $group->school_id)->first();
+                                                    @endphp
+                                                    <!-- <option value="{{ $group->id }}" data-school="{{ $sch->id }}">{{ $sch->name }} / {{ $group->name }}</option> -->
+                                                    <option value="{{ $group->id }}" data-school="{{ $sch->id }}" {{ old('group1_id', $request['group1_id'] ?? '') == $group->id ? 'selected' : '' }}>
+                                                        {{ $group->name }}
+                                                    </option>
+                                                    @endforeach
+                                                    @endrole
                                                 </select>
                                             </div>
+                                            <!-- Group 2 Filter -->
                                             <div class="col-md-4">
-                                                <label for="group2_id">Select school/class</label>
+                                                <label for="group2_id">Select Second Class</label>
                                                 <select class="form-select js-select2" name="group2_id" id="group2_id" required>
+                                                    @role('Admin')
                                                     <option value="" disabled {{ old('group2_id', $request['group2_id'] ?? '') == '' ? 'selected' : '' }}>Choose a school/class</option>
                                                     @foreach ($groups as $group)
                                                     @php
@@ -51,6 +68,19 @@
                                                         {{ $sch->name }} / {{ $group->name }}
                                                     </option>
                                                     @endforeach
+                                                    @endrole
+                                                    @role('school')
+                                                    <option value="" disabled {{ old('group2_id', $request['group2_id'] ?? '') == '' ? 'selected' : '' }}>Choose a Class</option>
+                                                    @foreach ($groups as $group)
+                                                    @php
+                                                    $sch = App\Models\School::where('id', $group->school_id)->first();
+                                                    @endphp
+                                                    <!-- <option value="{{ $group->id }}" data-school="{{ $sch->id }}">{{ $sch->name }} / {{ $group->name }}</option> -->
+                                                    <option value="{{ $group->id }}" data-school="{{ $sch->id }}" {{ old('group2_id', $request['group2_id'] ?? '') == $group->id ? 'selected' : '' }}>
+                                                        {{ $group->name }}
+                                                    </option>
+                                                    @endforeach
+                                                    @endrole
                                                 </select>
                                             </div>
                                             <!-- Program Filter -->
@@ -98,37 +128,25 @@
                             </div>
 
                             <!-- Report Section -->
-                            <div id="report_container">
+                            <div id="report_container" style="display:none">
                                 <div class="card mt-4">
                                     <div class="card-body">
                                         @if (isset($programsUsage) || isset($unitsUsage) || isset($lessonsUsage) || isset($gamesUsage) || isset($skillsUsage))
                                         <!-- Display Chart if Data is Available -->
                                         <div class="row">
-                                            <div class="col-lg-6 col-md-12 mb-4">
-                                                <div class="container mt-5">
-                                                    <h5>Class {{$groupName1}} Usage</h5>
-                                                    <canvas id="usageChart1" width="400" height="200"></canvas>
-                                                </div>
-                                            </div>
-                                            <div class="col-lg-6 col-md-12 mb-4">
-                                                <div class="container mt-5">
-                                                    <h5>Class {{$groupName2}} Usage</h5>
-                                                    <canvas id="usageChart2" width="400" height="200"></canvas>
-                                                </div>
+                                            <div class="container mt-5">
+                                                <canvas id="usageChart" width="400" height="200"></canvas>
                                             </div>
                                             <div class="chart-buttons" id="chart-buttons" style="display: none; justify-content: flex-end; gap: 10px; padding-top:20px">
                                                 <button class="btn btn-primary" id="prevBtn" onclick="previousPage()">Previous Unit</button>
                                                 <button class="btn btn-primary" id="nextBtn" onclick="nextPage()">Next Unit</button>
                                             </div>
                                         </div>
-
-
                                     </div>
                                 </div>
 
                                 <div class="card mt-4">
                                     <div class="card-body">
-
                                         @if (isset($programsUsage))
                                         <h5>Programs Usage</h5>
                                         <table class="table">
@@ -279,14 +297,10 @@
                                             </tbody>
                                         </table>
                                         @endif
-
-                                        @else
-                                        <p>No data available for the selected filters.</p>
                                         @endif
                                     </div>
                                 </div>
                             </div>
-
                         </div>
                     </div>
                 </div>
@@ -310,153 +324,8 @@
         const gamesValues = @json($gamesValues);
         const gamesLabels2 = @json($gamesLabels2);
         const gamesValues2 = @json($gamesValues2);
-
-        // Group lessons by unit using the "-" separator for both charts
-        function groupByUnit(labels, values) {
-            const units = [];
-            let currentUnit = [];
-            labels.forEach((label, index) => {
-                if (label !== "-") {
-                    currentUnit.push({
-                        label: label,
-                        value: values[index]
-                    });
-                } else if (currentUnit.length > 0) {
-                    units.push(currentUnit);
-                    currentUnit = [];
-                }
-            });
-            if (currentUnit.length > 0) {
-                units.push(currentUnit);
-            }
-            return units;
-        }
-
-        // Group units for both charts
-        const units1 = groupByUnit(gamesLabels, gamesValues);
-        const units2 = groupByUnit(gamesLabels2, gamesValues2);
-
-        // Initialize dynamic pagination variables
-        let currentPage = 0;
-
-        // Initialize both charts
-        const ctx1 = document.getElementById('usageChart1').getContext('2d');
-        const ctx2 = document.getElementById('usageChart2').getContext('2d');
-
-        const btnContainer = document.getElementById('chart-buttons').style.display = 'flex';
-        toggleButtons();
-
-        let usageChart1 = initializeChart(ctx1, units1[currentPage].map(item => item.label), units1[currentPage].map(item => item.value));
-        let usageChart2 = initializeChart(ctx2, units2[currentPage].map(item => item.label), units2[currentPage].map(item => item.value));
-
-        // Function to initialize a chart
-        function initializeChart(ctx, labels, data) {
-            return new Chart(ctx, {
-                type: 'bar',
-                data: {
-                    labels: labels,
-                    datasets: [{
-                        label: 'Assigned Games',
-                        data: data, // Expecting values between 0 and 100
-                        backgroundColor: '#E9C874',
-                        borderColor: '#E9C874',
-                        borderWidth: 1,
-                        maxBarThickness: 120
-                    }]
-                },
-                options: {
-                    scales: {
-                        x: {
-                            grid: {
-                                display: false
-                            }
-                        },
-                        y: {
-                            beginAtZero: true,
-                            max: 1, // Set the max value to 100 for percentage
-                        }
-                    },
-                    responsive: true,
-                    maintainAspectRatio: true,
-                    plugins: {
-                        legend: {
-                            display: true,
-                            position: 'top'
-                        },
-                    },
-                    layout: {
-                        padding: {
-                            left: 50,
-                            right: 50
-                        }
-                    }
-                }
-            });
-        }
-
-        // Function to update both charts with the current page data (current unit)
-        function updateCharts() {
-            const currentUnit1 = units1[currentPage];
-            const currentUnit2 = units2[currentPage];
-
-            if (usageChart1 && usageChart2) {
-                // Update the first chart
-                usageChart1.data.labels = currentUnit1.map(item => item.label);
-                usageChart1.data.datasets[0].data = currentUnit1.map(item => item.value);
-                usageChart1.update();
-
-                // Update the second chart
-                usageChart2.data.labels = currentUnit2.map(item => item.label);
-                usageChart2.data.datasets[0].data = currentUnit2.map(item => item.value);
-                usageChart2.update();
-            }
-
-            toggleButtons();
-        }
-
-        // Function to go to the previous unit (previous page) for both charts
-        window.previousPage = function() {
-            if (currentPage > 0) {
-                currentPage--;
-                updateCharts(); // Call updateCharts to refresh both charts with new data
-            }
-        };
-
-        // Function to go to the next unit (next page) for both charts
-        window.nextPage = function() {
-            if (currentPage < units1.length - 1 && currentPage < units2.length - 1) {
-                currentPage++;
-                updateCharts(); // Call updateCharts to refresh both charts with new data
-            }
-        };
-
-        // Function to toggle the visibility of the previous and next buttons
-        function toggleButtons() {
-            const prevButton = document.getElementById('prevBtn');
-            const nextButton = document.getElementById('nextBtn');
-
-            // If only one page, hide both buttons
-            if (units1.length <= 1 && units2.length <= 1) {
-                prevButton.style.display = 'none';
-                nextButton.style.display = 'none';
-            } else {
-                // Show or hide buttons based on the current page
-                prevButton.style.display = (currentPage === 0) ? 'none' : 'block';
-                nextButton.style.display = (currentPage === units1.length - 1 && currentPage === units2.length - 1) ? 'none' : 'block';
-            }
-        }
-    });
-</script>
-@endif
-
-@if (isset($chartLabels) || isset($chartValues) || isset($chartLabels2) || isset($chartValues2))
-<script>
-    document.addEventListener('DOMContentLoaded', function() {
-        // Data from controller for the two charts
-        const names1 = @json($chartLabels);
-        const usageCounts1 = @json($chartValues);
-        const names2 = @json($chartLabels2);
-        const usageCounts2 = @json($chartValues2);
+        const classname1 = @json($groupName1);
+        const classname2 = @json($groupName2);
 
         // Function to group lessons by unit using the "-" separator
         function groupByUnit(names, usageCounts) {
@@ -479,39 +348,55 @@
             return units;
         }
 
-        // Group lessons by units for both charts
-        const units1 = groupByUnit(names1, usageCounts1);
-        const units2 = groupByUnit(names2, usageCounts2);
+        // Group units for both charts
+        const units1 = groupByUnit(gamesLabels, gamesValues);
+        const units2 = groupByUnit(gamesLabels2, gamesValues2);
 
         // Initialize dynamic pagination variables
         let currentPage = 0;
 
         // Initialize both charts
-        const ctx1 = document.getElementById('usageChart1').getContext('2d');
-        const ctx2 = document.getElementById('usageChart2').getContext('2d');
+        const ctx = document.getElementById('usageChart').getContext('2d');
         const btnContainer = document.getElementById('chart-buttons').style.display = 'flex';
 
         toggleButtons();
 
-        let usageChart1 = initializeChart(ctx1, units1[currentPage].map(item => item.label), units1[currentPage].map(item => item.value));
-        let usageChart2 = initializeChart(ctx2, units2[currentPage].map(item => item.label), units2[currentPage].map(item => item.value));
 
-        // Function to initialize chart
-        function initializeChart(ctx, labels, data) {
+        // Initialize the chart with the first page data
+        let usageChart = initializeChart(
+            ctx,
+            units1[currentPage].map(item => item.label),
+            units1[currentPage].map(item => item.value),
+            units2[currentPage].map(item => item.value)
+        );
+
+        // Function to initialize the chart with grouped bars
+        function initializeChart(ctx, labels, data1, data2) {
             return new Chart(ctx, {
                 type: 'bar',
                 data: {
                     labels: labels,
                     datasets: [{
-                        label: 'Usage',
-                        data: data, // Expecting values between 0 and 100
-                        backgroundColor: '#E9C874',
-                        borderColor: '#E9C874',
-                        borderWidth: 1,
-                        maxBarThickness: 120
-                    }]
+                            label: classname1,
+                            data: data1,
+                            backgroundColor: '#E9C874',
+                            borderColor: '#E9C874',
+                            borderWidth: 1,
+                            maxBarThickness: 80
+                        },
+                        {
+                            label: classname2,
+                            data: data2,
+                            backgroundColor: '#74B9E9',
+                            borderColor: '#74B9E9',
+                            borderWidth: 1,
+                            maxBarThickness: 80
+                        }
+                    ]
                 },
                 options: {
+                    responsive: true,
+                    maintainAspectRatio: true,
                     scales: {
                         x: {
                             grid: {
@@ -519,28 +404,31 @@
                             }
                         },
                         y: {
-                            beginAtZero: true,
-                            max: 100, // Set the max value to 100 for percentage
                             ticks: {
-                                callback: function(value) {
-                                    return value + '%'; // Append '%' to each tick value
-                                },
-                                stepSize: 10 // Set the step size (optional)
-                            }
+                                stepSize: 1,
+                            },
+                            beginAtZero: true,
+                            max: 1,
                         }
                     },
-                    responsive: true,
-                    maintainAspectRatio: true,
                     plugins: {
                         legend: {
                             display: true,
                             position: 'top'
                         },
                         tooltip: {
+                            mode: 'index', // Ensure tooltips display grouped values
+                            intersect: false, // Show tooltip for all bars in a group
                             callbacks: {
                                 label: function(tooltipItem) {
-                                    let value = tooltipItem.raw; // Get the value from the tooltip item
-                                    return `${value}%`; // Append '%' to the tooltip value
+                                    let datasetLabel = tooltipItem.dataset.label; // Dataset name
+                                    let value = tooltipItem.raw; // Bar value
+                                    if (value == '1') {
+                                        value = "Assigned";
+                                    } else {
+                                        value = "Unassigned";
+                                    }
+                                    return `${datasetLabel}: ${value}`; // Return label with dataset name and value
                                 }
                             }
                         }
@@ -555,57 +443,214 @@
             });
         }
 
-        // Function to update both charts with the current page data (current unit)
-        function updateCharts() {
+        // Function to update the chart with new page data
+        function updateChart() {
             const currentUnit1 = units1[currentPage];
             const currentUnit2 = units2[currentPage];
 
-            if (usageChart1 && usageChart2) {
-                usageChart1.data.labels = currentUnit1.map(item => item.label);
-                usageChart1.data.datasets[0].data = currentUnit1.map(item => item.value);
-                usageChart1.update();
+            usageChart.data.labels = currentUnit1.map(item => item.label);
+            usageChart.data.datasets[0].data = currentUnit1.map(item => item.value);
+            usageChart.data.datasets[1].data = currentUnit2.map(item => item.value);
 
-                usageChart2.data.labels = currentUnit2.map(item => item.label);
-                usageChart2.data.datasets[0].data = currentUnit2.map(item => item.value);
-                usageChart2.update();
-            }
-
+            usageChart.update(); // Refresh the chart with new data
             toggleButtons();
         }
 
-        // Function to go to the previous unit (previous page) for both charts
+        // Optimized function to go to the previous page
         window.previousPage = function() {
             if (currentPage > 0) {
                 currentPage--;
-                updateCharts(); // Call updateCharts to refresh both charts with new data
+                updateChart();
             }
         };
 
-        // Function to go to the next unit (next page) for both charts
+        // Optimized function to go to the next page
         window.nextPage = function() {
-            if (currentPage < units1.length - 1 && currentPage < units2.length - 1) {
+            if (currentPage < units1.length - 1) {
                 currentPage++;
-                updateCharts(); // Call updateCharts to refresh both charts with new data
+                updateChart();
             }
         };
 
-        // Function to toggle the visibility of the previous and next buttons
+        // Function to toggle button visibility based on the current page
         function toggleButtons() {
             const prevButton = document.getElementById('prevBtn');
             const nextButton = document.getElementById('nextBtn');
 
-            // If only one page, hide both buttons
-            if (units1.length <= 1 && units2.length <= 1) {
-                prevButton.style.display = 'none';
-                nextButton.style.display = 'none';
-            } else {
-                // Show or hide buttons based on the current page
-                prevButton.style.display = (currentPage === 0) ? 'none' : 'block';
-                nextButton.style.display = (currentPage === units1.length - 1 && currentPage === units2.length - 1) ? 'none' : 'block';
-            }
+            prevButton.style.display = currentPage === 0 ? 'none' : 'block';
+            nextButton.style.display = currentPage === units1.length - 1 ? 'none' : 'block';
         }
     });
 </script>
+@endif
+
+@if (isset($chartLabels) || isset($chartValues) || isset($chartLabels2) || isset($chartValues2))
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Data from the controller for the two charts
+        const names1 = @json($chartLabels);
+        const usageCounts1 = @json($chartValues);
+        const names2 = @json($chartLabels2);
+        const usageCounts2 = @json($chartValues2);
+        const classname1 = @json($groupName1);
+        const classname2 = @json($groupName2);
+
+        // Function to group lessons by unit using the "-" separator
+        function groupByUnit(names, usageCounts) {
+            const units = [];
+            let currentUnit = [];
+            names.forEach((label, index) => {
+                if (label !== "-") {
+                    currentUnit.push({
+                        label: label,
+                        value: usageCounts[index]
+                    });
+                } else if (currentUnit.length > 0) {
+                    units.push(currentUnit);
+                    currentUnit = [];
+                }
+            });
+            if (currentUnit.length > 0) {
+                units.push(currentUnit);
+            }
+            return units;
+        }
+
+        // Group lessons by units for both datasets
+        const units1 = groupByUnit(names1, usageCounts1);
+        const units2 = groupByUnit(names2, usageCounts2);
+
+        // Initialize dynamic pagination variables
+        let currentPage = 0;
+
+        // Initialize the chart context
+        const ctx = document.getElementById('usageChart').getContext('2d');
+        const btnContainer = document.getElementById('chart-buttons').style.display = 'flex';
+
+        toggleButtons();
+
+        // Initialize the chart with the first page data
+        let usageChart = initializeChart(
+            ctx,
+            units1[currentPage].map(item => item.label),
+            units1[currentPage].map(item => item.value),
+            units2[currentPage].map(item => item.value)
+        );
+
+        // Function to initialize the chart with grouped bars
+        function initializeChart(ctx, labels, data1, data2) {
+            return new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                            label: classname1,
+                            data: data1,
+                            backgroundColor: '#E9C874',
+                            borderColor: '#E9C874',
+                            borderWidth: 1,
+                            maxBarThickness: 80
+                        },
+                        {
+                            label: classname2,
+                            data: data2,
+                            backgroundColor: '#74B9E9',
+                            borderColor: '#74B9E9',
+                            borderWidth: 1,
+                            maxBarThickness: 80
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: true,
+                    scales: {
+                        x: {
+                            grid: {
+                                display: false
+                            },
+                            stacked: false, // Ensure bars are grouped, not stacked
+                            barPercentage: 1.0, // Remove gap between bars within the same group
+                            categoryPercentage: 1.0 // Remove gap between groups of bars
+                        },
+                        y: {
+                            beginAtZero: true,
+                            max: 100,
+                            ticks: {
+                                callback: function(value) {
+                                    return value + '%'; // Append '%' to tick values
+                                },
+                                stepSize: 10
+                            }
+                        }
+                    },
+                    plugins: {
+                        legend: {
+                            display: true,
+                            position: 'top'
+                        },
+                        tooltip: {
+                            mode: 'index', // Ensure tooltips display grouped values
+                            intersect: false, // Show tooltip for all bars in a group
+                            callbacks: {
+                                label: function(tooltipItem) {
+                                    let datasetLabel = tooltipItem.dataset.label; // Dataset name
+                                    let value = tooltipItem.raw; // Bar value
+                                    return `${datasetLabel}: ${value}%`; // Return label with dataset name and value
+                                }
+                            }
+                        }
+                    },
+                    layout: {
+                        padding: {
+                            left: 50,
+                            right: 50
+                        }
+                    }
+                }
+            });
+        }
+
+        // Function to update the chart with new page data
+        function updateChart() {
+            const currentUnit1 = units1[currentPage];
+            const currentUnit2 = units2[currentPage];
+
+            usageChart.data.labels = currentUnit1.map(item => item.label);
+            usageChart.data.datasets[0].data = currentUnit1.map(item => item.value);
+            usageChart.data.datasets[1].data = currentUnit2.map(item => item.value);
+
+            usageChart.update(); // Refresh the chart with new data
+            toggleButtons();
+        }
+
+        // Optimized function to go to the previous page
+        window.previousPage = function() {
+            if (currentPage > 0) {
+                currentPage--;
+                updateChart();
+            }
+        };
+
+        // Optimized function to go to the next page
+        window.nextPage = function() {
+            if (currentPage < units1.length - 1) {
+                currentPage++;
+                updateChart();
+            }
+        };
+
+        // Function to toggle button visibility based on the current page
+        function toggleButtons() {
+            const prevButton = document.getElementById('prevBtn');
+            const nextButton = document.getElementById('nextBtn');
+
+            prevButton.style.display = currentPage === 0 ? 'none' : 'block';
+            nextButton.style.display = currentPage === units1.length - 1 ? 'none' : 'block';
+        }
+    });
+</script>
+
 
 @endif
 <!-- SweetAlert validation messages -->
@@ -643,11 +688,21 @@
     document.getElementById('report_container').style.display = 'none';
 </script>
 @endif
-
+@php
+if (isset($programsUsage) || isset($unitsUsage) || isset($lessonsUsage) || isset($gamesUsage) || isset($skillsUsage)){
+$showReports = 1;
+}else{
+$showReports = 0;
+}
+@endphp
 <script>
     $(document).ready(function() {
         $('.js-select2').select2();
 
+        showReports = @json($showReports);
+        if (showReports) {
+            document.getElementById('report_container').style.display = 'block';
+        }
         // Get previously selected program_id from localStorage if exists
         var selectedProgramId = "{{$request['program_id'] ?? '' }}";
 

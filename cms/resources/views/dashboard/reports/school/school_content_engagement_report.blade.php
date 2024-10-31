@@ -42,7 +42,7 @@
                                             <!-- Program Filter -->
                                             <div class="col-md-4">
                                                 <label for="program_id">Select Program</label>
-                                                <select class="form-select js-select2" name="program_id" id="program_id">
+                                                <select class="form-select js-select2" name="program_id" id="program_id" required>
                                                     @role('Admin')
                                                     <option value="" selected disabled>No Available Programs</option>
                                                     @endrole

@@ -19,38 +19,63 @@
                                     <h5 class="title">Class Number of Trials Report</h5>
                                 </div>
                                 <!-- Form Section -->
-
                                 <div class="card-body">
                                     <form method="GET" action="{{ route('reports.classNumOfTrialsReportWeb') }}">
-                                        @csrf
                                         <div class="row">
                                             <!-- Group Filter -->
                                             <div class="col-md-4">
+                                                @role('Admin')
                                                 <label for="group_id">Select school/class</label>
                                                 <select class="form-select js-select2" name="group_id" id="group_id" required>
-                                                    <option value="" disabled selected>Choose a school/class</option>
+                                                    <option value="" disabled {{ old('group_id', $request['group_id'] ?? '') == '' ? 'selected' : '' }}>Choose a school/class</option>
                                                     @foreach ($groups as $group)
                                                     @php
                                                     $sch = App\Models\School::where('id', $group->school_id)->first();
                                                     @endphp
+                                                    <!-- <option value="{{ $group->id }}" data-school="{{ $sch->id }}">{{ $sch->name }} / {{ $group->name }}</option> -->
                                                     <option value="{{ $group->id }}" data-school="{{ $sch->id }}" {{ old('group_id', $request['group_id'] ?? '') == $group->id ? 'selected' : '' }}>
                                                         {{ $sch->name }} / {{ $group->name }}
                                                     </option>
                                                     @endforeach
                                                 </select>
+                                                @endrole
+                                                @role('school')
+                                                <label for="group_id">Select Class</label>
+                                                <select class="form-select js-select2" name="group_id" id="group_id" required>
+                                                    <option value="" disabled {{ old('group_id', $request['group_id'] ?? '') == '' ? 'selected' : '' }}>Choose a Class</option>
+                                                    @foreach ($groups as $group)
+                                                    @php
+                                                    $sch = App\Models\School::where('id', $group->school_id)->first();
+                                                    @endphp
+                                                    <!-- <option value="{{ $group->id }}" data-school="{{ $sch->id }}">{{ $sch->name }} / {{ $group->name }}</option> -->
+                                                    <option value="{{ $group->id }}" data-school="{{ $sch->id }}" {{ old('group_id', $request['group_id'] ?? '') == $group->id ? 'selected' : '' }}>
+                                                        {{ $group->name }}
+                                                    </option>
+                                                    @endforeach
+                                                </select>
+                                                @endrole
                                             </div>
 
                                             <!-- Program Filter -->
                                             <div class="col-md-4">
                                                 <label for="program_id">Select Program</label>
                                                 <select class="form-select js-select2" name="program_id" id="program_id">
-                                                    <option value="" disabled selected>Choose a Program</option>
+                                                    @role('Admin')
+                                                    <option value="" selected disabled>No Available Programs</option>
+                                                    @endrole
+                                                    @role('school')
+                                                    @if(!$programs->isEmpty())
+                                                    <option value="" selected disabled>Choose a Program</option>
                                                     @foreach ($programs as $program)
                                                     <option value="{{ $program->id }}">
                                                         {{ $program->course ? $program->course->name : 'No Course' }} /
                                                         {{ $program->stage ? $program->stage->name : 'No Stage' }}
                                                     </option>
                                                     @endforeach
+                                                    @else
+                                                    <option value="" selected disabled>No Available Programs</option>
+                                                    @endif
+                                                    @endrole
                                                 </select>
                                             </div>
 
@@ -77,6 +102,7 @@
                             </div>
 
                             <!-- Report Section -->
+                            @if (isset($progress))
                             @if ($progress->first() != null)
                             <section id="reports-section">
                                 <div class="card mt-4">
@@ -143,6 +169,7 @@
                                 </div>
                             </section>
                             @endif
+                            @endif
                         </div>
                     </div>
                 </div>
@@ -153,7 +180,9 @@
 </div>
 @endsection
 @php
+if(isset($progress)){
 $data = [$oneStarDisplayedPercentage, $twoStarDisplayedPercentage, $threeStarDisplayedPercentage];
+}
 @endphp
 
 @section('page_js')
@@ -234,44 +263,70 @@ $data = [$oneStarDisplayedPercentage, $twoStarDisplayedPercentage, $threeStarDis
 </script>
 @endif
 
-@if(session('error'))
+@if(isset($error))
 <script>
     Swal.fire({
-        title: @json(session('error')),
+        title: @json($error),
         icon: 'error',
         confirmButtonText: 'Ok'
     });
-    var element = document.getElementById("reports-section");
-    element.style.display = 'none'
+    var canvas = document.getElementById("reports-section");
+    canvas.style.display = 'none';
 </script>
 @endif
+
 </script>
 <script>
     $(document).ready(function() {
         $('.js-select2').select2();
+        // Get previously selected program_id from localStorage if exists
+        var selectedProgramId = "{{$request['program_id'] ?? '' }}";
 
+        // Trigger getProgramsByGroup on group change
         $('#group_id').change(function() {
-            var schoolId = $('#group_id option:selected').data('school');
             var groupId = $('#group_id').val();
-            // console.log(schoolId, groupId);
-            getProgramsByGroup(schoolId, groupId);
+            getProgramsByGroup(groupId, selectedProgramId);
+        });
+
+        // Trigger change on page load to fetch programs for the selected group
+        $('#group_id').trigger('change');
+
+        // Save the selected program_id to localStorage when it changes
+        $('select[name="program_id"]').change(function() {
+            var programId = $(this).val();
+            localStorage.setItem('selectedProgramId', programId);
         });
     });
 
-    function getProgramsByGroup(schoolId, groupId) {
+    function getProgramsByGroup(groupId, selectedProgramId) {
         $.ajax({
-            url: '/get-programs-group/' + schoolId + '/' + groupId,
+            url: '/get-programs-group/' + groupId,
             type: "GET",
             dataType: "json",
             success: function(data) {
+                // Clear the existing options
                 $('select[name="program_id"]').empty();
-                $('select[name="program_id"]').append(
-                    '<option value="">Choose a Program</option>');
-                $.each(data, function(key, value) {
-                    $('select[name="program_id"]').append('<option value="' +
-                        value.id + '">' +
-                        value.program_details + '</option>');
-                });
+
+                if (!data || data.length === 0) {
+                    $('select[name="program_id"]').append(
+                        '<option value="" selected disabled>No Available Programs</option>'
+                    );
+                } else {
+
+                    $('select[name="program_id"]').append(
+                        '<option value="" selected>Choose a Program</option>'
+                    );
+                    $.each(data, function(key, value) {
+                        $('select[name="program_id"]').append(
+                            '<option value="' + value.id + '">' + value.program_details + '</option>'
+                        );
+                    });
+
+
+                    if (selectedProgramId) {
+                        $('select[name="program_id"]').val(selectedProgramId).trigger('change');
+                    }
+                }
             },
             error: function(xhr, status, error) {
                 console.error('AJAX Error:', error);

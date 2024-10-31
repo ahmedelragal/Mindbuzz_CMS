@@ -335,4 +335,16 @@ class StudentController extends Controller
         });
         return response()->json($programsData);
     }
+    public function getStudentPrograms($studentId)
+    {
+        $studentPrograms = UserCourse::where('user_id', $studentId)->pluck('program_id');
+        $programs = Program::whereIn('id', $studentPrograms)->get();
+        $programsData = $programs->map(function ($program) {
+            return [
+                'id' => $program->id,
+                'program_details' => $program->course->name . ' - ' . $program->stage->name,
+            ];
+        });
+        return response()->json($programsData);
+    }
 }

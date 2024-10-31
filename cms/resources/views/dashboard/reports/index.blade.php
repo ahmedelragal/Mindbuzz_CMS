@@ -692,7 +692,6 @@
 
         function renderTrialsChart(data) {
             const ctx = document.getElementById('trialsbarChart').getContext('2d');
-            console.log(data);
             // Destroy previous chart instance if it exists
             if (window.trialsChart) {
                 window.trialsChart.destroy();
@@ -849,7 +848,6 @@
                 <thead>
                     <tr>
                         <th>Lesson</th>
-                        <th>Failed</th>
                         <th>Introduced</th>
                         <th>Practiced</th>
                         <th>Mastered</th>
@@ -862,7 +860,6 @@
                     html += `
                     <tr>
                         <td>${item.name}</td>
-                        <td>${item.failed}</td>
                         <td>${item.introduced}</td>
                         <td>${item.practiced}</td>
                         <td>${item.mastered}</td>
@@ -879,7 +876,6 @@
                 <thead>
                     <tr>
                         <th>Game</th>
-                        <th>Failed</th>
                         <th>Introduced</th>
                         <th>Practiced</th>
                         <th>Mastered</th>
@@ -892,7 +888,6 @@
                     html += `
                     <tr>
                         <td>${item.name}</td>
-                        <td>${item.failed}</td>
                         <td>${item.introduced}</td>
                         <td>${item.practiced}</td>
                         <td>${item.mastered}</td>
@@ -909,7 +904,6 @@
                 <thead>
                     <tr>
                         <th>Skill</th>
-                        <th>Failed</th>
                         <th>Introduced</th>
                         <th>Practiced</th>
                         <th>Mastered</th>
@@ -922,7 +916,6 @@
                     html += `
                     <tr>
                         <td>${item.name}</td>
-                        <td>${item.failed}</td>
                         <td>${item.introduced}</td>
                         <td>${item.practiced}</td>
                         <td>${item.mastered}</td>

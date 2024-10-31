@@ -21,13 +21,12 @@
                                 <!-- Form Section -->
                                 <div class="card-body">
                                     <form method="GET" action="{{ route('reports.teacherCompletionReport') }}">
-                                        @csrf
                                         <div class="row">
                                             <!-- School Filter -->
-                                            <div class="col-md-6">
-                                                @role('Admin')
-                                                <label for="sch_id">Select School</label>
-                                                <select class="form-select js-select2" name="school_id" id="sch_id">
+                                            @role('Admin')
+                                            <div class="col-md-4">
+                                                <label for="school_id">Select School</label>
+                                                <select class="form-select js-select2" name="school_id" id="school_id">
                                                     <option value="" selected disabled>Choose a School</option>
                                                     @foreach ($schools as $school)
                                                     <option value="{{ $school->id }}" data-school="{{ $school->id }}" {{ old('school_id', $request['school_id'] ?? '') == $school->id ? 'selected' : '' }}>
@@ -35,31 +34,16 @@
                                                     </option>
                                                     @endforeach
                                                 </select>
-                                                @endrole
-
-                                                @role('school')
-                                                <input type="hidden" name="school_id" value="{{ auth()->user()->school_id }}">
-                                                @endrole
                                             </div>
+                                            @endrole
+                                            @role('school')
+                                            <input type="hidden" name="school_id" id="school_id" value="{{ auth()->user()->school_id }}">
+                                            @endrole
 
-                                            <div class="col-md-6">
+                                            <div class="col-md-4">
                                                 <label for="teacher_id">Select Teacher</label>
                                                 <select class="form-select js-select2" name="teacher_id" id="teacher_id">
-                                                    @role('Admin')
-                                                    <option value="" selected disabled>Choose a Teacher</option>
-                                                    @endrole
-                                                    @role('school')
-                                                    @php
-                                                    $schTeachers = App\Models\User::where('school_id', auth()->user()->school_id)
-                                                    ->where('role', 1)
-                                                    ->get();
-                                                    @endphp
-                                                    @foreach ($schTeachers as $teacher)
-                                                    <option value="{{ $teacher->id }}" {{ old('teacher_id', $request['teacher_id'] ?? '') == $teacher->id ? 'selected' : '' }}>
-                                                        {{ $teacher->name }}
-                                                    </option>
-                                                    @endforeach
-                                                    @endrole
+                                                    <option value="" selected disabled>No Available Teachers</option>
                                                 </select>
                                             </div>
 
@@ -68,27 +52,23 @@
                                             <div class="col-md-4">
                                                 <label for="program_id">Select Program</label>
                                                 <select class="form-select js-select2" name="program_id" id="program_id" required>
-                                                    <option value="" disabled selected>Choose a Program</option>
+                                                    <option value="" disabled selected>No Available Programs</option>
                                                 </select>
                                             </div>
+                                        </div>
+                                        <div class="row mt-3">
                                             <div class="col-md-4">
                                                 <label for="assignment_id">Select Assignment</label>
                                                 <select class="form-select js-select2" name="assignment_id" id="assignment_id">
-                                                    <option value="" disabled selected>All Assignments</option>
+                                                    <option value="" disabled selected>No Available Assignments</option>
                                                 </select>
                                             </div>
 
                                             <!-- Status Filter -->
                                             <div class="col-md-4">
                                                 <label for="status">Select Status</label>
-                                                <!-- <select class="form-select js-select2" name="status" id="status">
-                                                    <option value="" disabled selected>Choose a status</option>
-                                                    <option value="Completed">Completed</option>
-                                                    <option value="Overdue">Overdue</option>
-                                                    <option value="Pending">Pending</option>
-                                                </select> -->
                                                 <select class="form-select js-select2" name="status" id="status">
-                                                    <option value="" disabled {{ old('status', $request['status'] ?? '') == '' ? 'selected' : '' }}>Choose a status</option>
+                                                    <option value="" selected {{ old('status', $request['status'] ?? '') == '' ? 'selected' : '' }}>All Status</option>
                                                     <option value="Completed" {{ old('status', $request['status'] ?? '') == 'Completed' ? 'selected' : '' }}>Completed</option>
                                                     <option value="Overdue" {{ old('status', $request['status'] ?? '') == 'Overdue' ? 'selected' : '' }}>Overdue</option>
                                                     <option value="Pending" {{ old('status', $request['status'] ?? '') == 'Pending' ? 'selected' : '' }}>Pending</option>
@@ -283,16 +263,15 @@
 </script>
 @endif
 
-@if(session('error'))
+@if(isset($error))
 <script>
     Swal.fire({
-        title: @json(session('error')),
-
+        title: 'Error!',
+        text: @json($error),
         icon: 'error',
         confirmButtonText: 'Ok'
     });
-    var canvas = document.getElementById("reports-section");
-    canvas.style.display = 'none';
+    document.getElementById('report_container').style.display = 'none';
 </script>
 @endif
 
@@ -304,48 +283,20 @@
         var selectedTeacherId = "{{ $request['teacher_id'] ?? '' }}";
         var selectedAssignmentId = "{{ $request['assignment_id'] ?? '' }}";
 
-        $('#sch_id').change(function() {
-            var schoolId = $('#sch_id option:selected').data('school');
+        $('#school_id').change(function() {
+            var schoolId = $('#school_id').val();
             getSchoolTeachers(schoolId, selectedTeacherId);
-            getProgramsBySchool(schoolId, selectedProgramId);
         });
 
         $('#teacher_id').change(function() {
             var teacherId = $('#teacher_id option:selected').val();
+            getProgramsByTeacher(teacherId, selectedProgramId);
             getAssignmentsByTeacher(teacherId, selectedAssignmentId);
         });
 
-        $('#sch_id').trigger('change');
+        $('#school_id').trigger('change');
+        $('#teacher_id').trigger('change');
     });
-
-    function getProgramsBySchool(schoolId, selectedProgramId) {
-        $.ajax({
-            url: '/get-programs-school/' + schoolId,
-            type: "GET",
-            dataType: "json",
-            success: function(data) {
-                // Clear the existing options
-                $('select[name="program_id"]').empty();
-
-                // Append the "Choose a Program" option
-                $('select[name="program_id"]').append('<option value="">Choose a Program</option>');
-
-                // Append the fetched program options
-                $.each(data, function(key, value) {
-                    $('select[name="program_id"]').append('<option value="' +
-                        value.id + '">' + value.program_details + '</option>');
-                });
-
-                // Re-select the program_id if it exists
-                if (selectedProgramId) {
-                    $('select[name="program_id"]').val(selectedProgramId).trigger('change');
-                }
-            },
-            error: function(xhr, status, error) {
-                console.error('AJAX Error fetching programs:', error);
-            }
-        });
-    }
 
     function getSchoolTeachers(schoolId, selectedTeacherId) {
         $.ajax({
@@ -379,15 +330,57 @@
             dataType: "json",
             success: function(data) {
                 $('select[name="assignment_id"]').empty();
-                $('select[name="assignment_id"]').append('<option value="" selected >All Assignments</option>');
+                if (!data || data.length === 0) {
+                    $('select[name="assignment_id"]').append(
+                        '<option value="" selected disabled>No Available Assignments for this Teacher</option>'
+                    );
+                } else {
+                    $('select[name="assignment_id"]').append('<option value="" selected >All Assignments</option>');
+                    $.each(data, function(key, value) {
+                        $('select[name="assignment_id"]').append('<option value="' +
+                            value.id + '">' + value.name + '</option>');
+                    });
 
-                $.each(data, function(key, value) {
-                    $('select[name="assignment_id"]').append('<option value="' +
-                        value.id + '">' + value.name + '</option>');
-                });
+                    if (selectedAssignmentId) {
+                        $('select[name="assignment_id"]').val(selectedAssignmentId).trigger('change');
+                    }
+                }
+            },
+            error: function(xhr, status, error) {
+                console.error('AJAX Error:', error);
+            }
+        });
+    }
 
-                if (selectedAssignmentId) {
-                    $('select[name="assignment_id"]').val(selectedAssignmentId).trigger('change');
+    function getProgramsByTeacher(teacherId, selectedProgramId) {
+        $.ajax({
+            url: '/get-teacher-programs/' + teacherId,
+            type: "GET",
+            dataType: "json",
+            success: function(data) {
+                // Clear the existing options
+                $('select[name="program_id"]').empty();
+
+                if (!data || data.length === 0) {
+                    $('select[name="program_id"]').append(
+                        '<option value="" selected disabled>No Available Programs</option>'
+                    );
+                } else {
+
+                    $('select[name="program_id"]').append(
+                        '<option value="" selected disabled>Choose a Program</option>'
+                    );
+                    $.each(data, function(key, value) {
+                        $('select[name="program_id"]').append(
+                            '<option value="' + value.id + '">' + value.program_details + '</option>'
+                        );
+                    });
+
+
+                    if (selectedProgramId) {
+                        console.log('asasasasasaas');
+                        $('select[name="program_id"]').val(selectedProgramId).trigger('change');
+                    }
                 }
             },
             error: function(xhr, status, error) {

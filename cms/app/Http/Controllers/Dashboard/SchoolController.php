@@ -54,7 +54,7 @@ class SchoolController extends Controller
             'email' => 'required|email|unique:users',
             'phone' => 'required|numeric',
             'type' => 'required|string|in:national,international',
-            'password' => 'required|string|min:6',
+            'password' => 'required|string|min:6|confirmed',
         ]);
 
         DB::beginTransaction();

@@ -23,6 +23,7 @@
                                     <form method="GET" action="{{ route('reports.studentHeatmapReport') }}">
                                         <div class="row">
                                             <!-- School Filter -->
+                                            @role('Admin')
                                             <div class="col-md-4">
                                                 <label for="school_id">Select School</label>
                                                 <select class="form-select js-select2" name="school_id" id="school_id" required>
@@ -34,6 +35,10 @@
                                                     @endforeach
                                                 </select>
                                             </div>
+                                            @endrole
+                                            @role('school')
+                                            <input type="hidden" name="school_id" value="{{Auth::user()->school_id}}">
+                                            @endrole
                                             <!-- Student Filter -->
                                             <div class="col-md-4">
                                                 <label for="student1_id">Select First Student</label>
@@ -70,9 +75,7 @@
                                                     @endrole
                                                 </select>
                                             </div>
-                                        </div>
-
-                                        <div class="row mt-3">
+                                            @role('school')
                                             <!-- Program Filter -->
                                             <div class="col-md-4">
                                                 <label for="program_id">Select Program</label>
@@ -80,6 +83,19 @@
                                                     <option value="" selected disabled>No Available Programs</option>
                                                 </select>
                                             </div>
+                                            @endrole
+                                        </div>
+
+                                        <div class="row mt-3">
+                                            @role('Admin')
+                                            <!-- Program Filter -->
+                                            <div class="col-md-4">
+                                                <label for="program_id">Select Program</label>
+                                                <select class="form-select js-select2" name="program_id" id="program_id">
+                                                    <option value="" selected disabled>No Available Programs</option>
+                                                </select>
+                                            </div>
+                                            @endrole
                                             <!-- Filter By -->
                                             <div class="col-md-4">
                                                 <label for="filter">Filter By</label>
@@ -98,23 +114,32 @@
                                             </div>
 
                                             <!-- To Date Filter -->
+                                            @role('school')
                                             <div class="col-md-4">
                                                 <label for="to_date">To Date</label>
                                                 <!-- <input type="date" class="form-control" name="to_date" id="to_date"> -->
                                                 <input type="date" class="form-control" name="to_date" id="to_date" value="{{ old('to_date', $request['to_date'] ?? '') }}">
                                             </div>
-
-                                            <!-- Submit Button -->
-                                            <div class="col-md-4 mt-4">
-                                                <button type="submit" class="btn btn-primary">Filter</button>
+                                            @endrole
+                                            @role('Admin')
+                                            <div class="col-md-4 mt-3">
+                                                <label for="to_date">To Date</label>
+                                                <!-- <input type="date" class="form-control" name="to_date" id="to_date"> -->
+                                                <input type="date" class="form-control" name="to_date" id="to_date" value="{{ old('to_date', $request['to_date'] ?? '') }}">
                                             </div>
+                                            @endrole
+
+                                        </div>
+                                        <!-- Submit Button -->
+                                        <div class="col-md-4 mt-4">
+                                            <button type="submit" class="btn btn-primary">Filter</button>
                                         </div>
                                     </form>
                                 </div>
                             </div>
 
                             <!-- Report Section -->
-                            <div id="report_container">
+                            <div id="report_container" style="display:none">
                                 <div class="card mt-4">
                                     <div class="card-body">
                                         @if (isset($programsUsage) || isset($unitsUsage) || isset($lessonsUsage) || isset($gamesUsage) || isset($skillsUsage))
@@ -137,14 +162,11 @@
                                                 <button class="btn btn-primary" id="nextBtn" onclick="nextPage()">Next Unit</button>
                                             </div>
                                         </div>
-
-
                                     </div>
                                 </div>
 
                                 <div class="card mt-4">
                                     <div class="card-body">
-
                                         @if (isset($programsUsage))
                                         <h5>Programs Usage</h5>
                                         <table class="table">
@@ -296,8 +318,7 @@
                                         </table>
                                         @endif
 
-                                        @else
-                                        <p>No data available for the selected filters.</p>
+
                                         @endif
                                     </div>
                                 </div>
@@ -659,11 +680,20 @@
     document.getElementById('report_container').style.display = 'none';
 </script>
 @endif
-
+@php
+if (isset($programsUsage) || isset($unitsUsage) || isset($lessonsUsage) || isset($gamesUsage) || isset($skillsUsage)){
+$showReports = 1;
+}else{
+$showReports = 0;
+}
+@endphp
 <script>
     $(document).ready(function() {
         $('.js-select2').select2();
-
+        showReports = @json($showReports);
+        if (showReports) {
+            document.getElementById('report_container').style.display = 'block';
+        }
         // Get previously selected program_id from if exists
         var selectedProgramId = "{{$request['program_id'] ?? '' }}";
         var selectedStudentId = "{{ $request['student1_id']?? '' }}";

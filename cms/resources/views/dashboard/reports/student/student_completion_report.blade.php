@@ -16,18 +16,18 @@
                         <div class="nk-content-body">
                             <div class="card">
                                 <div class="card-header">
-                                    <h5 class="title">School Completion Report</h5>
+                                    <h5 class="title">Student Completion Report</h5>
                                 </div>
                                 <!-- Form Section -->
                                 <div class="card-body">
-                                    <form method="GET" action="{{ route('reports.schoolCompletionReport') }}">
+                                    <form method="GET" action="{{ route('reports.completionReport') }}">
                                         <div class="row">
                                             <!-- School Filter -->
                                             @role('Admin')
                                             <div class="col-md-4">
-                                                <label for="sch_id">Select School</label>
-                                                <select class="form-select js-select2" name="school_id" id="school_id" required>
-                                                    <option value="" disabled {{ old('school_id', $request['school_id'] ?? '') == '' ? 'selected' : '' }}>Choose a School</option>
+                                                <label for="school_id">Select School</label>
+                                                <select class="form-select js-select2" name="school_id" id="school_id">
+                                                    <option value="" selected disabled>Choose a School</option>
                                                     @foreach ($schools as $school)
                                                     <option value="{{ $school->id }}" data-school="{{ $school->id }}" {{ old('school_id', $request['school_id'] ?? '') == $school->id ? 'selected' : '' }}>
                                                         {{ $school->name }}
@@ -36,47 +36,51 @@
                                                 </select>
                                             </div>
                                             @endrole
-
                                             @role('school')
-                                            <input type="hidden" name="school_id" value="{{ auth()->user()->school_id }}">
+                                            <input type="hidden" name="school_id" id="school_id" value="{{ auth()->user()->school_id }}">
                                             @endrole
 
+
+                                            <div class="col-md-4">
+                                                <label for="student_id">Select Student</label>
+                                                <select class="form-select js-select2" name="student_id" id="student_id">
+                                                    <option value="" selected disabled>No Available Students</option>
+                                                </select>
+                                            </div>
                                             <!-- Program Filter -->
                                             <div class="col-md-4">
                                                 <label for="program_id">Select Program</label>
                                                 <select class="form-select js-select2" name="program_id" id="program_id">
-                                                    @role('Admin')
-                                                    <option value="" selected disabled>No Available Programs</option>
-                                                    @endrole
-                                                    @role('school')
-                                                    @if(!$programs->isEmpty())
-                                                    <option value="" selected disabled>Choose a Program</option>
-                                                    @foreach ($programs as $program)
-                                                    <option value="{{ $program->id }}">
-                                                        {{ $program->course ? $program->course->name : 'No Course' }} /
-                                                        {{ $program->stage ? $program->stage->name : 'No Stage' }}
-                                                    </option>
-                                                    @endforeach
-                                                    @else
-                                                    <option value="" selected disabled>No Available Programs</option>
-                                                    @endif
-                                                    @endrole
+                                                    <option value="" disabled selected>No Available Programs</option>
                                                 </select>
                                             </div>
 
+                                            @role('school')
                                             <!-- Status Filter -->
                                             <div class="col-md-4">
                                                 <label for="status">Select Status</label>
                                                 <select class="form-select js-select2" name="status" id="status">
-                                                    <option value="" disabled {{ old('status', $request['status'] ?? '') == '' ? 'selected' : '' }}>Choose a status</option>
+                                                    <option value="" selected {{ old('status', $request['status'] ?? '') == '' ? 'selected' : '' }}>All Status</option>
                                                     <option value="Completed" {{ old('status', $request['status'] ?? '') == 'Completed' ? 'selected' : '' }}>Completed</option>
                                                     <option value="Overdue" {{ old('status', $request['status'] ?? '') == 'Overdue' ? 'selected' : '' }}>Overdue</option>
                                                     <option value="Pending" {{ old('status', $request['status'] ?? '') == 'Pending' ? 'selected' : '' }}>Pending</option>
                                                 </select>
                                             </div>
+                                            @endrole
                                         </div>
-
-                                        <div class="row mt-3">
+                                        <div class="row mt-4">
+                                            @role('Admin')
+                                            <!-- Status Filter -->
+                                            <div class="col-md-4">
+                                                <label for="status">Select Status</label>
+                                                <select class="form-select js-select2" name="status" id="status">
+                                                    <option value="" selected {{ old('status', $request['status'] ?? '') == '' ? 'selected' : '' }}>All Status</option>
+                                                    <option value="Completed" {{ old('status', $request['status'] ?? '') == 'Completed' ? 'selected' : '' }}>Completed</option>
+                                                    <option value="Overdue" {{ old('status', $request['status'] ?? '') == 'Overdue' ? 'selected' : '' }}>Overdue</option>
+                                                    <option value="Pending" {{ old('status', $request['status'] ?? '') == 'Pending' ? 'selected' : '' }}>Pending</option>
+                                                </select>
+                                            </div>
+                                            @endrole
                                             <!-- From Date Filter -->
                                             <div class="col-md-4">
                                                 <label for="from_date">From Date</label>
@@ -91,18 +95,16 @@
                                                 <input type="date" class="form-control" name="to_date" id="to_date" value="{{ old('to_date', $request['to_date'] ?? '') }}">
                                             </div>
                                         </div>
-
-                                        <div class="form-row mt-3">
-                                            <div class="col-md-12 text-right">
-                                                <button type="submit" class="btn btn-primary">Filter</button>
-                                            </div>
+                                        <!-- Submit Button -->
+                                        <div class="col-md-4 mt-3">
+                                            <button type="submit" class="btn btn-primary">Filter</button>
                                         </div>
                                     </form>
                                 </div>
                             </div>
-
                             <!-- Report Section -->
                             <section id="reports-section">
+                                @if (isset($counts))
                                 @if ($counts['completed'] != 0 || $counts['overdue'] != 0 || $counts['pending'] != 0 || $assignments_percentages['completed'] || $assignments_percentages['overdue'] || $assignments_percentages['pending'] )
                                 <div class="card mt-4">
                                     <div class="card-body">
@@ -150,7 +152,7 @@
                                             <thead>
                                                 <tr>
                                                     <th>Student Name</th>
-                                                    <th>Class Name</th>
+                                                    <th>Group Name</th>
                                                     <th>Test Name</th>
                                                     <th>Start Date</th>
                                                     <th>Due Date</th>
@@ -178,22 +180,21 @@
                                 <p>No data available for the selected filters.</p>
                             </div> -->
                             @endif
+                            @endif
                         </div>
                     </div>
                 </div>
             </div>
+            <!-- Footer -->
             @include('dashboard.layouts.footer')
         </div>
-        <!-- Footer -->
     </div>
 </div>
 @endsection
 
-
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 @section('page_js')
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-
 @if(isset($counts))
 <script>
     document.addEventListener('DOMContentLoaded', function() {
@@ -267,7 +268,6 @@
 <script>
     Swal.fire({
         title: @json($error),
-
         icon: 'error',
         confirmButtonText: 'Ok'
     });
@@ -276,35 +276,38 @@
 </script>
 @endif
 
-@role('school')
 <script>
     $(document).ready(function() {
         $('.js-select2').select2();
 
+        // Get previously selected program_id from localStorage if exists
         var selectedProgramId = "{{$request['program_id'] ?? '' }}";
+        var selectedStudentId = "{{$request['student_id'] ?? '' }}";
 
-        if (selectedProgramId) {
-            $('select[name="program_id"]').val(selectedProgramId).trigger('change');
-        }
-    });
-</script>
-@endrole
-
-<script>
-    $(document).ready(function() {
-        $('.js-select2').select2();
-
-        var selectedProgramId = "{{$request['program_id'] ?? '' }}";
+        // Trigger getProgramsByGroup on group change
         $('#school_id').change(function() {
-            var schoolId = $('#school_id option:selected').data('school');
-            getProgramsBySchool(schoolId, selectedProgramId);
+            var schoolId = $('#school_id').val();
+            getSchoolStudents(schoolId, selectedStudentId);
         });
+        $('#student_id').change(function() {
+            var studentId = $('#student_id').val();
+            getProgramsByStudent(studentId, selectedProgramId);
+        });
+
+        // Trigger change on page load to fetch programs for the selected group
         $('#school_id').trigger('change');
+        $('#student_id').trigger('change');
+
+        // Save the selected program_id to localStorage when it changes
+        $('select[name="program_id"]').change(function() {
+            var programId = $(this).val();
+            localStorage.setItem('selectedProgramId', programId);
+        });
     });
 
-    function getProgramsBySchool(schoolId, selectedProgramId) {
+    function getProgramsByStudent(studentId, selectedProgramId) {
         $.ajax({
-            url: '/get-programs-school/' + schoolId,
+            url: '/get-student-programs/' + studentId,
             type: "GET",
             dataType: "json",
             success: function(data) {
@@ -316,7 +319,6 @@
                         '<option value="" selected disabled>No Available Programs</option>'
                     );
                 } else {
-
                     $('select[name="program_id"]').append(
                         '<option value="" selected>All Programs</option>'
                     );
@@ -335,5 +337,38 @@
             }
         });
     }
+
+    function getSchoolStudents(schoolId, selectedStudentId) {
+        $.ajax({
+            url: '/get-students-school/' + schoolId,
+            type: "GET",
+            dataType: "json",
+            success: function(data) {
+                // Clear the existing options
+                $('select[name="student_id"]').empty();
+                if (!data || data.length === 0) {
+                    $('select[name="student_id"]').append(
+                        '<option value="" selected disabled>No Available Students</option>'
+                    );
+                } else {
+                    $('select[name="student_id"]').append(
+                        '<option value="" selected disabled>Choose a Student</option>'
+                    );
+                    $.each(data, function(key, value) {
+                        $('select[name="student_id"]').append(
+                            '<option value="' + value.id + '">' + value.name + '</option>'
+                        );
+                    });
+                    if (selectedStudentId) {
+                        $('select[name="student_id"]').val(selectedStudentId).trigger('change');
+                    }
+                }
+            },
+            error: function(xhr, status, error) {
+                console.error('AJAX Error:', error);
+            }
+        });
+    }
 </script>
+
 @endsection

@@ -72,10 +72,9 @@
                                                                     class="form-label">Type</label>
                                                                 <div class="form-control-wrap">
                                                                     <select class="form-select js-select2"
-                                                                        data-placeholder="Select multiple options"
+                                                                        data-placeholder="Select School Type"
                                                                         name="type" required>
-                                                                        <option value="" disabled selected>Select
-                                                                            Type</option>
+                                                                        <option value="" disabled selected>Select School Type</option>
                                                                         <option value="national">National</option>
                                                                         <option value="international">International
                                                                         </option>
@@ -89,12 +88,21 @@
 
 
                                                         <div class="col-md-6">
-                                                            <div class="form-group"><label class="form-label"
-                                                                    for="password">Password</label>
-                                                                <input type="password" class="form-control"
-                                                                    id="password" name="password"
-                                                                    placeholder="Password" required>
+                                                            <div class="form-group">
+                                                                <label class="form-label" for="password">Password</label>
+                                                                <input type="password" class="form-control" id="password" name="password" placeholder="Enter Password" required>
                                                                 @error('password')
+                                                                <div class="text-danger">{{ $message }}</div>
+                                                                @enderror
+                                                            </div>
+                                                        </div>
+
+                                                        <div class="col-md-6">
+                                                            <div class="form-group">
+                                                                <label class="form-label" for="password_confirmation">Confirm Password</label>
+                                                                <input type="password" class="form-control" id="password_confirmation" name="password_confirmation"
+                                                                    placeholder="Confirm Password" required>
+                                                                @error('password_confirmation')
                                                                 <div class="text-danger">{{ $message }}</div>
                                                                 @enderror
                                                             </div>

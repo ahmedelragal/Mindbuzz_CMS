@@ -190,13 +190,21 @@
                         class="nk-menu-link "></span><span
                             class="nk-menu-icon"><em class="icon ni ni-property-add"></em></span><span class="nk-menu-text">Student Reports</span></a>
                 </li> -->
-
                                 <li class="nk-menu-item has-sub"><a href="#" class="nk-menu-link nk-menu-toggle"><span
                                                         class="nk-menu-icon"><em class="icon ni ni-property-add"></em></span><span
                                                         class="nk-menu-text">Student Reports</span></a>
                                         <ul class="nk-menu-sub">
                                                 <li class="nk-menu-item"><a href="{{ route('reports.index') }}"
                                                                 class="nk-menu-link"><span class="nk-menu-text">Progress Reports</span></a></li>
+                                                <li class="nk-menu-item"><a href="{{ route('reports.completionReport') }}"
+                                                                class="nk-menu-link"><span class="nk-menu-text">Completion Report</span></a>
+                                                </li>
+                                                <li class="nk-menu-item"><a href="{{ route('reports.masteryReport') }}"
+                                                                class="nk-menu-link"><span class="nk-menu-text">Mastery Report</span></a>
+                                                </li>
+                                                <li class="nk-menu-item"><a href="{{ route('reports.numOfTrialsReport') }}"
+                                                                class="nk-menu-link"><span class="nk-menu-text">Number of Trials Report</span></a>
+                                                </li>
                                                 <li class="nk-menu-item"><a href="{{ route('reports.studentLoginReport') }}"
                                                                 class="nk-menu-link"><span class="nk-menu-text">Number of Logins Report</span></a>
                                                 </li>

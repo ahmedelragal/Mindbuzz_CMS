@@ -16,69 +16,46 @@
                         <div class="nk-content-body">
                             <div class="card">
                                 <div class="card-header">
-                                    <h5 class="title">Class Mastery Report</h5>
+                                    <h5 class="title">Student Mastery Report</h5>
                                 </div>
                                 <!-- Form Section -->
                                 <div class="card-body">
-                                    <form method="GET" action="{{ route('reports.classMasteryReportWeb') }}">
+                                    <form method="GET" action="{{ route('reports.masteryReport') }}">
                                         <div class="row">
-                                            <!-- Group Filter -->
+                                            <!-- School Filter -->
+                                            @role('Admin')
                                             <div class="col-md-4">
-                                                @role('Admin')
-                                                <label for="group_id">Select school/class</label>
-                                                <select class="form-select js-select2" name="group_id" id="group_id" required>
-                                                    <option value="" disabled {{ old('group_id', $request['group_id'] ?? '') == '' ? 'selected' : '' }}>Choose a school/class</option>
-                                                    @foreach ($groups as $group)
-                                                    @php
-                                                    $sch = App\Models\School::where('id', $group->school_id)->first();
-                                                    @endphp
-                                                    <!-- <option value="{{ $group->id }}" data-school="{{ $sch->id }}">{{ $sch->name }} / {{ $group->name }}</option> -->
-                                                    <option value="{{ $group->id }}" data-school="{{ $sch->id }}" {{ old('group_id', $request['group_id'] ?? '') == $group->id ? 'selected' : '' }}>
-                                                        {{ $sch->name }} / {{ $group->name }}
+                                                <label for="school_id">Select School</label>
+                                                <select class="form-select js-select2" name="school_id" id="school_id">
+                                                    <option value="" selected disabled>Choose a School</option>
+                                                    @foreach ($schools as $school)
+                                                    <option value="{{ $school->id }}" data-school="{{ $school->id }}" {{ old('school_id', $request['school_id'] ?? '') == $school->id ? 'selected' : '' }}>
+                                                        {{ $school->name }}
                                                     </option>
                                                     @endforeach
                                                 </select>
-                                                @endrole
-                                                @role('school')
-                                                <label for="group_id">Select Class</label>
-                                                <select class="form-select js-select2" name="group_id" id="group_id" required>
-                                                    <option value="" disabled {{ old('group_id', $request['group_id'] ?? '') == '' ? 'selected' : '' }}>Choose a Class</option>
-                                                    @foreach ($groups as $group)
-                                                    @php
-                                                    $sch = App\Models\School::where('id', $group->school_id)->first();
-                                                    @endphp
-                                                    <!-- <option value="{{ $group->id }}" data-school="{{ $sch->id }}">{{ $sch->name }} / {{ $group->name }}</option> -->
-                                                    <option value="{{ $group->id }}" data-school="{{ $sch->id }}" {{ old('group_id', $request['group_id'] ?? '') == $group->id ? 'selected' : '' }}>
-                                                        {{ $group->name }}
-                                                    </option>
-                                                    @endforeach
-                                                </select>
-                                                @endrole
                                             </div>
+                                            @endrole
+                                            @role('school')
+                                            <input type="hidden" name="school_id" id="school_id" value="{{ auth()->user()->school_id }}">
+                                            @endrole
 
+
+                                            <div class="col-md-4">
+                                                <label for="student_id">Select Student</label>
+                                                <select class="form-select js-select2" name="student_id" id="student_id">
+                                                    <option value="" selected disabled>No Available Students</option>
+                                                </select>
+                                            </div>
                                             <!-- Program Filter -->
                                             <div class="col-md-4">
                                                 <label for="program_id">Select Program</label>
                                                 <select class="form-select js-select2" name="program_id" id="program_id">
-                                                    @role('Admin')
-                                                    <option value="" selected disabled>No Available Programs</option>
-                                                    @endrole
-                                                    @role('school')
-                                                    @if(!$programs->isEmpty())
-                                                    <option value="" selected disabled>Choose a Program</option>
-                                                    @foreach ($programs as $program)
-                                                    <option value="{{ $program->id }}">
-                                                        {{ $program->course ? $program->course->name : 'No Course' }} /
-                                                        {{ $program->stage ? $program->stage->name : 'No Stage' }}
-                                                    </option>
-                                                    @endforeach
-                                                    @else
-                                                    <option value="" selected disabled>No Available Programs</option>
-                                                    @endif
-                                                    @endrole
+                                                    <option value="" disabled selected>No Available Programs</option>
                                                 </select>
                                             </div>
 
+                                            @role("school")
                                             <!-- Filter By -->
                                             <div class="col-md-4">
                                                 <label for="filter">Filter By</label>
@@ -90,9 +67,22 @@
                                                     <option value="Skill" {{ old('filter', $request['filter'] ?? '') == 'Skill' ? 'selected' : '' }}>Skill</option>
                                                 </select>
                                             </div>
+                                            @endrole
                                         </div>
-
-                                        <div class="row mt-3">
+                                        <div class="row mt-4">
+                                            @role("Admin")
+                                            <!-- Filter By -->
+                                            <div class="col-md-4">
+                                                <label for="filter">Filter By</label>
+                                                <select class="form-select js-select2" name="filter" id="filter">
+                                                    <!-- <option value="" selected>No Filter</option> -->
+                                                    <option value="Unit" {{ old('filter', $request['filter'] ?? '') == 'Unit' ? 'selected' : '' }}>Unit</option>
+                                                    <option value="Lesson" {{ old('filter', $request['filter'] ?? '') == 'Lesson' ? 'selected' : '' }}>Lesson</option>
+                                                    <option value="Game" {{ old('filter', $request['filter'] ?? '') == 'Game' ? 'selected' : '' }}>Game</option>
+                                                    <option value="Skill" {{ old('filter', $request['filter'] ?? '') == 'Skill' ? 'selected' : '' }}>Skill</option>
+                                                </select>
+                                            </div>
+                                            @endrole
                                             <!-- From Date Filter -->
                                             <div class="col-md-4">
                                                 <label for="from_date">From Date</label>
@@ -108,7 +98,7 @@
                                             </div>
                                         </div>
                                         <!-- Submit Button -->
-                                        <div class="col-md-4 mt-4">
+                                        <div class="col-md-4 mt-3">
                                             <button type="submit" class="btn btn-primary">Filter</button>
                                         </div>
                                     </form>
@@ -250,24 +240,27 @@
                                         @endif
                                     </div>
                                 </div>
-                                @endif
                             </section>
+
+                            <!-- <div style="margin-top: 20px; margin-left:10px;">
+                                <p>No data available for the selected filters.</p>
+                            </div> -->
+                            @endif
+
                         </div>
                     </div>
                 </div>
             </div>
-            @include('dashboard.layouts.footer')
         </div>
     </div>
+    <!-- Footer -->
+    @include('dashboard.layouts.footer')
 </div>
 @endsection
 
-
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 @section('page_js')
-<!-- Include Chart.js -->
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-
 @if(isset($chartLabels) && isset($chartPercentage))
 <script>
     document.addEventListener('DOMContentLoaded', function() {
@@ -338,11 +331,6 @@
 
 
 @endif
-
-<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.min.js"
-    integrity="sha512-L0Shl7nXXzIlBSUUPpxrokqq4ojqgZFQczTYlGjzONGTDAcLremjwaWv5A+EDLnxhQzY5xUZPWLOLqYRkY0Cbw=="
-    crossorigin="anonymous" referrerpolicy="no-referrer"></script>
-
 <!-- SweetAlert validation messages -->
 @if($errors->any())
 <script>
@@ -382,17 +370,24 @@
 <script>
     $(document).ready(function() {
         $('.js-select2').select2();
+
         // Get previously selected program_id from localStorage if exists
         var selectedProgramId = "{{$request['program_id'] ?? '' }}";
+        var selectedStudentId = "{{$request['student_id'] ?? '' }}";
 
         // Trigger getProgramsByGroup on group change
-        $('#group_id').change(function() {
-            var groupId = $('#group_id').val();
-            getProgramsByGroup(groupId, selectedProgramId);
+        $('#school_id').change(function() {
+            var schoolId = $('#school_id').val();
+            getSchoolStudents(schoolId, selectedStudentId);
+        });
+        $('#student_id').change(function() {
+            var studentId = $('#student_id').val();
+            getProgramsByStudent(studentId, selectedProgramId);
         });
 
         // Trigger change on page load to fetch programs for the selected group
-        $('#group_id').trigger('change');
+        $('#school_id').trigger('change');
+        $('#student_id').trigger('change');
 
         // Save the selected program_id to localStorage when it changes
         $('select[name="program_id"]').change(function() {
@@ -401,9 +396,9 @@
         });
     });
 
-    function getProgramsByGroup(groupId, selectedProgramId) {
+    function getProgramsByStudent(studentId, selectedProgramId) {
         $.ajax({
-            url: '/get-programs-group/' + groupId,
+            url: '/get-student-programs/' + studentId,
             type: "GET",
             dataType: "json",
             success: function(data) {
@@ -415,17 +410,14 @@
                         '<option value="" selected disabled>No Available Programs</option>'
                     );
                 } else {
-
                     $('select[name="program_id"]').append(
-                        '<option value="" selected>Choose a Program</option>'
+                        '<option value="" selected disabled>Choose a Program</option>'
                     );
                     $.each(data, function(key, value) {
                         $('select[name="program_id"]').append(
                             '<option value="' + value.id + '">' + value.program_details + '</option>'
                         );
                     });
-
-
                     if (selectedProgramId) {
                         $('select[name="program_id"]').val(selectedProgramId).trigger('change');
                     }
@@ -436,5 +428,38 @@
             }
         });
     }
+
+    function getSchoolStudents(schoolId, selectedStudentId) {
+        $.ajax({
+            url: '/get-students-school/' + schoolId,
+            type: "GET",
+            dataType: "json",
+            success: function(data) {
+                // Clear the existing options
+                $('select[name="student_id"]').empty();
+                if (!data || data.length === 0) {
+                    $('select[name="student_id"]').append(
+                        '<option value="" selected disabled>No Available Students</option>'
+                    );
+                } else {
+                    $('select[name="student_id"]').append(
+                        '<option value="" selected disabled>Choose a Student</option>'
+                    );
+                    $.each(data, function(key, value) {
+                        $('select[name="student_id"]').append(
+                            '<option value="' + value.id + '">' + value.name + '</option>'
+                        );
+                    });
+                    if (selectedStudentId) {
+                        $('select[name="student_id"]').val(selectedStudentId).trigger('change');
+                    }
+                }
+            },
+            error: function(xhr, status, error) {
+                console.error('AJAX Error:', error);
+            }
+        });
+    }
 </script>
+
 @endsection

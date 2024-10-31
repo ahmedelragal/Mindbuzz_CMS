@@ -26,8 +26,8 @@
                                             @role('Admin')
                                             <div class="col-md-4">
                                                 <label for="school_id">Select School</label>
-                                                <select class="form-select js-select2" name="school_id" id="school_id" required>
-                                                    <option value="" disabled {{ old('school_id', $request['school_id'] ?? '') == '' ? 'selected' : '' }}>Choose a School</option>
+                                                <select class="form-select js-select2" name="school_id" id="school_id">
+                                                    <option value="" selected disabled>Choose a School</option>
                                                     @foreach ($schools as $school)
                                                     <option value="{{ $school->id }}" data-school="{{ $school->id }}" {{ old('school_id', $request['school_id'] ?? '') == $school->id ? 'selected' : '' }}>
                                                         {{ $school->name }}
@@ -37,39 +37,25 @@
                                             </div>
                                             @endrole
                                             @role('school')
-                                            <input type="hidden" name="school_id" value="{{ auth()->user()->school_id }}">
+                                            <input type="hidden" name="school_id" id="school_id" value="{{ auth()->user()->school_id }}">
                                             @endrole
-                                            <!-- Program Filter -->
-                                            <div class="col-md-4">
-                                                <label for="program_id">Select Program</label>
-                                                <select class="form-select js-select2" name="program_id" id="program_id">
-                                                    <option value="" disabled>Chooose a Program</option>
-                                                </select>
-                                            </div>
+
                                             <div class="col-md-4">
                                                 <label for="teacher_id">Select Teacher</label>
                                                 <select class="form-select js-select2" name="teacher_id" id="teacher_id">
-                                                    @role('Admin')
-                                                    <option value="" disabled>Choose a Teacher</option>
-                                                    @endrole
-                                                    @role('school')
-                                                    @php
-                                                    $schTeachers = App\Models\User::where('school_id', auth()->user()->school_id)
-                                                    ->where('role', 1)
-                                                    ->get();
-                                                    @endphp
-                                                    @foreach ($schTeachers as $teacher)
-                                                    <option value="{{ $teacher->id }}" {{ old('teacher_id', $request['teacher_id'] ?? '') == $teacher->id ? 'selected' : '' }}>
-                                                        {{ $teacher->name }}
-                                                    </option>
-                                                    @endforeach
-                                                    @endrole
+                                                    <option value="" selected disabled>No Available Teachers</option>
                                                 </select>
                                             </div>
 
-                                        </div>
+                                            <!-- Program Filter -->
+                                            <div class="col-md-4">
+                                                <label for="program_id">Select Program</label>
+                                                <select class="form-select js-select2" name="program_id" id="program_id" required>
+                                                    <option value="" disabled selected>No Available Programs</option>
+                                                </select>
+                                            </div>
 
-                                        <div class="row mt-3">
+                                            @role('school')
                                             <!-- Filter By -->
                                             <div class="col-md-4">
                                                 <label for="filter">Filter By</label>
@@ -80,6 +66,23 @@
                                                     <option value="Skill" {{ old('filter', $request['filter'] ?? '') == 'Skill' ? 'selected' : '' }}>Skill</option>
                                                 </select>
                                             </div>
+                                            @endrole
+
+                                        </div>
+
+                                        <div class="row mt-3">
+                                            @role('Admin')
+                                            <!-- Filter By -->
+                                            <div class="col-md-4">
+                                                <label for="filter">Filter By</label>
+                                                <select class="form-select js-select2" name="filter" id="filter">
+                                                    <option value="Unit" selected {{ old('filter', $request['filter'] ?? '') == 'Unit' ? 'selected' : '' }}>Unit</option>
+                                                    <option value="Lesson" {{ old('filter', $request['filter'] ?? '') == 'Lesson' ? 'selected' : '' }}>Lesson</option>
+                                                    <option value="Game" {{ old('filter', $request['filter'] ?? '') == 'Game' ? 'selected' : '' }}>Game</option>
+                                                    <option value="Skill" {{ old('filter', $request['filter'] ?? '') == 'Skill' ? 'selected' : '' }}>Skill</option>
+                                                </select>
+                                            </div>
+                                            @endrole
                                             <!-- From Date Filter -->
                                             <div class="col-md-4">
                                                 <label for="from_date">From Date</label>
@@ -93,127 +96,128 @@
                                                 <!-- <input type="date" class="form-control" name="to_date" id="to_date"> -->
                                                 <input type="date" class="form-control" name="to_date" id="to_date" value="{{ old('to_date', $request['to_date'] ?? '') }}">
                                             </div>
-
-                                            <!-- Submit Button -->
-                                            <div class="col-md-4 mt-4">
-                                                <button type="submit" class="btn btn-primary">Filter</button>
-                                            </div>
+                                        </div>
+                                        <!-- Submit Button -->
+                                        <div class="col-md-4 mt-3">
+                                            <button type="submit" class="btn btn-primary">Filter</button>
                                         </div>
                                     </form>
+
                                 </div>
                             </div>
-                            <!-- Report Section -->
-                            @if(isset($highEngagementLabels) || isset($highEngagementValues) || isset($lowEngagementLabels) || isset($lowEngagementValues))
-                            <div class="card mt-4">
-                                <div class="card-body">
-                                    <!-- Display Chart if Data is Available -->
-                                    <div class="container mt-5">
-                                        <canvas id="masteryChart" width="400" height="200"></canvas>
-                                    </div>
-                                    <div class="container mt-5">
-                                        <canvas id="masteryChartNumbers" width="400" height="200" style="display:none;"></canvas>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div class="card mt-4">
-                                <div class="card-body">
-                                    @if (isset($unitsEngagement) || isset($lessonsEngagement) || isset($gameEngagement) || isset($skillsEngagement))
-
-                                    @if (isset($unitsEngagement))
-                                    <h5>Units Engagement</h5>
-                                    <table class="table">
-                                        <thead>
-                                            <tr>
-                                                <th>Unit</th>
-                                                <th>Engagement Percentage</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody>
-                                            @foreach ($unitsEngagement as $engagement)
-                                            <tr>
-                                                <td>{{ $engagement['name'] }}</td>
-                                                <td>{{ $engagement['engagement_percentage'] }}%</td>
-                                            </tr>
-                                            @endforeach
-                                        </tbody>
-                                    </table>
-                                    @endif
-
-                                    @if (isset($lessonsEngagement))
-                                    <h5>Lessons Engagement</h5>
-                                    <table class="table">
-                                        <thead>
-                                            <tr>
-                                                <th>Lesson</th>
-                                                <th>Engagement Percentage</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody>
-                                            @foreach ($lessonsEngagement as $engagement)
-                                            <tr>
-                                                <td>{{ $engagement['name'] }}</td>
-                                                <td>{{ $engagement['engagement_percentage'] }}%</td>
-                                            </tr>
-                                            @endforeach
-                                        </tbody>
-                                    </table>
-                                    @endif
-
-                                    @if (isset($gameEngagement))
-                                    <h5>Game Engagement</h5>
-                                    <table class="table">
-                                        <thead>
-                                            <tr>
-                                                <th>Game</th>
-                                                <th>Engagement Percentage</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody>
-                                            @foreach ($gameEngagement as $engagement)
-                                            <tr>
-                                                <td>{{ $engagement['name'] }}</td>
-                                                <td>{{ $engagement['engagement_percentage'] }}%</td>
-                                            </tr>
-                                            @endforeach
-                                        </tbody>
-                                    </table>
-                                    @endif
-
-                                    @if (isset($skillsEngagement))
-                                    <h5>Skills Engagement</h5>
-                                    <table class="table">
-                                        <thead>
-                                            <tr>
-                                                <th>Skill</th>
-                                                <th>Engagement Percentage</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody>
-                                            @foreach ($skillsEngagement as $engagement)
-                                            <tr>
-                                                <td>{{ $engagement['name'] }}</td>
-                                                <td>{{ $engagement['engagement_percentage'] }}%</td>
-                                            </tr>
-                                            @endforeach
-                                        </tbody>
-                                    </table>
-                                    @endif
-
-                                    @else
-                                    <p>No data available for the selected filters.</p>
-                                    @endif
-                                </div>
-                            </div>
-                            @endif
                         </div>
+                        <!-- Report Section -->
+                        @if(isset($highEngagementLabels) || isset($highEngagementValues) || isset($lowEngagementLabels) || isset($lowEngagementValues))
+                        <div class="card mt-4">
+                            <div class="card-body">
+                                <!-- Display Chart if Data is Available -->
+                                <div class="container mt-5">
+                                    <canvas id="masteryChart" width="400" height="200"></canvas>
+                                </div>
+                                <div class="container mt-5">
+                                    <canvas id="masteryChartNumbers" width="400" height="200" style="display:none;"></canvas>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="card mt-4">
+                            <div class="card-body">
+                                @if (isset($unitsEngagement) || isset($lessonsEngagement) || isset($gameEngagement) || isset($skillsEngagement))
+
+                                @if (isset($unitsEngagement))
+                                <h5>Units Engagement</h5>
+                                <table class="table">
+                                    <thead>
+                                        <tr>
+                                            <th>Unit</th>
+                                            <th>Engagement Percentage</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        @foreach ($unitsEngagement as $engagement)
+                                        <tr>
+                                            <td>{{ $engagement['name'] }}</td>
+                                            <td>{{ $engagement['engagement_percentage'] }}%</td>
+                                        </tr>
+                                        @endforeach
+                                    </tbody>
+                                </table>
+                                @endif
+
+                                @if (isset($lessonsEngagement))
+                                <h5>Lessons Engagement</h5>
+                                <table class="table">
+                                    <thead>
+                                        <tr>
+                                            <th>Lesson</th>
+                                            <th>Engagement Percentage</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        @foreach ($lessonsEngagement as $engagement)
+                                        <tr>
+                                            <td>{{ $engagement['name'] }}</td>
+                                            <td>{{ $engagement['engagement_percentage'] }}%</td>
+                                        </tr>
+                                        @endforeach
+                                    </tbody>
+                                </table>
+                                @endif
+
+                                @if (isset($gameEngagement))
+                                <h5>Game Engagement</h5>
+                                <table class="table">
+                                    <thead>
+                                        <tr>
+                                            <th>Game</th>
+                                            <th>Engagement Percentage</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        @foreach ($gameEngagement as $engagement)
+                                        <tr>
+                                            <td>{{ $engagement['name'] }}</td>
+                                            <td>{{ $engagement['engagement_percentage'] }}%</td>
+                                        </tr>
+                                        @endforeach
+                                    </tbody>
+                                </table>
+                                @endif
+
+                                @if (isset($skillsEngagement))
+                                <h5>Skills Engagement</h5>
+                                <table class="table">
+                                    <thead>
+                                        <tr>
+                                            <th>Skill</th>
+                                            <th>Engagement Percentage</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        @foreach ($skillsEngagement as $engagement)
+                                        <tr>
+                                            <td>{{ $engagement['name'] }}</td>
+                                            <td>{{ $engagement['engagement_percentage'] }}%</td>
+                                        </tr>
+                                        @endforeach
+                                    </tbody>
+                                </table>
+                                @endif
+
+                                @else
+                                <p>No data available for the selected filters.</p>
+                                @endif
+                            </div>
+                        </div>
+                        @endif
                     </div>
                 </div>
             </div>
-            <!-- Footer -->
-            @include('dashboard.layouts.footer')
         </div>
+        <!-- Footer -->
+        @include('dashboard.layouts.footer')
     </div>
+</div>
 </div>
 @endsection
 
@@ -356,39 +360,52 @@
 
         $('#school_id').change(function() {
             var schoolId = $('#school_id').val();
-            getProgramsBySchool(schoolId, selectedProgramId);
             getSchoolTeachers(schoolId, selectedTeacherId);
+        });
+
+        $('#teacher_id').change(function() {
+            var teacherId = $('#teacher_id option:selected').val();
+            getProgramsByTeacher(teacherId, selectedProgramId);
         });
 
         // Trigger change on page load to fetch programs for the selected School
         $('#school_id').trigger('change');
+        $('#teacher_id').trigger('change');
+
     });
 
-    function getProgramsBySchool(schoolId, selectedProgramId) {
+    function getProgramsByTeacher(teacherId, selectedProgramId) {
         $.ajax({
-            url: '/get-programs-school/' + schoolId,
+            url: '/get-teacher-programs/' + teacherId,
             type: "GET",
             dataType: "json",
             success: function(data) {
                 // Clear the existing options
                 $('select[name="program_id"]').empty();
 
-                // Append the "Choose a Program" option
-                $('select[name="program_id"]').append('<option value="">Choose a Program</option>');
+                if (!data || data.length === 0) {
+                    $('select[name="program_id"]').append(
+                        '<option value="" selected disabled>No Available Programs</option>'
+                    );
+                } else {
 
-                // Append the fetched program options
-                $.each(data, function(key, value) {
-                    $('select[name="program_id"]').append('<option value="' +
-                        value.id + '">' + value.program_details + '</option>');
-                });
+                    $('select[name="program_id"]').append(
+                        '<option value="" selected disabled>Choose a Program</option>'
+                    );
+                    $.each(data, function(key, value) {
+                        $('select[name="program_id"]').append(
+                            '<option value="' + value.id + '">' + value.program_details + '</option>'
+                        );
+                    });
 
-                // Re-select the program_id if it exists
-                if (selectedProgramId) {
-                    $('select[name="program_id"]').val(selectedProgramId).trigger('change');
+
+                    if (selectedProgramId) {
+                        $('select[name="program_id"]').val(selectedProgramId).trigger('change');
+                    }
                 }
             },
             error: function(xhr, status, error) {
-                console.error('AJAX Error fetching programs:', error);
+                console.error('AJAX Error:', error);
             }
         });
     }

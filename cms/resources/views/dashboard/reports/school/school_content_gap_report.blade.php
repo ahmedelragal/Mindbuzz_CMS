@@ -23,10 +23,11 @@
                                     <form method="GET" action="{{ route('reports.schoolContentGapReport') }}">
                                         <div class="row">
                                             <!-- School Filter -->
+                                            @role('Admin')
                                             <div class="col-md-4">
                                                 <label for="school_id">Select School</label>
                                                 <select class="form-select js-select2" name="school_id" id="school_id" required>
-                                                    <option value="" disabled {{ old('school_id', $request['school_id'] ?? '') == '' ? 'selected' : '' }}>Choose a School</option>
+                                                    <option value="" disabled {{ old('school_id', $request['school_id'] ?? '') == '' ? 'selected' : '' }}>Choose a school/class</option>
                                                     @foreach ($schools as $school)
                                                     <option value="{{ $school->id }}" data-school="{{ $school->id }}" {{ old('school_id', $request['school_id'] ?? '') == $school->id ? 'selected' : '' }}>
                                                         {{ $school->name }}
@@ -34,11 +35,30 @@
                                                     @endforeach
                                                 </select>
                                             </div>
+                                            @endrole
+                                            @role('school')
+                                            <input type="hidden" name="school_id" value="{{ auth()->user()->school_id }}">
+                                            @endrole
                                             <!-- Program Filter -->
                                             <div class="col-md-4">
                                                 <label for="program_id">Select Program</label>
                                                 <select class="form-select js-select2" name="program_id" id="program_id">
+                                                    @role('Admin')
                                                     <option value="" selected disabled>No Available Programs</option>
+                                                    @endrole
+                                                    @role('school')
+                                                    @if(!$programs->isEmpty())
+                                                    <option value="" selected disabled>Choose a Program</option>
+                                                    @foreach ($programs as $program)
+                                                    <option value="{{ $program->id }}">
+                                                        {{ $program->course ? $program->course->name : 'No Course' }} /
+                                                        {{ $program->stage ? $program->stage->name : 'No Stage' }}
+                                                    </option>
+                                                    @endforeach
+                                                    @else
+                                                    <option value="" selected disabled>No Available Programs</option>
+                                                    @endif
+                                                    @endrole
                                                 </select>
                                             </div>
 
@@ -607,7 +627,19 @@
     document.getElementById('report_container').style.display = 'none';
 </script>
 @endif
+@role('school')
+<script>
+    $(document).ready(function() {
+        $('.js-select2').select2();
 
+        var selectedProgramId = "{{$request['program_id'] ?? '' }}";
+
+        if (selectedProgramId) {
+            $('select[name="program_id"]').val(selectedProgramId).trigger('change');
+        }
+    });
+</script>
+@endrole
 <script>
     $(document).ready(function() {
         $('.js-select2').select2();

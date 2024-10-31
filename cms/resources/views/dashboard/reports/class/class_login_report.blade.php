@@ -16,10 +16,10 @@
                                 <div class="card-body">
 
                                     <form method="GET" action="{{ route('reports.classLoginReport') }}">
-                                        @csrf
                                         <div class="row">
                                             <!-- Group Filter -->
                                             <div class="col-md-4">
+                                                @role('Admin')
                                                 <label for="group_id">Select school/class</label>
                                                 <select class="form-select js-select2" name="group_id" id="group_id" required>
                                                     <option value="" disabled {{ old('group_id', $request['group_id'] ?? '') == '' ? 'selected' : '' }}>Choose a school/class</option>
@@ -33,6 +33,22 @@
                                                     </option>
                                                     @endforeach
                                                 </select>
+                                                @endrole
+                                                @role('school')
+                                                <label for="group_id">Select Class</label>
+                                                <select class="form-select js-select2" name="group_id" id="group_id" required>
+                                                    <option value="" disabled {{ old('group_id', $request['group_id'] ?? '') == '' ? 'selected' : '' }}>Choose a Class</option>
+                                                    @foreach ($groups as $group)
+                                                    @php
+                                                    $sch = App\Models\School::where('id', $group->school_id)->first();
+                                                    @endphp
+                                                    <!-- <option value="{{ $group->id }}" data-school="{{ $sch->id }}">{{ $sch->name }} / {{ $group->name }}</option> -->
+                                                    <option value="{{ $group->id }}" data-school="{{ $sch->id }}" {{ old('group_id', $request['group_id'] ?? '') == $group->id ? 'selected' : '' }}>
+                                                        {{ $group->name }}
+                                                    </option>
+                                                    @endforeach
+                                                </select>
+                                                @endrole
                                             </div>
                                         </div>
 
