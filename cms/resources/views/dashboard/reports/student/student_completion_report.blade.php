@@ -163,7 +163,16 @@
                                                 @foreach ($tests as $test)
                                                 <tr>
                                                     <td>{{App\Models\User::find($test->student_id)->name}}</td>
-                                                    <td>{{App\Models\Group::find(App\Models\GroupStudent::where('student_id',$test->student_id )->pluck('group_id'))->first()->name}}</td>
+                                                    <?php
+                                                    $groupId = App\Models\GroupStudent::where('student_id', $test->student_id)->value('group_id');
+                                                    $groupName = $groupId ? App\Models\Group::find($groupId)?->name : null;
+
+                                                    if ($groupName) {
+                                                        echo '<td>' . $groupName . '</td>';
+                                                    } else {
+                                                        echo '<td>No Group Found</td>';
+                                                    }
+                                                    ?>
                                                     <td>{{ $test->tests->name }}</td>
                                                     <td>{{ $test->start_date }}</td>
                                                     <td>{{ $test->due_date }}</td>

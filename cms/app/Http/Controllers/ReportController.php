@@ -681,12 +681,16 @@ class ReportController extends Controller
 
         if ($studentId) {
             $query = StudentProgress::where('student_id', $studentId)
-                ->where('program_id', $programId)
                 ->where('is_done', 1);
+
+            if ($programId) {
+                $query->where('program_id', $programId);
+            }
             if ($query->get()->isEmpty()) {
                 $data['error'] = 'No Student Progress Found';
-                return view('dashboard.reports.student.student_completion_report', $data);
+                return view('dashboard.reports.student.student_num_of_trials_report', $data);
             }
+
 
 
             if ($filterType && $filterValue) {
@@ -723,25 +727,30 @@ class ReportController extends Controller
 
             if ($query->get()->isEmpty()) {
                 $data['error'] = 'No Results Found';
-                return view('dashboard.reports.student.student_completion_report', $data);
+                return view('dashboard.reports.student.student_num_of_trials_report', $data);
             }
 
             $studentProgress = $query->get();
             $response = [];
-
+            $chartLabels = [];
+            $chartValues = [];
             foreach ($studentProgress as $progress) {
                 $test = Test::find($progress->test_id);
                 if (!$test) {
                     continue;
                 }
-
-                $data[] = [
+                $chartLabels[] = $test->name;
+                $chartValues[] = $progress->mistake_count + 1;
+                $testsData[] = [
                     'test_name' => $test->name,
                     'completion_date' => $progress->created_at->format('Y-m-d'),
                     'num_trials' => $progress->mistake_count + 1,
                     'score' => $progress->score,
                 ];
             }
+            $data['chartLabels'] = $chartLabels;
+            $data['chartValues'] = $chartValues;
+            $data['testsData'] = $testsData;
         }
         // dd($data);
         return view('dashboard.reports.student.student_num_of_trials_report', $data);
@@ -760,12 +769,24 @@ class ReportController extends Controller
             });
         }
 
-        if ($request->filled(['from_date', 'to_date']) && $request->from_date != null && $request->to_date != null) {
-            $fromDate = Carbon::parse($request->from_date)->startOfDay();
-            $toDate = Carbon::parse($request->to_date)->endOfDay();
-            $query->whereBetween('created_at', [$fromDate, $toDate]);
-        }
+        // if ($request->filled(['from_date', 'to_date']) && $request->from_date != null && $request->to_date != null) {
+        //     $fromDate = Carbon::parse($request->from_date)->startOfDay();
+        //     $toDate = Carbon::parse($request->to_date)->endOfDay();
+        //     $query->whereBetween('created_at', [$fromDate, $toDate]);
+        // }
 
+
+        // Add the 'from_date' filter if it exists
+        $query->when($request->filled('from_date'), function ($query) use ($request) {
+            $fromDate = Carbon::parse($request->from_date)->startOfDay();
+            return $query->where('created_at', '>=', $fromDate);
+        });
+
+        // Add the 'to_date' filter if it exists
+        $query->when($request->filled('to_date'), function ($query) use ($request) {
+            $toDate = Carbon::parse($request->to_date)->endOfDay();
+            return $query->where('created_at', '<=', $toDate);
+        });
         $studentProgress = $query->get();
         $skillsData = [];
 
@@ -901,11 +922,23 @@ class ReportController extends Controller
                 });
             }
 
-            if ($request->filled(['from_date', 'to_date']) && $request->from_date != NULL && $request->to_date != NULL) {
+            // if ($request->filled(['from_date', 'to_date']) && $request->from_date != NULL && $request->to_date != NULL) {
+            //     $fromDate = Carbon::parse($request->from_date)->startOfDay();
+            //     $toDate = Carbon::parse($request->to_date)->endOfDay();
+            //     $query->whereBetween('created_at', [$fromDate, $toDate]);
+            // }
+
+            // Add the 'from_date' filter if it exists
+            $query->when($request->filled('from_date'), function ($query) use ($request) {
                 $fromDate = Carbon::parse($request->from_date)->startOfDay();
+                return $query->where('created_at', '>=', $fromDate);
+            });
+
+            // Add the 'to_date' filter if it exists
+            $query->when($request->filled('to_date'), function ($query) use ($request) {
                 $toDate = Carbon::parse($request->to_date)->endOfDay();
-                $query->whereBetween('created_at', [$fromDate, $toDate]);
-            }
+                return $query->where('created_at', '<=', $toDate);
+            });
 
             $student_progress = $query->get();
 
@@ -1247,12 +1280,22 @@ class ReportController extends Controller
                 });
             }
 
-            if ($request->filled(['from_date', 'to_date']) && $request->from_date != NULL && $request->to_date != NULL) {
+            // if ($request->filled(['from_date', 'to_date']) && $request->from_date != NULL && $request->to_date != NULL) {
+            //     $fromDate = Carbon::parse($request->from_date)->startOfDay();
+            //     $toDate = Carbon::parse($request->to_date)->endOfDay();
+            //     $query->whereBetween('created_at', [$fromDate, $toDate]);
+            // }
+            // Add the 'from_date' filter if it exists
+            $query->when($request->filled('from_date'), function ($query) use ($request) {
                 $fromDate = Carbon::parse($request->from_date)->startOfDay();
-                $toDate = Carbon::parse($request->to_date)->endOfDay();
-                $query->whereBetween('created_at', [$fromDate, $toDate]);
-            }
+                return $query->where('created_at', '>=', $fromDate);
+            });
 
+            // Add the 'to_date' filter if it exists
+            $query->when($request->filled('to_date'), function ($query) use ($request) {
+                $toDate = Carbon::parse($request->to_date)->endOfDay();
+                return $query->where('created_at', '<=', $toDate);
+            });
             $student_progress = $query->get();
 
             // Initialize arrays to hold data for grouping
@@ -1915,11 +1958,23 @@ class ReportController extends Controller
                 });
             }
 
-            if ($request->filled(['from_date', 'to_date']) && $request->from_date != NULL && $request->to_date != NULL) {
+            // if ($request->filled(['from_date', 'to_date']) && $request->from_date != NULL && $request->to_date != NULL) {
+            //     $fromDate = Carbon::parse($request->from_date)->startOfDay();
+            //     $toDate = Carbon::parse($request->to_date)->endOfDay();
+            //     $query->whereBetween('created_at', [$fromDate, $toDate]);
+            // }
+
+            // Add the 'from_date' filter if it exists
+            $query->when($request->filled('from_date'), function ($query) use ($request) {
                 $fromDate = Carbon::parse($request->from_date)->startOfDay();
+                return $query->where('created_at', '>=', $fromDate);
+            });
+
+            // Add the 'to_date' filter if it exists
+            $query->when($request->filled('to_date'), function ($query) use ($request) {
                 $toDate = Carbon::parse($request->to_date)->endOfDay();
-                $query->whereBetween('created_at', [$fromDate, $toDate]);
-            }
+                return $query->where('created_at', '<=', $toDate);
+            });
 
             $student_progress = $query->get();
 
@@ -2426,15 +2481,81 @@ class ReportController extends Controller
                         ->where('program_id', $request->program_id)->count() / $division) * 100) ?? 0,
                 ];
             } else {
-                $threestars = StudentProgress::where('mistake_count', 0)->whereIn('student_id', $students)->where('is_done', 1)->whereBetween('student_progress.created_at', [$from_date, $to_date])
+
+
+                // Add the 'from_date' filter if it exists
+                $query->when($request->filled('from_date'), function ($query) use ($request) {
+                    $fromDate = Carbon::parse($request->from_date)->startOfDay();
+                    return $query->where('created_at', '>=', $fromDate);
+                });
+
+                // Add the 'to_date' filter if it exists
+                $query->when($request->filled('to_date'), function ($query) use ($request) {
+                    $toDate = Carbon::parse($request->to_date)->endOfDay();
+                    return $query->where('created_at', '<=', $toDate);
+                });
+
+
+
+
+
+                // $threestars = StudentProgress::where('mistake_count', 0)->whereIn('student_id', $students)->where('is_done', 1)->whereBetween('student_progress.created_at', [$from_date, $to_date])
+                //     ->where('program_id', $request->program_id)->count();
+                // $twostars = StudentProgress::where('mistake_count', 1)->whereIn('student_id', $students)->where('is_done', 1)->whereBetween('student_progress.created_at', [$from_date, $to_date])
+                //     ->where('program_id', $request->program_id)->count();
+                // $onestar = StudentProgress::whereIn('mistake_count', [2, 3, 4, 5, 6, 7, 8, 9, 10, 11])->where('is_done', 1)->whereIn('student_id', $students)->whereBetween('student_progress.created_at', [$from_date, $to_date])
+                //     ->where('program_id', $request->program_id)->count();
+
+                // $division = StudentProgress::whereIn('student_id', $students)->where('program_id', $request->program_id)
+                //     ->whereBetween('student_progress.created_at', [$from_date, $to_date])->count();
+
+
+                $threestars = StudentProgress::where('mistake_count', 0)->whereIn('student_id', $students)->where('is_done', 1)
+                    ->when($request->filled('from_date'), function ($threestars) use ($request) {
+                        $fromDate = Carbon::parse($request->from_date)->startOfDay();
+                        return $threestars->where('student_progress.created_at', '>=', $fromDate);
+                    })
+                    ->when($request->filled('to_date'), function ($threestars) use ($request) {
+                        $toDate = Carbon::parse($request->to_date)->endOfDay();
+                        return $threestars->where('student_progress.created_at', '<=', $toDate);
+                    })
                     ->where('program_id', $request->program_id)->count();
-                $twostars = StudentProgress::where('mistake_count', 1)->whereIn('student_id', $students)->where('is_done', 1)->whereBetween('student_progress.created_at', [$from_date, $to_date])
+
+
+                $twostars = StudentProgress::where('mistake_count', 1)->whereIn('student_id', $students)->where('is_done', 1)
+                    ->when($request->filled('from_date'), function ($twostars) use ($request) {
+                        $fromDate = Carbon::parse($request->from_date)->startOfDay();
+                        return $twostars->where('student_progress.created_at', '>=', $fromDate);
+                    })
+                    ->when($request->filled('to_date'), function ($twostars) use ($request) {
+                        $toDate = Carbon::parse($request->to_date)->endOfDay();
+                        return $twostars->where('student_progress.created_at', '<=', $toDate);
+                    })
                     ->where('program_id', $request->program_id)->count();
-                $onestar = StudentProgress::whereIn('mistake_count', [2, 3, 4, 5, 6, 7, 8, 9, 10, 11])->where('is_done', 1)->whereIn('student_id', $students)->whereBetween('student_progress.created_at', [$from_date, $to_date])
+
+
+                $onestar = StudentProgress::whereIn('mistake_count', [2, 3, 4, 5, 6, 7, 8, 9, 10, 11])->where('is_done', 1)->whereIn('student_id', $students)
+                    ->when($request->filled('from_date'), function ($onestar) use ($request) {
+                        $fromDate = Carbon::parse($request->from_date)->startOfDay();
+                        return $onestar->where('student_progress.created_at', '>=', $fromDate);
+                    })
+                    ->when($request->filled('to_date'), function ($onestar) use ($request) {
+                        $toDate = Carbon::parse($request->to_date)->endOfDay();
+                        return $onestar->where('student_progress.created_at', '<=', $toDate);
+                    })
                     ->where('program_id', $request->program_id)->count();
 
                 $division = StudentProgress::whereIn('student_id', $students)->where('program_id', $request->program_id)
-                    ->whereBetween('student_progress.created_at', [$from_date, $to_date])->count();
+                    ->when($request->filled('from_date'), function ($division) use ($request) {
+                        $fromDate = Carbon::parse($request->from_date)->startOfDay();
+                        return $division->where('student_progress.created_at', '>=', $fromDate);
+                    })
+                    ->when($request->filled('to_date'), function ($division) use ($request) {
+                        $toDate = Carbon::parse($request->to_date)->endOfDay();
+                        return $division->where('student_progress.created_at', '<=', $toDate);
+                    });
+
+
 
                 if ($division == 0) {
                     $division = 1;
@@ -2480,7 +2601,7 @@ class ReportController extends Controller
             array_push($studentName, $student->name);
             array_push($numLogin, $student->number_logins);
             return view(
-                'dashboard.reports.student_login_report',
+                'dashboard.reports.student.student_login_report',
                 [
                     'students' => $students,
                     'schools' => $schools,
@@ -2491,7 +2612,7 @@ class ReportController extends Controller
             );
         }
         return view(
-            'dashboard.reports.student_login_report',
+            'dashboard.reports.student.student_login_report',
             [
                 'students' => $students,
                 'schools' => $schools,
@@ -3108,12 +3229,23 @@ class ReportController extends Controller
                 });
             }
 
-            if ($request->filled(['from_date', 'to_date']) && $request->from_date != NULL && $request->to_date != NULL) {
-                $fromDate = Carbon::parse($request->from_date)->startOfDay();
-                $toDate = Carbon::parse($request->to_date)->endOfDay();
-                $query->whereBetween('created_at', [$fromDate, $toDate]);
-            }
+            // if ($request->filled(['from_date', 'to_date']) && $request->from_date != NULL && $request->to_date != NULL) {
+            //     $fromDate = Carbon::parse($request->from_date)->startOfDay();
+            //     $toDate = Carbon::parse($request->to_date)->endOfDay();
+            //     $query->whereBetween('created_at', [$fromDate, $toDate]);
+            // }
 
+            // Add the 'from_date' filter if it exists
+            $query->when($request->filled('from_date'), function ($query) use ($request) {
+                $fromDate = Carbon::parse($request->from_date)->startOfDay();
+                return $query->where('created_at', '>=', $fromDate);
+            });
+
+            // Add the 'to_date' filter if it exists
+            $query->when($request->filled('to_date'), function ($query) use ($request) {
+                $toDate = Carbon::parse($request->to_date)->endOfDay();
+                return $query->where('created_at', '<=', $toDate);
+            });
             $student_progress = $query->get();
 
             // Initialize arrays to hold data for grouping
@@ -3464,12 +3596,23 @@ class ReportController extends Controller
                 return view('dashboard.reports.class.class_content_engagement_report', $data);
             }
 
-            if ($request->filled(['from_date', 'to_date']) && $request->from_date != NULL && $request->to_date != NULL) {
-                $fromDate = Carbon::parse($request->from_date)->startOfDay();
-                $toDate = Carbon::parse($request->to_date)->endOfDay();
-                $query->whereBetween('created_at', [$fromDate, $toDate]);
-            }
+            // if ($request->filled(['from_date', 'to_date']) && $request->from_date != NULL && $request->to_date != NULL) {
+            //     $fromDate = Carbon::parse($request->from_date)->startOfDay();
+            //     $toDate = Carbon::parse($request->to_date)->endOfDay();
+            //     $query->whereBetween('created_at', [$fromDate, $toDate]);
+            // }
 
+            // Add the 'from_date' filter if it exists
+            $query->when($request->filled('from_date'), function ($query) use ($request) {
+                $fromDate = Carbon::parse($request->from_date)->startOfDay();
+                return $query->where('created_at', '>=', $fromDate);
+            });
+
+            // Add the 'to_date' filter if it exists
+            $query->when($request->filled('to_date'), function ($query) use ($request) {
+                $toDate = Carbon::parse($request->to_date)->endOfDay();
+                return $query->where('created_at', '<=', $toDate);
+            });
             $student_progress = $query->get();
 
             if ($student_progress->isEmpty()) {
@@ -4462,15 +4605,25 @@ class ReportController extends Controller
             if ($query->get()->isEmpty()) {
                 // return redirect()->back()->with('error', 'No Student Progress Found.');
                 $data['error'] = 'No Student Progress Found';
-                return view('dashboard.reports.student_content_engagement_report', $data);
+                return view('dashboard.reports.student.student_content_engagement_report', $data);
             }
 
-            if ($request->filled(['from_date', 'to_date']) && $request->from_date != NULL && $request->to_date != NULL) {
+            // if ($request->filled(['from_date', 'to_date']) && $request->from_date != NULL && $request->to_date != NULL) {
+            //     $fromDate = Carbon::parse($request->from_date)->startOfDay();
+            //     $toDate = Carbon::parse($request->to_date)->endOfDay();
+            //     $query->whereBetween('created_at', [$fromDate, $toDate]);
+            // }
+            // Add the 'from_date' filter if it exists
+            $query->when($request->filled('from_date'), function ($query) use ($request) {
                 $fromDate = Carbon::parse($request->from_date)->startOfDay();
-                $toDate = Carbon::parse($request->to_date)->endOfDay();
-                $query->whereBetween('created_at', [$fromDate, $toDate]);
-            }
+                return $query->where('created_at', '>=', $fromDate);
+            });
 
+            // Add the 'to_date' filter if it exists
+            $query->when($request->filled('to_date'), function ($query) use ($request) {
+                $toDate = Carbon::parse($request->to_date)->endOfDay();
+                return $query->where('created_at', '<=', $toDate);
+            });
             // Add the 'from_date' filter if it exists
             $query->when($request->filled('from_date'), function ($query) use ($request) {
                 $fromDate = Carbon::parse($request->from_date)->startOfDay();
@@ -4484,7 +4637,7 @@ class ReportController extends Controller
             });
             if ($query->get()->isEmpty()) {
                 $data['error'] = 'No Results Found for this Date.';
-                return view('dashboard.reports.student_content_engagement_report', $data);
+                return view('dashboard.reports.student.student_content_engagement_report', $data);
             }
 
             $student_progress = $query->get();
@@ -4613,7 +4766,7 @@ class ReportController extends Controller
                             $data['lowEngagementValues'] = $lowEngagementValues;
                         } else {
                             $data['error'] = 'No Skills Found';
-                            return view('dashboard.reports.student_content_engagement_report', $data);
+                            return view('dashboard.reports.student.student_content_engagement_report', $data);
                         }
 
                         break;
@@ -4759,7 +4912,7 @@ class ReportController extends Controller
                 }
             }
         }
-        return view('dashboard.reports.student_content_engagement_report', $data);
+        return view('dashboard.reports.student.student_content_engagement_report', $data);
     }
 
     public function classContentUsageReport(Request $request)

@@ -79,14 +79,13 @@
                             </div>
 
                             <!-- Report Section -->
-                            @if (isset($progress))
-                            @if ($progress->first() != null)
+                            @if (isset($testsData))
                             <section id="reports-section">
                                 <div class="card mt-4">
                                     <div class="card-body">
                                         <div class="containerchart" style="display: flex;align-items: center;justify-content: center;">
                                             <div>
-                                                <canvas id="trialspieChart" width="600" height="600"></canvas>
+                                                <canvas id="trialsChart" width="800" height="600"></canvas>
                                             </div>
                                         </div>
                                     </div>
@@ -104,12 +103,12 @@
                                                 </tr>
                                             </thead>
                                             <tbody>
-                                                @foreach($data as $trial)
+                                                @foreach($testsData as $test)
                                                 <tr>
-                                                    <td>{{ $trial->test_name }}</td>
-                                                    <td>{{ $trial->completion_date }}</td>
-                                                    <td>{{ $trial->num_trials }}</td>
-                                                    <td>{{ $trial->score }}</td>
+                                                    <td>{{ $test['test_name'] }}</td>
+                                                    <td>{{ $test['completion_date'] }}</td>
+                                                    <td>{{ $test['num_trials'] }}</td>
+                                                    <td>{{ $test['score'] }}</td>
                                                 </tr>
                                                 @endforeach
                                             </tbody>
@@ -117,7 +116,7 @@
                                     </div>
                                 </div>
                             </section>
-                            @endif
+
                             @endif
                         </div>
                     </div>
@@ -137,59 +136,66 @@ $data = [$oneStarDisplayedPercentage, $twoStarDisplayedPercentage, $threeStarDis
 @section('page_js')
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
-@if(isset($data))
+@if(isset($chartLabels) && isset($chartValues))
 <script>
     document.addEventListener('DOMContentLoaded', function() {
-        type: 'bar',
-        data: {
-            labels: labels,
-            datasets: [{
-                label: 'Trial Count',
-                data: trialsData,
-                backgroundColor: 'rgba(54, 162, 235, 0.5)',
-                borderColor: 'rgba(54, 162, 235, 1)',
-                borderWidth: 1,
-                maxBarThickness: 100
-            }]
-        },
-        options: {
-            scales: {
-                x: {
-                    min: 0,
-                    max: labels.length > 1 ? labels.length - 1 : 1,
-                    grid: {
-                        display: false
+        // Make sure you have a canvas element in your HTML with id 'myChart'
+        const ctx = document.getElementById('trialsChart').getContext('2d');
+        var labels = @json($chartLabels);
+        var chartValues = @json($chartValues);
+        new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: labels,
+                datasets: [{
+                    label: 'Trial Count',
+                    data: chartValues,
+                    backgroundColor: 'rgba(54, 162, 235, 0.5)',
+                    borderColor: 'rgba(54, 162, 235, 1)',
+                    borderWidth: 1,
+                    maxBarThickness: 100
+                }]
+            },
+            options: {
+                scales: {
+                    x: {
+                        min: 0,
+                        max: labels.length > 1 ? labels.length - 1 : 1,
+                        grid: {
+                            display: false
+                        }
+                    },
+                    y: {
+                        beginAtZero: true,
+                        ticks: {
+                            stepSize: 1,
+                            // callback: function(value) {
+                            //     if (Number.isInteger(value)) {
+                            //         return value;
+                            //     }
+                            // }
+                        }
                     }
                 },
-                y: {
-                    beginAtZero: true,
-                    ticks: {
-                        stepSize: 1,
-                        // callback: function(value) {
-                        //     if (Number.isInteger(value)) {
-                        //         return value;
-                        //     }
-                        // }
-                    }
-                }
-            },
-            responsive: true,
-            maintainAspectRatio: true,
-            plugins: {
-                legend: {
-                    display: true,
-                    position: 'top'
+                responsive: true,
+                maintainAspectRatio: true,
+                plugins: {
+                    legend: {
+                        display: true,
+                        position: 'top'
+                    },
                 },
-            },
-            layout: {
-                padding: {
-                    left: 50,
-                    right: 50
+                layout: {
+                    padding: {
+                        left: 50,
+                        right: 50
+                    }
                 }
             }
-        }
+        });
     });
 </script>
+
 @endif
 <!-- SweetAlert validation messages -->
 @if($errors->any())
