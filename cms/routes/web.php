@@ -117,6 +117,10 @@ Route::middleware('auth')->group(function () {
     Route::post('/get-units-by-program', [ProgramController::class, 'getUnitsByProgram'])->name('get.units.by.program');
 
     Route::resource('students', StudentController::class);
+    Route::delete('/students-selected/mass-delete', [StudentController::class, 'massDestroy'])->name('students.massDestroy');
+    Route::delete('/teachers-selected/mass-delete', [InstructorController::class, 'massDestroy'])->name('teachers.massDestroy');
+    Route::delete('/classes-selected/mass-delete', [ClassController::class, 'massDestroy'])->name('classes.massDestroy');
+    Route::delete('/schools-selected/mass-delete', [SchoolController::class, 'massDestroy'])->name('schools.massDestroy');
     Route::post('import-users', [StudentController::class, 'import'])->name('import.users');
     Route::resource('instructors', InstructorController::class);
     Route::resource('schools', SchoolController::class);

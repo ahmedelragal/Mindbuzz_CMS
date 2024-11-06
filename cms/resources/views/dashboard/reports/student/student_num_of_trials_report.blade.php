@@ -85,7 +85,7 @@
                                     <div class="card-body">
                                         <div class="containerchart" style="display: flex;align-items: center;justify-content: center;">
                                             <div>
-                                                <canvas id="trialsChart" width="800" height="600"></canvas>
+                                                <canvas id="trialsChart" width="1200" height="600"></canvas>
                                             </div>
                                         </div>
                                     </div>

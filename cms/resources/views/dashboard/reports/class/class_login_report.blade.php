@@ -73,22 +73,25 @@
                                     </ul>
 
                                     <!-- Display Chart if Data is Available -->
-                                    <div class="container mt-5">
 
-                                        <div class="container mt-5">
+                                    <div class="container mt-5" id="student-container" style="min-width: 100%;">
+                                        <div id="student-canvas-cont">
                                             <div class="chart-buttons" id="chart-buttons" style="display: flex; justify-content: flex-end; gap: 10px;">
                                                 <button class="btn btn-primary" id="prevBtn" onclick="previousPage()">Previous</button>
                                                 <button class="btn btn-primary" id="nextBtn" onclick="nextPage()">Next</button>
                                             </div>
                                             <canvas id="studentloginChart" width="400" height="200"></canvas>
                                         </div>
+                                        <div class="alert alert-danger mb-3" id="student-error" style="display:none"></div>
                                     </div>
 
-                                    <div class="container mt-5">
-                                        <canvas id="teacherloginChart" width="400" height="200"></canvas>
+                                    <div class="container mt-5" id="teacher-container" style="min-width: 100%;">
+                                        <div id="teacher-canvas-cont">
+                                            <canvas id="teacherloginChart" width="400" height="200"></canvas>
+                                        </div>
+                                        <div class="alert alert-danger mb-3" id="teacher-error" style="display:none"></div>
                                     </div>
                                     @endif
-
                                 </div>
                             </div>
                         </div>
@@ -107,7 +110,6 @@
 <script>
     document.addEventListener('DOMContentLoaded', function() {
         $(document).ready(function() {
-            console.log("aaa");
             // Initialize select2 for the filters
             $('.js-select2').select2();
         });
@@ -130,6 +132,13 @@
         const ctx = document.getElementById('studentloginChart').getContext('2d');
         const ctx2 = document.getElementById('teacherloginChart').getContext('2d');
 
+        if (studentNames.length == 0) {
+            studenterror = document.getElementById('student-error');
+            studenterror.innerText = 'No Students Found';
+            studenterror.style.display = 'block';
+            document.getElementById('student-canvas-cont').style.display = 'none';
+        }
+
         let studentloginChart = initializeChart(ctx, studentNames.slice(0, pageSize), numLogins.slice(0, pageSize));
 
         // Function to initialize chart
@@ -144,7 +153,7 @@
                         backgroundColor: '#E9C874',
                         borderColor: '#E9C874',
                         borderWidth: 1,
-                        barThickness: 120
+                        maxBarThickness: 100
                     }]
                 },
                 options: {
@@ -178,7 +187,12 @@
                 }
             });
         }
-
+        if (teacherNames.length == 0) {
+            teachererror = document.getElementById('teacher-error');
+            teachererror.innerText = 'No Teachers Found';
+            teachererror.style.display = 'block';
+            document.getElementById('teacher-canvas-cont').style.display = 'none';
+        }
         // Initialize teacher login chart
         let teacherloginChart = new Chart(ctx2, {
             type: 'bar',
@@ -262,8 +276,8 @@
 
         // Handle tab click events to show/hide charts
         document.getElementById('student-login-tab').addEventListener('click', function() {
-            document.getElementById('studentloginChart').style.display = 'block';
-            document.getElementById('teacherloginChart').style.display = 'none';
+            document.getElementById('student-container').style.display = 'block';
+            document.getElementById('teacher-container').style.display = 'none';
             document.getElementById('chart-buttons').style.display = 'flex';
             // Update aria-selected attributes
             document.getElementById('student-login-tab').setAttribute('aria-selected', 'true');
@@ -275,8 +289,8 @@
         });
 
         document.getElementById('teacher-login-tab').addEventListener('click', function() {
-            document.getElementById('teacherloginChart').style.display = 'block';
-            document.getElementById('studentloginChart').style.display = 'none';
+            document.getElementById('teacher-container').style.display = 'block';
+            document.getElementById('student-container').style.display = 'none';
             document.getElementById('chart-buttons').style.display = 'none';
             // Update aria-selected attributes
             document.getElementById('teacher-login-tab').setAttribute('aria-selected', 'true');
@@ -288,8 +302,8 @@
         });
 
         // By default, show the student chart and hide the teacher chart
-        document.getElementById('studentloginChart').style.display = 'block';
-        document.getElementById('teacherloginChart').style.display = 'none';
+        document.getElementById('student-container').style.display = 'block';
+        document.getElementById('teacher-container').style.display = 'none';
     });
 </script>
 @endif

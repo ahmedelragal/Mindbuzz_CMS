@@ -65,7 +65,7 @@
                                                     @endrole
                                                     @role('school')
                                                     @if(!$programs->isEmpty())
-                                                    <option value="" selected disabled>Choose a Program</option>
+                                                    <option value="" selected disabled>All Programs</option>
                                                     @foreach ($programs as $program)
                                                     <option value="{{ $program->id }}">
                                                         {{ $program->course ? $program->course->name : 'No Course' }} /
@@ -78,7 +78,8 @@
                                                     @endrole
                                                 </select>
                                             </div>
-
+                                        </div>
+                                        <div class="row mt-4">
                                             <!-- From Date Filter -->
                                             <div class="col-md-4">
                                                 <label for="from_date">From Date</label>
@@ -90,33 +91,34 @@
                                                 <label for="to_date">To Date</label>
                                                 <input type="date" class="form-control" name="to_date" id="to_date" value="{{ old('to_date', $request['to_date'] ?? '') }}">
                                             </div>
-
-                                            <!-- Submit Button -->
-                                            <div class="col-md-4 mt-4">
-                                                <button type="submit" class="btn btn-primary">Filter</button>
-                                            </div>
                                         </div>
-                                    </form>
-                                </div>
 
+                                        <!-- Submit Button -->
+                                        <div class="col-md-4 mt-4">
+                                            <button type="submit" class="btn btn-primary">Filter</button>
+                                        </div>
+                                </div>
+                                </form>
                             </div>
 
-                            <!-- Report Section -->
-                            @if (isset($progress))
-                            @if ($progress->first() != null)
-                            <section id="reports-section">
-                                <div class="card mt-4">
-                                    <div class="card-body">
-                                        <div class="containerchart" style="display: flex;align-items: center;justify-content: center;">
-                                            <div>
-                                                <canvas id="trialspieChart" width="600" height="600"></canvas>
-                                            </div>
+                        </div>
+
+                        <!-- Report Section -->
+                        @if (isset($progress))
+                        @if ($progress->first() != null)
+                        <section id="reports-section">
+                            <div class="card mt-4">
+                                <div class="card-body">
+                                    <div class="containerchart" style="display: flex;align-items: center;justify-content: center;">
+                                        <div>
+                                            <canvas id="trialspieChart" width="600" height="600"></canvas>
                                         </div>
                                     </div>
                                 </div>
-                                <div class="card mt-4">
-                                    <div class="card-body">
-                                        <!-- <h5>Monthly Scores</h5>
+                            </div>
+                            <div class="card mt-4">
+                                <div class="card-body">
+                                    <!-- <h5>Monthly Scores</h5>
                                         <table class="table">
                                             <thead>
                                                 <tr>
@@ -140,43 +142,41 @@
                                             </tbody>
                                         </table> -->
 
-
-
-                                        <h5 class="mb-3">Details</h5>
-                                        <table class="table">
-                                            <thead>
-                                                <tr>
-                                                    <th>Student Name</th>
-                                                    <th>Test Name</th>
-                                                    <th>Score</th>
-                                                    <th>Mistake Count</th>
-                                                    <th>Started At</th>
-                                                </tr>
-                                            </thead>
-                                            <tbody>
-                                                @foreach ($progress as $prog)
-                                                <tr>
-                                                    <td>{{ App\Models\User::find($prog->student_id)->name }}</td>
-                                                    <td>{{ App\Models\Test::find($prog->test_id)->name }}</td>
-                                                    <td>{{ $prog->score }}</td>
-                                                    <td>{{ $prog->mistake_count }}</td>
-                                                    <td>{{ $prog->created_at }}</td>
-                                                </tr>
-                                                @endforeach
-                                            </tbody>
-                                        </table>
-                                    </div>
+                                    <h5 class="mb-3">Details</h5>
+                                    <table class="table">
+                                        <thead>
+                                            <tr>
+                                                <th>Student Name</th>
+                                                <th>Test Name</th>
+                                                <th>Number of Trials</th>
+                                                <th>Score</th>
+                                                <th>Started At</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            @foreach ($progress as $prog)
+                                            <tr>
+                                                <td>{{ App\Models\User::find($prog->student_id)->name }}</td>
+                                                <td>{{ App\Models\Test::find($prog->test_id)->name }}</td>
+                                                <td>{{ $prog->mistake_count + 1 }}</td>
+                                                <td>{{ $prog->score }}</td>
+                                                <td>{{ $prog->created_at->format('Y-m-d') }}</td>
+                                            </tr>
+                                            @endforeach
+                                        </tbody>
+                                    </table>
                                 </div>
-                            </section>
-                            @endif
-                            @endif
-                        </div>
+                            </div>
+                        </section>
+                        @endif
+                        @endif
                     </div>
                 </div>
             </div>
-            @include('dashboard.layouts.footer')
         </div>
+        @include('dashboard.layouts.footer')
     </div>
+</div>
 </div>
 @endsection
 @php
@@ -192,7 +192,7 @@ $data = [$oneStarDisplayedPercentage, $twoStarDisplayedPercentage, $threeStarDis
 <script>
     document.addEventListener('DOMContentLoaded', function() {
         var values = @json($data);
-        const labels = ['First Trial', 'Second Trial', 'Third Trial'];
+        const labels = ['First Trial', 'Second Trial', 'Third Trial or More'];
         var ctx = document.getElementById("trialspieChart").getContext("2d");
 
         // Destroy previous chart instance if it exists
@@ -314,7 +314,7 @@ $data = [$oneStarDisplayedPercentage, $twoStarDisplayedPercentage, $threeStarDis
                 } else {
 
                     $('select[name="program_id"]').append(
-                        '<option value="" selected>Choose a Program</option>'
+                        '<option value="" selected>All Programs</option>'
                     );
                     $.each(data, function(key, value) {
                         $('select[name="program_id"]').append(

@@ -290,9 +290,11 @@ class StudentController extends Controller
                 'parent_image' => $imagePath
             ]);
         }
+        // Determine the redirect URL
+        $redirectUrl = session('students_previous_url', route('students.index'));
 
-        // Redirect back to the student index with a success message
-        return redirect()->route('students.index')->with('success', 'Student updated successfully.');
+        // Redirect back to the stored URL with a success message
+        return redirect($redirectUrl)->with('success', 'Student updated successfully.');
     }
 
 
@@ -301,8 +303,23 @@ class StudentController extends Controller
     {
         $student = User::findOrFail($id);
         $student->delete();
+        $redirectUrl = session('students_previous_url', route('students.index'));
+        return redirect($redirectUrl)->with('success', 'Student deleted successfully.');
+    }
 
-        return redirect()->route('students.index')->with('success', 'Student deleted successfully.');
+    public function massDestroy(Request $request)
+    {
+        // dd($request->all());
+        $ids = $request->input('ids'); // Accept an array of IDs from the request
+        if ($ids) {
+            User::whereIn('id', $ids)->delete();
+
+            $redirectUrl = session('students_previous_url', route('students.index'));
+            return redirect($redirectUrl)->with('success', 'Students deleted successfully.');
+            // return redirect()->route('students.index')->with('success', 'Students deleted successfully.');
+        }
+
+        return redirect()->route('students.index')->with('error', 'No students selected.');
     }
 
     public function getCourses($stageId, $schoolId)

@@ -23,7 +23,7 @@
                                         <div class="modal-body modal-body-md">
                                             <h5 class="title">Edit Student</h5>
 
-                                            <form method="POST" action="{{ route('students.update', $student->id) }}" enctype="multipart/form-data">
+                                            <form method="POST" class="mt-3" action="{{ route('students.update', $student->id) }}" enctype="multipart/form-data">
                                                 @csrf
                                                 @method('put')
                                                 <div class="tab-content">
@@ -94,7 +94,7 @@
                                                             </div>
 
                                                             <!-- Profile Picture Input -->
-                                                            <div class="col-md-12">
+                                                            <!-- <div class="col-md-12">
                                                                 <div class="form-group">
                                                                     <label class="form-label" for="profile-picture">Profile Picture</label>
                                                                     <input type="file" id="profile-picture" name="parent_image">
@@ -102,7 +102,7 @@
                                                                     <div class="text-danger">{{ $message }}</div>
                                                                     @enderror
                                                                 </div>
-                                                            </div>
+                                                            </div> -->
 
                                                             <!-- Submit Button -->
                                                             <div class="col-md-12">

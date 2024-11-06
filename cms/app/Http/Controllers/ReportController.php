@@ -2321,25 +2321,33 @@ class ReportController extends Controller
                 $data['error'] = 'No Students Found for Selected Group.';
                 return view('dashboard.reports.class.class_num_of_trials_report', $data);
             }
-        }
 
+            // Check if student progress exists for the given program
+            if ($request->filled('program_id')) {
+                // Initialize query builder with student IDs and program ID
+                $selectedPrograms = $request->program_id;
+                $progressQuery = StudentProgress::whereIn('student_id', $students)
+                    ->where('program_id', $selectedPrograms);
+                if ($progressQuery->get()->isEmpty()) {
+                    $data['error'] = 'No Student Progress Found for this Program.';
+                    return view('dashboard.reports.class.class_num_of_trials_report', $data);
+                }
+            } else {
+                $selectedPrograms = Group::with('groupCourses')
+                    ->findOrFail($request->group_id)
+                    ->groupCourses
+                    ->pluck('program_id');
 
-        // Check if student progress exists for the given program
-        if ($request->filled('program_id')) {
-            // Initialize query builder with student IDs and program ID
-            $progressQuery = StudentProgress::whereIn('student_id', $students)
-                ->where('program_id', $request->program_id);
-            if ($progressQuery->get()->isEmpty()) {
-                $data['error'] = 'No Student Progress Found for this Program.';
-                return view('dashboard.reports.class.class_num_of_trials_report', $data);
+                // $selectedPrograms = Program::whereIn('id', $groupProgramIds)->get();
+                $progressQuery = StudentProgress::whereIn('student_id', $students)
+                    ->whereIn('program_id', $selectedPrograms);
+
+                if ($progressQuery->get()->isEmpty()) {
+                    $data['error'] = 'No Student Progress Found for this Class.';
+                    return view('dashboard.reports.class.class_num_of_trials_report', $data);
+                }
             }
 
-
-            // if ($request->filled(['from_date', 'to_date']) && $request->from_date != NULL && $request->to_date != NULL) {
-            //     $from_date = Carbon::parse($request->from_date)->startOfDay();
-            //     $to_date = Carbon::parse($request->to_date)->endOfDay();
-            //     $progressQuery->whereBetween('created_at', [$from_date, $to_date]);
-            // }
             // Add the 'from_date' filter if it exists
             $progressQuery->when($request->filled('from_date'), function ($progressQuery) use ($request) {
                 $fromDate = Carbon::parse($request->from_date)->startOfDay();
@@ -2463,42 +2471,24 @@ class ReportController extends Controller
                 $data['counts'] = StudentProgress::where('stars', $request->stars)->count();
             } else {
                 $data['counts'] = StudentProgress::whereIn('student_id', $students)
-                    ->where('program_id', $request->program_id)
+                    ->whereIn('program_id', $selectedPrograms)
                     ->count();
             }
 
-            $division = StudentProgress::whereIn('student_id', $students)->where('program_id', $request->program_id)->count();
+            $division = StudentProgress::whereIn('student_id', $students)->whereIn('program_id', $selectedPrograms)->count();
             if ($division == 0) {
                 $division = 1;
             }
             if (!$request->filled('from_date') && !$request->filled('to_date')) {
                 $data['reports_percentages'] = [
                     'first_trial' => round((StudentProgress::where('mistake_count', 0)->whereIn('student_id', $students)
-                        ->where('program_id', $request->program_id)->count() / $division) * 100) ?? 0,
+                        ->whereIn('program_id', $selectedPrograms)->count() / $division) * 100) ?? 0,
                     'second_trial' => round((StudentProgress::where('mistake_count', 1)->whereIn('student_id', $students)
-                        ->where('program_id', $request->program_id)->count() / $division) * 100) ?? 0,
+                        ->whereIn('program_id', $selectedPrograms)->count() / $division) * 100) ?? 0,
                     'third_trial' => round((StudentProgress::whereIn('mistake_count', [2, 3, 4, 5, 6, 7, 8, 9, 10, 11])->whereIn('student_id', $students)
-                        ->where('program_id', $request->program_id)->count() / $division) * 100) ?? 0,
+                        ->whereIn('program_id', $selectedPrograms)->count() / $division) * 100) ?? 0,
                 ];
             } else {
-
-
-                // Add the 'from_date' filter if it exists
-                $query->when($request->filled('from_date'), function ($query) use ($request) {
-                    $fromDate = Carbon::parse($request->from_date)->startOfDay();
-                    return $query->where('created_at', '>=', $fromDate);
-                });
-
-                // Add the 'to_date' filter if it exists
-                $query->when($request->filled('to_date'), function ($query) use ($request) {
-                    $toDate = Carbon::parse($request->to_date)->endOfDay();
-                    return $query->where('created_at', '<=', $toDate);
-                });
-
-
-
-
-
                 // $threestars = StudentProgress::where('mistake_count', 0)->whereIn('student_id', $students)->where('is_done', 1)->whereBetween('student_progress.created_at', [$from_date, $to_date])
                 //     ->where('program_id', $request->program_id)->count();
                 // $twostars = StudentProgress::where('mistake_count', 1)->whereIn('student_id', $students)->where('is_done', 1)->whereBetween('student_progress.created_at', [$from_date, $to_date])
@@ -2519,7 +2509,7 @@ class ReportController extends Controller
                         $toDate = Carbon::parse($request->to_date)->endOfDay();
                         return $threestars->where('student_progress.created_at', '<=', $toDate);
                     })
-                    ->where('program_id', $request->program_id)->count();
+                    ->whereIn('program_id', $selectedPrograms)->count();
 
 
                 $twostars = StudentProgress::where('mistake_count', 1)->whereIn('student_id', $students)->where('is_done', 1)
@@ -2531,7 +2521,7 @@ class ReportController extends Controller
                         $toDate = Carbon::parse($request->to_date)->endOfDay();
                         return $twostars->where('student_progress.created_at', '<=', $toDate);
                     })
-                    ->where('program_id', $request->program_id)->count();
+                    ->whereIn('program_id', $selectedPrograms)->count();
 
 
                 $onestar = StudentProgress::whereIn('mistake_count', [2, 3, 4, 5, 6, 7, 8, 9, 10, 11])->where('is_done', 1)->whereIn('student_id', $students)
@@ -2543,9 +2533,9 @@ class ReportController extends Controller
                         $toDate = Carbon::parse($request->to_date)->endOfDay();
                         return $onestar->where('student_progress.created_at', '<=', $toDate);
                     })
-                    ->where('program_id', $request->program_id)->count();
+                    ->whereIn('program_id', $selectedPrograms)->count();
 
-                $division = StudentProgress::whereIn('student_id', $students)->where('program_id', $request->program_id)
+                $division = StudentProgress::whereIn('student_id', $students)->whereIn('program_id', $selectedPrograms)
                     ->when($request->filled('from_date'), function ($division) use ($request) {
                         $fromDate = Carbon::parse($request->from_date)->startOfDay();
                         return $division->where('student_progress.created_at', '>=', $fromDate);
@@ -2593,31 +2583,32 @@ class ReportController extends Controller
 
         $schools = School::all();
 
-
+        $data = [
+            'students' => $students,
+            'schools' => $schools,
+            'request' => $request->all()
+        ];
         if ($request->filled('student_id')) {
             $numLogin = [];
             $studentName = [];
             $student =  User::find($request->student_id);
-            array_push($studentName, $student->name);
-            array_push($numLogin, $student->number_logins);
+
+            if ($student->number_logins === 0) {
+                $data['error'] = "No Logins Found for this Student";
+                return view('dashboard.reports.student.student_login_report', $data);
+            } else {
+                array_push($studentName, $student->name);
+                array_push($numLogin, $student->number_logins);
+            }
+            $data['studentName'] = $studentName;
+            $data['numLogin'] = $numLogin;
+
             return view(
                 'dashboard.reports.student.student_login_report',
-                [
-                    'students' => $students,
-                    'schools' => $schools,
-                    'studentName' => $studentName,
-                    'numLogin' => $numLogin,
-                    'request' => $request->all(),
-                ]
+                $data
             );
         }
-        return view(
-            'dashboard.reports.student.student_login_report',
-            [
-                'students' => $students,
-                'schools' => $schools,
-            ]
-        );
+        return view('dashboard.reports.student.student_login_report', $data);
     }
     public function teacherLoginReport(Request $request)
     {
@@ -2637,30 +2628,33 @@ class ReportController extends Controller
         $teachers = $query->get();
         $schools = School::all();
 
-
+        $data = [
+            'teachers' => $teachers,
+            'schools' => $schools,
+            'request' => $request->all()
+        ];
         if ($request->filled('teacher_id')) {
             $numLogin = [];
             $teacherName = [];
             $teacher =  User::find($request->teacher_id);
-            array_push($teacherName, $teacher->name);
-            array_push($numLogin, $teacher->number_logins);
+
+            if ($teacher->number_logins === 0) {
+                $data['error'] = "No Logins Found for this Teacher";
+                return view('dashboard.reports.instructor.instructor_login_report', $data);
+            } else {
+                array_push($teacherName, $teacher->name);
+                array_push($numLogin, $teacher->number_logins);
+            }
+            $data['teacherName'] = $teacherName;
+            $data['numLogin'] = $numLogin;
             return view(
                 'dashboard.reports.instructor.instructor_login_report',
-                [
-                    'teachers' => $teachers,
-                    'schools' => $schools,
-                    'teacherName' => $teacherName,
-                    'numLogin' => $numLogin,
-                    'request' => $request->all(),
-                ]
+                $data
             );
         }
         return view(
             'dashboard.reports.instructor.instructor_login_report',
-            [
-                'teachers' => $teachers,
-                'schools' => $schools,
-            ]
+            $data
         );
     }
 

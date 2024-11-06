@@ -16,7 +16,6 @@
                                 <div class="card-body">
 
                                     <form method="GET" action="{{ route('reports.teacherLoginReport') }}">
-                                        @csrf
                                         <div class="row">
                                             <!-- School Filter -->
                                             <div class="col-md-6">
@@ -96,6 +95,7 @@
         // Data from your controller
         var teacherNames = @json($teacherName);
         var numLogins = @json($numLogin);
+        var maxLogins = Math.max(...numLogins);
 
         // Create the bar chart
         var ctx = document.getElementById('loginChart').getContext('2d');
@@ -122,7 +122,8 @@
                         }
                     },
                     y: {
-                        beginAtZero: true,
+                        min: 0,
+                        max: maxLogins + 10,
                         ticks: {
                             stepSize: 1
                         }
@@ -153,7 +154,42 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.min.js"
     integrity="sha512-L0Shl7nXXzIlBSUUPpxrokqq4ojqgZFQczTYlGjzONGTDAcLremjwaWv5A+EDLnxhQzY5xUZPWLOLqYRkY0Cbw=="
     crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<!-- SweetAlert validation messages -->
+@if($errors->any())
+<script>
+    Swal.fire({
+        title: 'Error!',
+        text: '{{ implode('\
+        n ', $errors->all()) }}',
+        icon: 'error',
+        confirmButtonText: 'Ok'
+    });
+</script>
+@endif
 
+@if(session('success'))
+<script>
+    Swal.fire({
+        title: 'Success!',
+        text: @json(session('success')),
+        icon: 'success',
+        confirmButtonText: 'Ok'
+    });
+</script>
+@endif
+
+@if(isset($error))
+<script>
+    Swal.fire({
+        title: 'Error!',
+        text: @json($error),
+        icon: 'error',
+        confirmButtonText: 'Ok'
+    });
+    document.getElementById('report_container').style.display = 'none';
+</script>
+@endif
 <script>
     $(document).ready(function() {
         $('.js-select2').select2();
@@ -174,16 +210,22 @@
             dataType: "json",
             success: function(data) {
                 $('select[name="teacher_id"]').empty();
-                $('select[name="teacher_id"]').append('<option value="" selected>Choose a Teacher</option>');
-
-                $.each(data, function(key, value) {
-                    $('select[name="teacher_id"]').append('<option value="' +
-                        value.id + '">' + value.name + '</option>');
-                });
-
-                // Re-select the teacher_id if it exists
-                if (selectedTeacherId) {
-                    $('select[name="teacher_id"]').val(selectedTeacherId).trigger('change');
+                if (!data || data.length === 0) {
+                    $('select[name="teacher_id"]').append(
+                        '<option value="" selected disabled>No Available Teacher</option>'
+                    );
+                } else {
+                    $('select[name="teacher_id"]').append(
+                        '<option value="" selected disabled>Choose a Teacher</option>'
+                    );
+                    $.each(data, function(key, value) {
+                        $('select[name="teacher_id"]').append(
+                            '<option value="' + value.id + '">' + value.name + '</option>'
+                        );
+                    });
+                    if (selectedTeacherId) {
+                        $('select[name="teacher_id"]').val(selectedTeacherId).trigger('change');
+                    }
                 }
             },
             error: function(xhr, status, error) {

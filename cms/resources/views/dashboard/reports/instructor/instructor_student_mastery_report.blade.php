@@ -17,7 +17,7 @@
                             <!-- Form Section -->
                             <div class="card">
                                 <div class="card-header">
-                                    <h5 class="title">Teacher's Students Mastery Report</h5>
+                                    <h5 class="title">Teacher's Students Mastery Level Report</h5>
                                 </div>
                                 <div class="card-body">
                                     <form method="GET" action="{{ route('reports.teacherStudentsMasteryLevel') }}">

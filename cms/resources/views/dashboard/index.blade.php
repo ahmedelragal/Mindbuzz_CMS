@@ -23,7 +23,7 @@
                                                 data-target="pageMenu">
                                                 <em class="icon ni ni-more-v"></em>
                                             </a>
-                                            <div class="toggle-expand-content" data-content="pageMenu">
+                                            <!-- <div class="toggle-expand-content" data-content="pageMenu">
                                                 <ul class="nk-block-tools g-3">
                                                     <li class="nk-block-tools-opt">
                                                         <a href="{{ route('reports.index') }}" class="btn btn-primary">
@@ -31,7 +31,7 @@
                                                         </a>
                                                     </li>
                                                 </ul>
-                                            </div>
+                                            </div> -->
                                         </div>
                                     </div>
                                 </div>

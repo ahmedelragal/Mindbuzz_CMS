@@ -69,7 +69,7 @@
                                                 @endcan
                                                 @can('school-list')
                                                 <li class="nk-menu-item"><a href="{{ route('schools.index') }}" class="nk-menu-link"><span
-                                                                        class="nk-menu-text">Schools
+                                                                        class="nk-menu-text">School
                                                                         List</span></a></li>
                                                 @endcan
                                         </ul>
@@ -142,7 +142,7 @@
                                                 @endcan
                                                 @can('class-list')
                                                 <li class="nk-menu-item"><a href="{{ route('classes.index') }}"
-                                                                class="nk-menu-link"><span class="nk-menu-text">Classes
+                                                                class="nk-menu-link"><span class="nk-menu-text">Class
                                                                         List</span></a></li>
                                                 @endcan
 
@@ -162,7 +162,7 @@
                                                 </li>
                                                 @endcan
                                                 <li class="nk-menu-item"><a href="{{ route('students.index') }}"
-                                                                class="nk-menu-link"><span class="nk-menu-text">Students
+                                                                class="nk-menu-link"><span class="nk-menu-text">Student
                                                                         List</span></a></li>
                                         </ul>
                                 </li>
@@ -171,15 +171,15 @@
                                 @can('instructor-list')
                                 <li class="nk-menu-item has-sub"><a href="#" class="nk-menu-link nk-menu-toggle"><span
                                                         class="nk-menu-icon"><em class="icon ni ni-user-fill"></em></span><span
-                                                        class="nk-menu-text">Instructors</span></a>
+                                                        class="nk-menu-text">Teachers</span></a>
                                         <ul class="nk-menu-sub">
                                                 @can('instructor-create')
                                                 <li class="nk-menu-item"><a href="{{ route('instructors.create') }}"
-                                                                class="nk-menu-link"><span class="nk-menu-text">Add Instructors
+                                                                class="nk-menu-link"><span class="nk-menu-text">Add Teacher
                                                                 </span></a></li>
                                                 @endcan
                                                 <li class="nk-menu-item"><a href="{{ route('instructors.index') }}"
-                                                                class="nk-menu-link"><span class="nk-menu-text">Instructor
+                                                                class="nk-menu-link"><span class="nk-menu-text">Teacher
                                                                         List</span></a></li>
                                         </ul>
                                 </li>
@@ -215,7 +215,7 @@
                                 </li>
                                 <li class="nk-menu-item has-sub"><a href="#" class="nk-menu-link nk-menu-toggle"><span
                                                         class="nk-menu-icon"><em class="icon ni ni-property-add"></em></span><span
-                                                        class="nk-menu-text">Instructor Reports</span></a>
+                                                        class="nk-menu-text">Teacher Reports</span></a>
                                         <ul class="nk-menu-sub">
                                                 <li class="nk-menu-item"><a href="{{ route('reports.teacherCompletionReport') }}"
                                                                 class="nk-menu-link"><span class="nk-menu-text">Completion Report</span></a>
@@ -307,7 +307,7 @@
                                         </ul>
                                 </li>
                                 @endcan
-                                @can('role-list')
+                                <!-- @can('role-list')
                                 <li class="nk-menu-item has-sub"><a href="#" class="nk-menu-link nk-menu-toggle"><span
                                                         class="nk-menu-icon"><em class="icon ni ni-book-fill"></em></span><span
                                                         class="nk-menu-text">Roles</span></a>
@@ -322,7 +322,7 @@
                                                 @endcan
                                         </ul>
                                 </li>
-                                @endcan
+                                @endcan -->
                                 {{-- <li class="nk-menu-item"><a href="message.html" class="nk-menu-link"><span
                                 class="nk-menu-icon"><em class="icon ni ni-chat-fill"></em></span><span
                                 class="nk-menu-text">Messages</span></a></li>

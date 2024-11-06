@@ -20,7 +20,7 @@
                                             data-bs-dismiss="modal"><em class="icon ni ni-cross-sm"></em></a>
                                         <div class="modal-body modal-body-md">
                                             <h5 class="title">Add Teachers</h5>
-                                            <form method="POST" action="{{ route('instructors.store') }}"
+                                            <form method="POST" class="mt-3" action="{{ route('instructors.store') }}"
                                                 enctype="multipart/form-data">
                                                 @csrf
                                                 <div class="tab-content">
@@ -86,7 +86,7 @@
 
                                                             @role('Admin')
                                                             <!-- School Select Input -->
-                                                            <div class="col-md-6">
+                                                            <div class="col-md-6 mt-3">
                                                                 <div class="form-group">
                                                                     <label class="form-label">School</label>
                                                                     <div class="form-control-wrap">
@@ -145,7 +145,7 @@
                                                             <div id="group_id_inputs"></div>
 
                                                             <!-- Password Inputs -->
-                                                            <div class="col-md-6">
+                                                            <div class="col-md-6 mt-0">
                                                                 <div class="form-group">
                                                                     <label class="form-label" for="password">Password</label>
                                                                     <input type="password" class="form-control"
@@ -156,7 +156,7 @@
                                                                 </div>
                                                             </div>
 
-                                                            <div class="col-md-6">
+                                                            <div class="col-md-6 mt-0">
                                                                 <div class="form-group">
                                                                     <label class="form-label" for="confirm-password">Confirm Password</label>
                                                                     <input type="password" class="form-control"
@@ -169,7 +169,7 @@
                                                             </div>
 
                                                             <!-- Profile Picture Input -->
-                                                            <div class="col-md-12">
+                                                            <!-- <div class="col-md-12">
                                                                 <div class="form-group">
                                                                     <label class="form-label" for="profile-picture">Profile Picture</label>
                                                                     <input type="file" id="profile-picture" name="parent_image">
@@ -177,7 +177,7 @@
                                                                     <div class="text-danger">{{ $message }}</div>
                                                                     @enderror
                                                                 </div>
-                                                            </div>
+                                                            </div> -->
 
                                                             <!-- Submit Button -->
                                                             <div class="col-md-12">

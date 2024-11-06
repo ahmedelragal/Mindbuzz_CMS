@@ -23,7 +23,7 @@
                                         <div class="modal-body modal-body-md">
                                             <h5 class="title">Edit Teacher</h5>
 
-                                            <form method="POST"
+                                            <form method="POST" class="mt-3"
                                                 action="{{ route('instructors.update', $instructor->id) }}"
                                                 enctype="multipart/form-data">
                                                 @csrf
@@ -92,7 +92,7 @@
                                                                     @enderror
                                                                 </div>
                                                             </div>
-                                                            <div class="col-md-12">
+                                                            <!-- <div class="col-md-12">
                                                                 <div class="form-group"><label class="form-label"
                                                                         for="profile-picture">Profile Picture</label>
                                                                     <span>(Optional)</span>
@@ -103,7 +103,7 @@
                                                                     <div class="text-danger">{{ $message }}</div>
                                                                     @enderror
                                                                 </div>
-                                                            </div>
+                                                            </div> -->
                                                             <div class="col-md-12">
                                                                 <ul
                                                                     class="align-center flex-wrap flex-sm-nowrap gx-4 gy-2">

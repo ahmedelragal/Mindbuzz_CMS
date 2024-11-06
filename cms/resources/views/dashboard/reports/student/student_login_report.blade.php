@@ -16,13 +16,12 @@
                                 <div class="card-body">
 
                                     <form method="GET" action="{{ route('reports.studentLoginReport') }}">
-                                        @csrf
                                         <div class="row">
                                             <!-- School Filter -->
                                             <div class="col-md-6">
                                                 @role('Admin')
-                                                <label for="sch_id">Select School</label>
-                                                <select class="form-select js-select2" name="school_id" id="sch_id">
+                                                <label for="school_id">Select School</label>
+                                                <select class="form-select js-select2" name="school_id" id="school_id">
                                                     <option value="" selected disabled>Choose a School</option>
                                                     @foreach ($schools as $school)
                                                     <option value="{{ $school->id }}" data-school="{{ $school->id }}" {{ old('school_id', $request['school_id'] ?? '') == $school->id ? 'selected' : '' }}>
@@ -68,15 +67,20 @@
                                             </div>
                                         </div>
                                     </form>
-
-                                    <!-- Display Chart if Data is Available -->
-                                    @if(isset($studentName) && isset($numLogin))
-                                    <div class="container mt-5">
-                                        <canvas id="loginChart" width="400" height="200"></canvas>
-                                    </div>
-                                    @endif
-
                                 </div>
+                            </div>
+
+                            <div class="card mt-4">
+                                <section id="report_container" style="display: none;">
+                                    <div class="card-body">
+                                        <!-- Display Chart if Data is Available -->
+                                        @if(isset($studentName) && isset($numLogin))
+                                        <div class="container mt-5">
+                                            <canvas id="loginChart" width="400" height="200"></canvas>
+                                        </div>
+                                        @endif
+                                    </div>
+                                </section>
                             </div>
                         </div>
                     </div>
@@ -92,15 +96,17 @@
 <!-- Include Chart.js -->
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
-@if(isset($studentName) && isset($numLogin))
+@if(isset($studentName) && isset($numLogin) && !isset($error))
 <script>
     document.addEventListener('DOMContentLoaded', function() {
         // Data from your controller
         var studentNames = @json($studentName);
         var numLogins = @json($numLogin);
+        var maxLogins = Math.max(...numLogins);
 
         // Create the bar chart
         var ctx = document.getElementById('loginChart').getContext('2d');
+        document.getElementById('report_container').style.display = 'block';
         var loginChart = new Chart(ctx, {
             type: 'bar',
             data: {
@@ -124,7 +130,8 @@
                         }
                     },
                     y: {
-                        beginAtZero: true,
+                        min: 0,
+                        max: maxLogins + 10,
                         ticks: {
                             stepSize: 1
                         }
@@ -155,34 +162,81 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.min.js"
     integrity="sha512-L0Shl7nXXzIlBSUUPpxrokqq4ojqgZFQczTYlGjzONGTDAcLremjwaWv5A+EDLnxhQzY5xUZPWLOLqYRkY0Cbw=="
     crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<!-- SweetAlert validation messages -->
+@if($errors->any())
+<script>
+    Swal.fire({
+        title: 'Error!',
+        text: '{{ implode('\
+        n ', $errors->all()) }}',
+        icon: 'error',
+        confirmButtonText: 'Ok'
+    });
+</script>
+@endif
 
+@if(session('success'))
+<script>
+    Swal.fire({
+        title: 'Success!',
+        text: @json(session('success')),
+        icon: 'success',
+        confirmButtonText: 'Ok'
+    });
+</script>
+@endif
+
+@if(isset($error))
+<script>
+    Swal.fire({
+        title: 'Error!',
+        text: @json($error),
+        icon: 'error',
+        confirmButtonText: 'Ok'
+    });
+    document.getElementById('report_container').style.display = 'none';
+</script>
+@endif
 <script>
     $(document).ready(function() {
         // Initialize select2 for the filters
         $('.js-select2').select2();
+        var selectedStudentId = "{{$request['student_id'] ?? '' }}";
 
-        $('#sch_id').change(function() {
-            var schoolId = $('#sch_id option:selected').data('school');
-            var groupId = $('#sch_id').val();
-            // console.log(schoolId, groupId);
-            getSchoolStudents(schoolId);
+        $('#school_id').change(function() {
+            var schoolId = $('#school_id option:selected').data('school');
+            getSchoolStudents(schoolId, selectedStudentId);
         });
+        $('#school_id').trigger('change');
+
     });
 
-    function getSchoolStudents(schoolId) {
+    function getSchoolStudents(schoolId, selectedStudentId) {
         $.ajax({
             url: '/get-students-school/' + schoolId,
             type: "GET",
             dataType: "json",
             success: function(data) {
+                // Clear the existing options
                 $('select[name="student_id"]').empty();
-                $('select[name="student_id"]').append(
-                    '<option value="">Choose a Student</option>');
-                $.each(data, function(key, value) {
-                    $('select[name="student_id"]').append('<option value="' +
-                        value.id + '">' +
-                        value.name + '</option>');
-                });
+                if (!data || data.length === 0) {
+                    $('select[name="student_id"]').append(
+                        '<option value="" selected disabled>No Available Students</option>'
+                    );
+                } else {
+                    $('select[name="student_id"]').append(
+                        '<option value="" selected disabled>Choose a Student</option>'
+                    );
+                    $.each(data, function(key, value) {
+                        $('select[name="student_id"]').append(
+                            '<option value="' + value.id + '">' + value.name + '</option>'
+                        );
+                    });
+                    if (selectedStudentId) {
+                        $('select[name="student_id"]').val(selectedStudentId).trigger('change');
+                    }
+                }
             },
             error: function(xhr, status, error) {
                 console.error('AJAX Error:', error);

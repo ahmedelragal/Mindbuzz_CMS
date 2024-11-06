@@ -78,8 +78,9 @@ class SchoolController extends Controller
             $user->assignRole('school');
 
             DB::commit();
-
-            return redirect()->route('schools.index')->with('success', 'School created successfully!');
+            $redirectUrl = session('schools_previous_url', route('schools.index'));
+            return redirect($redirectUrl)->with('success', 'Schools created successfully.');
+            // return redirect()->route('schools.index')->with('success', 'School created successfully!');
         } catch (\Exception $e) {
             DB::rollBack();
 
@@ -148,8 +149,9 @@ class SchoolController extends Controller
             $user->update($userData);
 
             DB::commit();
-
-            return redirect()->route('schools.index', $id)->with('success', 'School updated successfully!');
+            $redirectUrl = session('schools_previous_url', route('schools.index'));
+            return redirect($redirectUrl)->with('success', 'Schools updated successfully.');
+            // return redirect()->route('schools.index', $id)->with('success', 'School updated successfully!');
         } catch (\Exception $e) {
             DB::rollBack();
 
@@ -172,10 +174,27 @@ class SchoolController extends Controller
         if ($school->image) {
             Storage::disk('public')->delete($school->image);
         }
-
         $school->delete();
+        $redirectUrl = session('schools_previous_url', route('schools.index'));
+        return redirect($redirectUrl)->with('success', 'School deleted successfully.');
+        // return redirect()->route('schools.index')->with('success', 'School deleted successfully!');
+    }
 
-        return redirect()->route('schools.index')->with('success', 'School deleted successfully!');
+    public function massDestroy(Request $request)
+    {
+        $ids = $request->input('ids');
+
+        $schools = School::whereIn('id', $ids)->get();
+
+        // Delete each school's image if it exists and then delete the school
+        foreach ($schools as $school) {
+            if ($school->image) {
+                Storage::disk('public')->delete($school->image);
+            }
+            $school->delete();
+        }
+        $redirectUrl = session('schools_previous_url', route('schools.index'));
+        return redirect($redirectUrl)->with('success', 'Schools deleted successfully.');
     }
     public function getStudentsSchool($schoolId)
     {

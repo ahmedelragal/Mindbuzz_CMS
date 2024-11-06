@@ -51,7 +51,7 @@
                                             <!-- Program Filter -->
                                             <div class="col-md-4">
                                                 <label for="program_id">Select Program</label>
-                                                <select class="form-select js-select2" name="program_id" id="program_id" required>
+                                                <select class="form-select js-select2" name="program_id" id="program_id">
                                                     <option value="" disabled selected>No Available Programs</option>
                                                 </select>
                                             </div>
@@ -305,7 +305,7 @@
             dataType: "json",
             success: function(data) {
                 $('select[name="teacher_id"]').empty();
-                $('select[name="teacher_id"]').append('<option value="" selected>Choose a Teacher</option>');
+                $('select[name="teacher_id"]').append('<option value="" selected disabled>Choose a Teacher</option>');
 
                 $.each(data, function(key, value) {
                     $('select[name="teacher_id"]').append('<option value="' +
@@ -368,7 +368,7 @@
                 } else {
 
                     $('select[name="program_id"]').append(
-                        '<option value="" selected disabled>Choose a Program</option>'
+                        '<option value="" selected disabled>All Programs</option>'
                     );
                     $.each(data, function(key, value) {
                         $('select[name="program_id"]').append(
@@ -378,7 +378,6 @@
 
 
                     if (selectedProgramId) {
-                        console.log('asasasasasaas');
                         $('select[name="program_id"]').val(selectedProgramId).trigger('change');
                     }
                 }

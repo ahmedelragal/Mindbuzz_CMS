@@ -459,16 +459,29 @@ class InstructorController extends Controller
             $imagePath = $request->file('parent_image')->store('images', 'public');
             $instructor->update(['parent_image' => $imagePath]);
         }
-
-        return redirect()->route('instructors.index')->with('success', 'Teacher updated successfully.');
+        $redirectUrl = session('teachers_previous_url', route('instructors.index'));
+        return redirect($redirectUrl)->with('success', 'Teacher updated successfully.');
     }
 
     public function destroy(string $id)
     {
         $instructor = User::findOrFail($id);
         $instructor->delete();
+        $redirectUrl = session('teachers_previous_url', route('instructors.index'));
 
-        return redirect()->route('instructors.index')->with('success', 'Teacher deleted successfully.');
+        return redirect($redirectUrl)->with('success', 'Teacher deleted successfully.');
+    }
+
+    public function massDestroy(Request $request)
+    {
+        // dd($request->all());
+        $ids = $request->input('ids'); // Accept an array of IDs from the request
+        if ($ids) {
+            User::whereIn('id', $ids)->delete();
+            $redirectUrl = session('teachers_previous_url', route('instructors.index'));
+            return redirect($redirectUrl)->with('success', 'Teachers deleted successfully.');
+        }
+        return redirect()->route('instructors.index')->with('error', 'No Teachers selected.');
     }
 
     public function getCommonTeacherPrograms($teacherId1, $teacherId2)

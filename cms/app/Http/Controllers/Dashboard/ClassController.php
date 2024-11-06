@@ -591,8 +591,9 @@ class ClassController extends Controller
             $group_classes->group_id = $grp->id;
             $group_classes->save();
         }
-
-        return redirect()->route('classes.index')->with('success', 'Class created successfully for selected programs.');
+        $redirectUrl = session('classes_previous_url', route('classes.index'));
+        return redirect($redirectUrl)->with('success', 'Class created successfully for selected programs.');
+        // return redirect()->route('classes.index')->with('success', 'Class created successfully for selected programs.');
     }
 
     /**
@@ -632,10 +633,8 @@ class ClassController extends Controller
             'name' => $request->name,
             'sec_name' => $request->sec_name,
         ]);
-
-
-
-        return redirect()->route('classes.index')->with('success', 'Class updated successfully.');
+        $redirectUrl = session('classes_previous_url', route('classes.index'));
+        return redirect($redirectUrl)->with('success', 'Class updated successfully.');
     }
 
     /**
@@ -646,9 +645,22 @@ class ClassController extends Controller
         $class = Group::findOrFail($id);
 
         $class->delete();
-
-        return redirect()->route('classes.index')->with('success', 'Class deleted successfully.');
+        $redirectUrl = session('classes_previous_url', route('classes.index'));
+        return redirect($redirectUrl)->with('success', 'Class deleted successfully.');
     }
+
+
+    public function massDestroy(Request $request)
+    {
+        $ids = $request->input('ids');
+        if ($ids) {
+            Group::whereIn('id', $ids)->delete();
+            $redirectUrl = session('classes_previous_url', route('classes.index'));
+            return redirect($redirectUrl)->with('success', 'Classes deleted successfully.');
+        }
+        return redirect()->route('classes.index')->with('error', 'No Teachers selected.');
+    }
+
     public function getStages($program_id)
     {
         $program = Program::findOrFail($program_id);
