@@ -20,7 +20,7 @@
                                 </div>
                                 <!-- Form Section -->
                                 <div class="card-body">
-                                    <form method="GET" action="{{ route('reports.classCompletionReportWeb') }}">
+                                    <form method="GET" action="{{ route('reports.classCompletionReportWeb') }}" id="page-form">
                                         <div class="row">
                                             <!-- Group Filter -->
                                             <div class="col-md-4">
@@ -217,7 +217,7 @@
 <script>
     document.addEventListener('DOMContentLoaded', function() {
         var data = @json($counts);
-        const labels = Object.keys(data);
+        const labels = Object.keys(data).map(label => label.charAt(0).toUpperCase() + label.slice(1));
         const values = Object.values(data);
         var ctx = document.getElementById("completionpieChart").getContext("2d");
 
@@ -251,6 +251,24 @@
                     padding: {
                         left: 50,
                         right: 50
+                    }
+                },
+                onClick: function(evt, item) {
+                    if (item.length > 0) {
+                        const index = item[0].index;
+                        const clickedLabel = labels[index];
+                        let filterValue;
+                        if (clickedLabel === 'Completed') {
+                            filterValue = 'Completed';
+                        } else if (clickedLabel === 'Overdue') {
+                            filterValue = 'Overdue';
+                        } else if (clickedLabel === 'Pending') {
+                            filterValue = 'Pending';
+                        }
+                        if (filterValue) {
+                            document.getElementById('status').value = filterValue;
+                            document.getElementById('page-form').submit();
+                        }
                     }
                 }
             }

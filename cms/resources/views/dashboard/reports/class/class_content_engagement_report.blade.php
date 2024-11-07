@@ -396,7 +396,7 @@
                 } else {
 
                     $('select[name="program_id"]').append(
-                        '<option value="" selected>Choose a Program</option>'
+                        '<option value="" selected disabled>Choose a Program</option>'
                     );
                     $.each(data, function(key, value) {
                         $('select[name="program_id"]').append(

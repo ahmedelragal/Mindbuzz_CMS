@@ -20,7 +20,7 @@
                                 </div>
                                 <!-- Form Section -->
                                 <div class="card-body">
-                                    <form method="GET" action="{{ route('reports.schoolCompletionReport') }}">
+                                    <form method="GET" action="{{ route('reports.schoolCompletionReport') }}" id="page-form">
                                         <div class="row">
                                             <!-- School Filter -->
                                             @role('Admin')
@@ -68,7 +68,7 @@
                                             <div class="col-md-4">
                                                 <label for="status">Select Status</label>
                                                 <select class="form-select js-select2" name="status" id="status">
-                                                    <option value="" disabled {{ old('status', $request['status'] ?? '') == '' ? 'selected' : '' }}>Choose a status</option>
+                                                    <option value="" {{ old('status', $request['status'] ?? '') == '' ? 'selected' : '' }}>All Status</option>
                                                     <option value="Completed" {{ old('status', $request['status'] ?? '') == 'Completed' ? 'selected' : '' }}>Completed</option>
                                                     <option value="Overdue" {{ old('status', $request['status'] ?? '') == 'Overdue' ? 'selected' : '' }}>Overdue</option>
                                                     <option value="Pending" {{ old('status', $request['status'] ?? '') == 'Pending' ? 'selected' : '' }}>Pending</option>
@@ -198,7 +198,7 @@
 <script>
     document.addEventListener('DOMContentLoaded', function() {
         var data = @json($counts);
-        const labels = Object.keys(data);
+        const labels = Object.keys(data).map(label => label.charAt(0).toUpperCase() + label.slice(1));
         const values = Object.values(data);
         var ctx = document.getElementById("completionpieChart").getContext("2d");
 
@@ -232,6 +232,24 @@
                     padding: {
                         left: 50,
                         right: 50
+                    }
+                },
+                onClick: function(evt, item) {
+                    if (item.length > 0) {
+                        const index = item[0].index;
+                        const clickedLabel = labels[index];
+                        let filterValue;
+                        if (clickedLabel === 'Completed') {
+                            filterValue = 'Completed';
+                        } else if (clickedLabel === 'Overdue') {
+                            filterValue = 'Overdue';
+                        } else if (clickedLabel === 'Pending') {
+                            filterValue = 'Pending';
+                        }
+                        if (filterValue) {
+                            document.getElementById('status').value = filterValue;
+                            document.getElementById('page-form').submit();
+                        }
                     }
                 }
             }

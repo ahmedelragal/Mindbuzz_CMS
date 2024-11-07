@@ -416,21 +416,34 @@
             type: "GET",
             dataType: "json",
             success: function(data) {
+
+                // Clear the existing options
                 $('select[name="teacher_id"]').empty();
-                $('select[name="teacher_id"]').append('<option value="" selected>Choose a Teacher</option>');
 
-                $.each(data, function(key, value) {
-                    $('select[name="teacher_id"]').append('<option value="' +
-                        value.id + '">' + value.name + '</option>');
-                });
+                if (!data || data.length === 0) {
+                    $('select[name="teacher_id"]').append(
+                        '<option value="" selected disabled>No Available Teachers</option>'
+                    );
+                } else {
 
-                // Re-select the teacher_id if it exists
-                if (selectedTeacherId) {
-                    $('select[name="teacher_id"]').val(selectedTeacherId).trigger('change');
+                    $('select[name="teacher_id"]').append(
+                        '<option value="" selected disabled>Choose a Teacher</option>'
+                    );
+                    $.each(data, function(key, value) {
+                        $('select[name="teacher_id"]').append(
+                            '<option value="' + value.id + '">' + value.name + '</option>'
+                        );
+                    });
+
+
+                    if (selectedTeacherId) {
+                        console.log('asasa');
+                        $('select[name="teacher_id"]').val(selectedTeacherId).trigger('change');
+                    }
                 }
             },
             error: function(xhr, status, error) {
-                console.error('AJAX Error fetching teachers:', error);
+                console.error('AJAX Error:', error);
             }
         });
     }

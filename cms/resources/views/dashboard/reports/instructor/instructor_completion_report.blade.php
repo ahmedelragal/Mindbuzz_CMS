@@ -20,7 +20,7 @@
                                 </div>
                                 <!-- Form Section -->
                                 <div class="card-body">
-                                    <form method="GET" action="{{ route('reports.teacherCompletionReport') }}">
+                                    <form method="GET" action="{{ route('reports.teacherCompletionReport') }}" id="page-form">
                                         <div class="row">
                                             <!-- School Filter -->
                                             @role('Admin')
@@ -198,7 +198,7 @@
 <script>
     document.addEventListener('DOMContentLoaded', function() {
         var data = @json($counts);
-        const labels = Object.keys(data);
+        const labels = Object.keys(data).map(label => label.charAt(0).toUpperCase() + label.slice(1));
         const values = Object.values(data);
         var ctx = document.getElementById("completionpieChart").getContext("2d");
 
@@ -232,6 +232,24 @@
                     padding: {
                         left: 50,
                         right: 50
+                    }
+                },
+                onClick: function(evt, item) {
+                    if (item.length > 0) {
+                        const index = item[0].index;
+                        const clickedLabel = labels[index];
+                        let filterValue;
+                        if (clickedLabel === 'Completed') {
+                            filterValue = 'Completed';
+                        } else if (clickedLabel === 'Overdue') {
+                            filterValue = 'Overdue';
+                        } else if (clickedLabel === 'Pending') {
+                            filterValue = 'Pending';
+                        }
+                        if (filterValue) {
+                            document.getElementById('status').value = filterValue;
+                            document.getElementById('page-form').submit();
+                        }
                     }
                 }
             }
@@ -304,21 +322,34 @@
             type: "GET",
             dataType: "json",
             success: function(data) {
+
+                // Clear the existing options
                 $('select[name="teacher_id"]').empty();
-                $('select[name="teacher_id"]').append('<option value="" selected disabled>Choose a Teacher</option>');
 
-                $.each(data, function(key, value) {
-                    $('select[name="teacher_id"]').append('<option value="' +
-                        value.id + '">' + value.name + '</option>');
-                });
+                if (!data || data.length === 0) {
+                    $('select[name="teacher_id"]').append(
+                        '<option value="" selected disabled>No Available Teachers</option>'
+                    );
+                } else {
 
-                // Re-select the teacher_id if it exists
-                if (selectedTeacherId) {
-                    $('select[name="teacher_id"]').val(selectedTeacherId).trigger('change');
+                    $('select[name="teacher_id"]').append(
+                        '<option value="" selected disabled>Choose a Teacher</option>'
+                    );
+                    $.each(data, function(key, value) {
+                        $('select[name="teacher_id"]').append(
+                            '<option value="' + value.id + '">' + value.name + '</option>'
+                        );
+                    });
+
+
+                    if (selectedTeacherId) {
+                        console.log('asasa');
+                        $('select[name="teacher_id"]').val(selectedTeacherId).trigger('change');
+                    }
                 }
             },
             error: function(xhr, status, error) {
-                console.error('AJAX Error fetching teachers:', error);
+                console.error('AJAX Error:', error);
             }
         });
     }

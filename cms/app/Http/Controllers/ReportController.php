@@ -4982,7 +4982,7 @@ class ReportController extends Controller
 
             if ($student_assignments->isEmpty()) {
                 // Add an error message to the data array
-                $data['error'] = 'No Assignments Found for All Students';
+                $data['error'] = 'No Commom Assignments Found for This Class';
                 return view('dashboard.reports.class.class_content_usage_report', $data);
             }
 
@@ -6023,7 +6023,7 @@ class ReportController extends Controller
             if ($student_assignments1->isEmpty()) {
                 // Add an error message to the data array
                 $groupName = Group::find($request->group1_id)->name;
-                $data['error'] = 'No Assignments Found for All Students in Class ' . $groupName . '.';
+                $data['error'] = 'No Common Assignments Found for All Students in Class ' . $groupName . '.';
                 return view('dashboard.reports.heatmap.class_heatmap_report', $data);
             }
 
@@ -6071,7 +6071,7 @@ class ReportController extends Controller
             if ($student_assignments2->isEmpty()) {
                 // Add an error message to the data array
                 $groupName = Group::find($request->group2_id)->name;
-                $data['error'] = 'No Assignments Found for All Students in Class ' . $groupName . '.';
+                $data['error'] = 'No Common Assignments Found for All Students in Class ' . $groupName . '.';
                 return view('dashboard.reports.heatmap.class_heatmap_report', $data);
             }
 
