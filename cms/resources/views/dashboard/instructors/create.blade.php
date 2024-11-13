@@ -23,7 +23,7 @@
                                                 <div class="form-group">
                                                     <label class="form-label" for="full-name">Name</label>
                                                     <input type="text" class="form-control" id="full-name"
-                                                        placeholder="Name" value="{{ old('name') }}"
+                                                        placeholder="Enter Name" value="{{ old('name') }}"
                                                         name="name">
                                                     @error('name')
                                                     <div class="text-danger">{{ $message }}</div>
@@ -35,7 +35,7 @@
                                                 <div class="form-group">
                                                     <label class="form-label" for="phone-no">Phone Number</label>
                                                     <input type="text" class="form-control" id="phone-no"
-                                                        placeholder="Phone Number" name="phone"
+                                                        placeholder="Enter Phone Number" name="phone"
                                                         value="{{ old('phone') }}">
                                                     @error('phone')
                                                     <div class="text-danger">{{ $message }}</div>
@@ -48,7 +48,7 @@
                                             <div class="form-group">
                                                 <label class="form-label" for="email">Email Address</label>
                                                 <input type="email" class="form-control" id="email"
-                                                    name="email" placeholder="Email Address"
+                                                    name="email" placeholder="Enter Email"
                                                     value="{{ old('email') }}">
                                                 @error('email')
                                                 <div class="text-danger">{{ $message }}</div>
