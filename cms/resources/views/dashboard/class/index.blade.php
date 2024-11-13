@@ -43,7 +43,7 @@ session(['classes_previous_url' => url()->full()]);
                                                                 </li>
                                                                 @endrole
                                                                 <li>
-                                                                    <button type="button" onclick="massDelete()" class="btn btn-primary">Delete Selected</button>
+                                                                    <button type="button" onclick="massDelete()" class="btn btn-danger">Delete Selected</button>
                                                                 </li>
                                                                 <li class="nk-block-tools-opt"><a
                                                                         class="btn btn-icon btn-primary d-md-none"
@@ -63,39 +63,36 @@ session(['classes_previous_url' => url()->full()]);
 
                                         </div>
                                     </div>
-
                                 </div>
                             </div>
                             <div class="nk-block">
                                 <form id="mass-delete-form" action="{{ route('classes.massDestroy') }}" method="POST">
                                     @csrf
                                     @method('DELETE')
-                                    <table class="table">
+                                    <table class="table text-center">
                                         <thead class="thead-dark">
                                             <tr>
-                                                <th scope="col"><input type="checkbox" id="select-all"></th>
-                                                <th scope="col">Name</th>
-                                                <th scope="col">School</th>
-                                                <th scope="col">Action</th>
+                                                <th class="col-1" style="padding-left:8px;"><input type="checkbox" id="select-all"></th>
+                                                <th class="col-3" style="text-align: left;padding-left:15px;">Name</th>
+                                                <th class="col-2" style="text-align: left;padding-left:15px;">School</th>
+                                                <th class="col-2">Students</th>
+                                                <th class="col-2">Teachers</th>
+                                                <th class="col-2" style="padding-right:8px;">Action</th>
                                             </tr>
                                         </thead>
                                         <tbody>
                                             @foreach ($pagedClasses as $class)
                                             <tr>
-                                                <td><input type="checkbox" class="class-checkbox" name="ids[]" value="{{ $class->id }}"></td>
-                                                <td>{{ $class->name }}</td>
-                                                <td>{{ $class->school->name ?? 'No School' }}</td>
-                                                <td>
-                                                    <div class="row w-90">
+                                                <td class="align-middle" style="padding-left:8px;"><input type="checkbox" class="class-checkbox" name="ids[]" value="{{ $class->id }}"></td>
+                                                <td class style="text-align: left;padding: 15px;">{{ $class->name }}</td>
+                                                <td style="text-align: left;padding: 15px;">{{ $class->school->name ?? 'No School' }}</td>
+
+                                                <td class="align-middle">{{ \App\Models\GroupStudent::where('group_id', $class->id)->distinct('student_id')->count('student_id')  }}</td>
+                                                <td class="align-middle">{{ \App\Models\GroupTeachers::where('group_id', $class->id)->distinct('teacher_id')->count('teacher_id') }}</td>
+                                                <td class="align-middle" style="padding-right:8px;">
+                                                    <div class="d-flex align-items-center justify-content-center">
                                                         <div class="col-4 ">
-                                                            <a href="{{ route('classes.view', $class->id) }}" class="btn btn-warning me-1">View</a>
-                                                        </div>
-                                                        <div class="col-5 ">
-                                                            <form id="delete-form-{{ $class->id }}" action="{{ route('classes.destroy', $class->id) }}" method="POST" style="display: none;">
-                                                                @csrf
-                                                                @method('DELETE')
-                                                            </form>
-                                                            <button type="button" class="btn btn-danger" onclick="confirmDelete({{ $class->id }})">Delete</button>
+                                                            <a href="{{ route('classes.view', $class->id) }}" class="btn btn-primary" title="View Class"><i class="fa-solid fa-eye"></i></a>
                                                         </div>
                                                     </div>
                                                 </td>
@@ -168,6 +165,11 @@ session(['classes_previous_url' => url()->full()]);
     }
 </script>
 <script>
+    document.getElementById('select-all').addEventListener('change', function() {
+        const checkboxes = document.querySelectorAll('.class-checkbox');
+        checkboxes.forEach(checkbox => checkbox.checked = this.checked);
+    });
+
     function massDelete() {
         const selectedClasses = document.querySelectorAll('.class-checkbox:checked');
         if (selectedClasses.length === 0) {
@@ -181,13 +183,13 @@ session(['classes_previous_url' => url()->full()]);
             return;
         }
         Swal.fire({
-            title: 'Are you sure?',
+            title: 'Are you sure you want to delete\n ' + selectedClasses.length + ' classes?',
             text: "You won't be able to revert this!",
             icon: 'warning',
             showCancelButton: true,
-            confirmButtonColor: '#3085d6',
-            cancelButtonColor: '#d33',
-            confirmButtonText: 'Yes, delete it!'
+            confirmButtonColor: '#d33',
+            cancelButtonColor: '#3085d6',
+            confirmButtonText: 'Delete'
         }).then((result) => {
             if (result.isConfirmed) {
                 document.getElementById('mass-delete-form').submit();

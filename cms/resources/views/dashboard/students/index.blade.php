@@ -15,12 +15,10 @@ session(['students_previous_url' => url()->full()]);
                             <div class="nk-block-head nk-block-head-sm">
                                 <div class="nk-block-between">
                                     <div class="nk-block-head-content">
-                                        <h3 class="nk-block-title page-title">Student List</h3>
+                                        <h3 class="nk-block-title page-title" style="font-size: 28px;">Student List</h3>
                                     </div>
                                 </div>
                             </div>
-
-
                             <div class="nk-block-head nk-block-head-sm">
                                 <div class="nk-block-head-content" style="display:flex; gap:10px;justify-content:space-between">
                                     <div class="toggle-wrap nk-block-tools-toggle">
@@ -80,7 +78,7 @@ session(['students_previous_url' => url()->full()]);
                                         </div>
                                     </div>
                                     <div style="justify-content :right; display: flex ;gap:10px">
-                                        <button type="button" onclick="massDelete()" class="btn btn-primary">Delete Selected</button>
+                                        <button type="button" onclick="massDelete()" class="btn btn-danger">Delete Selected</button>
                                         <button type="button" class="btn btn-primary float-right" data-bs-toggle="modal" data-bs-target="#importStudentsModal">
                                             Import
                                         </button>
@@ -137,38 +135,42 @@ session(['students_previous_url' => url()->full()]);
                                 <form id="mass-delete-form" action="{{ route('students.massDestroy') }}" method="POST">
                                     @csrf
                                     @method('DELETE')
-                                    <table class="table">
+                                    <table class="table text-center">
                                         <thead class="thead-dark">
                                             <tr>
-                                                <th scope="col"><input type="checkbox" id="select-all"></th>
-                                                <th scope="col">Student</th>
-                                                <th scope="col">School</th>
-                                                <th scope="col">Phone</th>
-                                                <th scope="col">Program</th>
-                                                <th scope="col" class="text-center">Action</th>
+                                                <th class="col-1" style="padding-left:8px;"><input type="checkbox" id="select-all"></th>
+                                                <th class="col-4" style="text-align: left;padding-left:15px;">Student</th>
+                                                <th class="col-2">School</th>
+                                                <th class="col-2">Phone</th>
+                                                <th class="col-2">Programs</th>
+                                                <th class="col-1" style="padding-right:8px;">Action</th>
                                             </tr>
                                         </thead>
                                         <tbody>
                                             @foreach ($students as $student)
                                             <tr>
-                                                <td><input type="checkbox" class="student-checkbox" name="ids[]" value="{{ $student->id }}"></td>
-                                                <th scope="row">
-                                                    <div class="nk-tb-col">
-                                                        <div class="user-card">
-                                                            <div class="user-avatar"><img src="../images/avatar/a-sm.jpg" alt=""></div>
-                                                            <div class="user-info">
-                                                                <span class="tb-lead">{{ $student->name }}<br><span>{{ $student->email }}</span>
-                                                            </div>
+                                                <td class="align-middle" style="padding-left:8px;"><input type="checkbox" class="student-checkbox" name="ids[]" value="{{ $student->id }}"></td>
+                                                <td class style="text-align: left;padding: 15px;">
+                                                    <div class="d-flex align-items-center">
+                                                        <div class="user-avatar" style><img src="../images/avatar/a-sm.jpg" alt=""></div>
+                                                        <div class="user-info ms-2">
+                                                            <span class="tb-lead">{{ $student->name }}<br><span>{{ $student->email }}</span>
                                                         </div>
                                                     </div>
-                                                </th>
-                                                <td>{{ $student->school->name }}</td>
-                                                <td>{{ $student->phone }}</td>
-                                                <td>
-                                                    <div class="d-lg-flex d-none">
-                                                        <div class="drodown"><a href="#" class="dropdown-toggle pt-1 text-info" data-bs-toggle="dropdown"> <button class="btn btn-gray">View</button> </a>
+                                                </td>
+                                                <td class="align-middle">{{ $student->school->name }}</td>
+                                                <td class="align-middle">{{ $student->phone }}</td>
+                                                <td class="align-middle">
+                                                    <div class="d-flex align-items-center justify-content-center">
+                                                        <div class="drodown">
+                                                            <a href="#" class="dropdown-toggle pt-1 text-info" data-bs-toggle="dropdown">
+                                                                <button class="btn btn-primary" title="View Programs"><i class="fa-solid fa-book-open"></i></button>
+                                                            </a>
                                                             <div class="dropdown-menu dropdown-menu-start">
                                                                 <ul class="link-list-opt no-bdr p-3">
+                                                                    @if ($student->userCourses->isEmpty())
+                                                                    <li><span>No Available Programs</span></li>
+                                                                    @else
                                                                     @foreach ($student->userCourses as $course)
                                                                     <li class="tb-lead p-1">
                                                                         {{ $course->program->course->name  ?? 'N/A' }} /
@@ -178,30 +180,22 @@ session(['students_previous_url' => url()->full()]);
                                                                         @endif
                                                                     </li>
                                                                     @endforeach
+                                                                    @endif
                                                                 </ul>
                                                             </div>
                                                         </div>
                                                     </div>
                                                 </td>
-                                                <td>
-                                                    <div class="row w-90">
-                                                        <div class="col-4 ">
-                                                            <a href="{{ route('students.edit', $student->id) }}" class="btn btn-warning me-1">Edit</a>
-                                                        </div>
-                                                        <div class="col-1"></div>
-                                                        <div class="col-5 ">
-                                                            <form id="delete-form-{{ $student->id }}" action="{{ route('students.destroy', $student->id) }}" method="POST" style="display: none;">
-                                                                @csrf
-                                                                @method('DELETE')
-                                                            </form>
-                                                            <button type="button" class="btn btn-danger" onclick="confirmDelete({{ $student->id }})">Delete</button>
-                                                        </div>
+                                                <td class="align-middle" style="padding-right:8px;">
+                                                    <div class="d-flex align-items-center justify-content-center">
+                                                        <a href="{{ route('students.edit', $student->id) }}" class="btn btn-primary" title="Edit Student"><i class="fa-regular fa-pen-to-square"></i></a>
                                                     </div>
                                                 </td>
                                             </tr>
                                             @endforeach
                                         </tbody>
                                     </table>
+
                                 </form>
 
 
@@ -280,13 +274,13 @@ session(['students_previous_url' => url()->full()]);
             return;
         }
         Swal.fire({
-            title: 'Are you sure?',
+            title: 'Are you sure you want to delete\n' + selectedStudents.length + ' students?',
             text: "You won't be able to revert this!",
             icon: 'warning',
             showCancelButton: true,
-            confirmButtonColor: '#3085d6',
-            cancelButtonColor: '#d33',
-            confirmButtonText: 'Yes, delete it!'
+            confirmButtonColor: '#d33',
+            cancelButtonColor: '#3085d6',
+            confirmButtonText: 'Delete'
         }).then((result) => {
             if (result.isConfirmed) {
                 document.getElementById('mass-delete-form').submit();

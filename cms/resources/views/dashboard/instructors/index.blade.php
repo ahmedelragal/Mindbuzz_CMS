@@ -114,7 +114,7 @@ session(['teachers_previous_url' => url()->full()]);
                                                                     </div>
                                                                 </li>
                                                                 <li>
-                                                                    <button type="button" onclick="massDelete()" class="btn btn-primary">Delete Selected</button>
+                                                                    <button type="button" onclick="massDelete()" class="btn btn-danger">Delete Selected</button>
                                                                 </li>
                                                             </ul>
                                                         </form>
@@ -135,36 +135,34 @@ session(['teachers_previous_url' => url()->full()]);
                                 <form id="mass-delete-form" action="{{ route('teachers.massDestroy') }}" method="POST">
                                     @csrf
                                     @method('DELETE')
-                                    <table class="table">
+                                    <table class="table text-center">
                                         <thead class="thead-dark">
                                             <tr>
-                                                <th scope="col"><input type="checkbox" id="select-all"></th>
-                                                <th scope="col">Teacher</th>
-                                                <th scope="col">School</th>
-                                                <th scope="col">Phone</th>
-                                                <th scope="col">Program</th>
-                                                <th scope="col" class="text-center">Action</th>
+                                                <th class="col-1" style="padding-left:8px;"><input type="checkbox" id="select-all"></th>
+                                                <th class="col-4" style="text-align: left;padding-left:15px;">Teacher</th>
+                                                <th class="col-2">School</th>
+                                                <th class="col-2">Phone</th>
+                                                <th class="col-2">Programs</th>
+                                                <th class="col-1" style="padding-right:8px;">Action</th>
                                             </tr>
                                         </thead>
                                         <tbody>
                                             @foreach ($instructors as $instructor)
                                             <tr>
-                                                <td><input type="checkbox" class="teacher-checkbox" name="ids[]" value="{{ $instructor->id }}"></td>
-                                                <th scope="row">
-                                                    <div class="nk-tb-col">
-                                                        <div class="user-card">
-                                                            <div class="user-avatar"><img src="../images/avatar/a-sm.jpg" alt=""></div>
-                                                            <div class="user-info">
-                                                                <span class="tb-lead">{{ $instructor->name }}<br><span>{{ $instructor->email }}</span>
-                                                            </div>
+                                                <td class="align-middle" style="padding-left:8px;"><input type="checkbox" class="teacher-checkbox" name="ids[]" value="{{ $instructor->id }}"></td>
+                                                <td class style="text-align: left;padding: 15px;">
+                                                    <div class="d-flex align-items-center">
+                                                        <div class="user-avatar"><img src="../images/avatar/a-sm.jpg" alt=""></div>
+                                                        <div class="user-info">
+                                                            <span class="tb-lead">{{ $instructor->name }}<br><span>{{ $instructor->email }}</span>
                                                         </div>
                                                     </div>
-                                                </th>
-                                                <td>{{ $instructor->school->name ?? '-' }}
-                                                <td>{{ $instructor->phone }}</td>
-                                                <td>
-                                                    <div class="d-lg-flex d-none">
-                                                        <div class="drodown"><a href="#" class="dropdown-toggle pt-1 text-info" data-bs-toggle="dropdown"> <button class="btn btn-gray">View</button> </a>
+                                                </td>
+                                                <td class="align-middle">{{ $instructor->school->name ?? '-' }}
+                                                <td class="align-middle">{{ $instructor->phone }}</td>
+                                                <td class="align-middle">
+                                                    <div class="d-flex align-items-center justify-content-center">
+                                                        <div class="drodown"><a href="#" class="dropdown-toggle pt-1 text-info" data-bs-toggle="dropdown"> <button class="btn btn-primary"><i class="fa-solid fa-book-open"></i></button> </a>
                                                             <div class="dropdown-menu dropdown-menu-start">
                                                                 <ul class="link-list-opt no-bdr p-3">
                                                                     @if ($instructor->teacher_programs->isEmpty())
@@ -181,25 +179,17 @@ session(['teachers_previous_url' => url()->full()]);
                                                                     </li>
                                                                     @endforeach
                                                                     @endif
-
                                                                 </ul>
                                                             </div>
                                                         </div>
                                                     </div>
                                                 </td>
-                                                <td>
-                                                    <div class="row w-90">
+                                                <td class="align-middle" style="padding-right:8px;">
+                                                    <div class="d-flex align-items-center justify-content-center">
                                                         <div class="col-4 ">
-                                                            <a href="{{ route('instructors.edit', $instructor->id) }}" class="btn btn-warning me-1">Edit</a>
+                                                            <a href="{{ route('instructors.edit', $instructor->id) }}" class="btn btn-primary" title="Edit Student"><i class="fa-regular fa-pen-to-square"></i></a>
                                                         </div>
                                                         <div class="col-1"></div>
-                                                        <div class="col-5 ">
-                                                            <form id="delete-form-{{ $instructor->id }}" action="{{ route('instructors.destroy', $instructor->id) }}" method="POST" style="display: none;">
-                                                                @csrf
-                                                                @method('DELETE')
-                                                            </form>
-                                                            <button type="button" class="btn btn-danger" onclick="confirmDelete({{ $instructor->id }})">Delete</button>
-                                                        </div>
                                                     </div>
                                                 </td>
                                             </tr>
@@ -232,16 +222,7 @@ session(['teachers_previous_url' => url()->full()]);
         });
     });
 </script>
-@if(session('success'))
-<script>
-    Swal.fire({
-        title: 'Success!',
-        text: @json(session('success')),
-        icon: 'success',
-        confirmButtonText: 'Ok'
-    });
-</script>
-@endif
+
 <script>
     function confirmDelete(instructorId) {
         Swal.fire({
@@ -259,8 +240,12 @@ session(['teachers_previous_url' => url()->full()]);
             }
         })
     }
-</script>
-<script>
+
+    document.getElementById('select-all').addEventListener('change', function() {
+        const checkboxes = document.querySelectorAll('.teacher-checkbox');
+        checkboxes.forEach(checkbox => checkbox.checked = this.checked);
+    });
+
     function massDelete() {
         const selectedTeachers = document.querySelectorAll('.teacher-checkbox:checked');
         if (selectedTeachers.length === 0) {
@@ -274,13 +259,13 @@ session(['teachers_previous_url' => url()->full()]);
             return;
         }
         Swal.fire({
-            title: 'Are you sure?',
+            title: 'Are you sure you want to delete\n' + selectedTeachers.length + ' teachers?',
             text: "You won't be able to revert this!",
             icon: 'warning',
             showCancelButton: true,
-            confirmButtonColor: '#3085d6',
-            cancelButtonColor: '#d33',
-            confirmButtonText: 'Yes, delete it!'
+            confirmButtonColor: '#d33',
+            cancelButtonColor: '#3085d6',
+            confirmButtonText: 'Delete'
         }).then((result) => {
             if (result.isConfirmed) {
                 document.getElementById('mass-delete-form').submit();
@@ -289,4 +274,15 @@ session(['teachers_previous_url' => url()->full()]);
 
     }
 </script>
+@if(session('success'))
+<script>
+    Swal.fire({
+        title: 'Success!',
+        text: @json(session('success')),
+        icon: 'success',
+        confirmButtonText: 'Ok'
+    });
+</script>
+@endif
+
 @endsection

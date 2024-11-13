@@ -121,6 +121,13 @@ Route::middleware('auth')->group(function () {
     Route::delete('/teachers-selected/mass-delete', [InstructorController::class, 'massDestroy'])->name('teachers.massDestroy');
     Route::delete('/classes-selected/mass-delete', [ClassController::class, 'massDestroy'])->name('classes.massDestroy');
     Route::delete('/schools-selected/mass-delete', [SchoolController::class, 'massDestroy'])->name('schools.massDestroy');
+    Route::delete('/users-selected/mass-delete', [UserController::class, 'massDestroy'])->name('users.massDestroy');
+
+    Route::get('/users/makeadmin/{userId}', [UserController::class, 'makeAdmin'])->name('users.makeAdmin');
+    Route::get('/users/removeAdmin/{userId}', [UserController::class, 'removeAdmin'])->name('users.removeAdmin');
+    Route::get('/users/makeschooladmin/', [UserController::class, 'makeSchoolAdmin'])->name('users.makeSchoolAdmin');
+    Route::get('/users/removeschoolAdmin/{userId}', [UserController::class, 'removeSchoolAdmin'])->name('users.removeSchoolAdmin');
+
     Route::post('import-users', [StudentController::class, 'import'])->name('import.users');
     Route::resource('instructors', InstructorController::class);
     Route::resource('schools', SchoolController::class);
