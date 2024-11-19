@@ -140,29 +140,31 @@
                                         <h5 class="mb-4">Details</h5>
                                         <div class="row">
                                             <div class="col-md-4">
-                                                <div class="card text-white bg-success mb-3">
+                                                <div class="card text-white mb-3">
                                                     <div class="card-header">Completed</div>
-                                                    <div class="card-body">
+                                                    <div class="card-body" style="background-color: #d17e00a8;">
                                                         <h5 class="card-title">{{ $counts['completed'] }}</h5>
                                                         <p class="card-text">{{ $assignments_percentages['completed'] }}%</p>
                                                     </div>
                                                 </div>
                                             </div>
+
                                             <div class="col-md-4">
-                                                <div class="card text-white bg-danger mb-3">
-                                                    <div class="card-header">Overdue</div>
-                                                    <div class="card-body">
-                                                        <h5 class="card-title">{{ $counts['overdue'] }}</h5>
-                                                        <p class="card-text">{{ $assignments_percentages['overdue'] }}%</p>
+                                                <div class="card text-white mb-3">
+                                                    <div class="card-header bg-warning">Pending</div>
+                                                    <div class=" card-body" style="background-color: #f4bd0ea3;">
+                                                        <h5 class="card-title">{{ $counts['pending'] }}</h5>
+                                                        <p class="card-text">{{ $assignments_percentages['pending'] }}%</p>
                                                     </div>
                                                 </div>
                                             </div>
+
                                             <div class="col-md-4">
-                                                <div class="card text-white bg-warning mb-3">
-                                                    <div class="card-header">Pending</div>
-                                                    <div class="card-body">
-                                                        <h5 class="card-title">{{ $counts['pending'] }}</h5>
-                                                        <p class="card-text">{{ $assignments_percentages['pending'] }}%</p>
+                                                <div class="card text-white mb-3">
+                                                    <div class="card-header" style="background-color: #ff0000cf;">Overdue</div>
+                                                    <div class="card-body bg-danger">
+                                                        <h5 class="card-title">{{ $counts['overdue'] }}</h5>
+                                                        <p class="card-text">{{ $assignments_percentages['overdue'] }}%</p>
                                                     </div>
                                                 </div>
                                             </div>
@@ -232,8 +234,8 @@
                 datasets: [{
                     label: 'Count',
                     data: values,
-                    backgroundColor: ['#1cd0a0', '#d84d42', '#e3b00d'],
-                    borderColor: ['#1cd0a0', '#d84d42', '#e3b00d'],
+                    backgroundColor: ['#D17E00', '#ff0000cf', '#f4bd0e'],
+                    borderColor: ['#D17E00', '#ff0000cf', '#f4bd0e'],
                     borderWidth: 1,
                     barThickness: 100
                 }]

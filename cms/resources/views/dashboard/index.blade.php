@@ -12,10 +12,10 @@
                             <div class="nk-block-head nk-block-head-sm">
                                 <div class="nk-block-between">
                                     <div class="nk-block-head-content">
-                                        <h3 class="nk-block-title page-title">Dashboard</h3>
-                                        <div class="nk-block-des text-soft">
+                                        <h3 class="nk-block-title page-title">User Dashboard</h3>
+                                        <!-- <div class="nk-block-des text-soft">
                                             <p>Welcome to Your Dashboard.</p>
-                                        </div>
+                                        </div> -->
                                     </div>
                                     <div class="nk-block-head-content">
                                         <div class="toggle-wrap nk-block-tools-toggle">
@@ -38,36 +38,74 @@
                             </div>
                             <div class="nk-block">
                                 <div class="row g-gs">
+                                    @role('Admin')
                                     <div class="col-md-6">
                                         <div class="card">
-                                            <div class="card-inner">
+                                            <div class="card-inner" style="padding-top:0">
                                                 <div class="card-title text-center">
                                                     <h4 class="title">Total Users</h4>
                                                     <h2 class="fs-2 text-dark">{{ $totalUsers }}</h2>
                                                 </div>
                                                 <div>
                                                     <canvas id="usersChart"
-                                                        style="display: block; box-sizing: border-box; height: 500px; width: 500px;"></canvas>
+                                                        style="display: block; box-sizing: border-box; height: 450px; width: 500px;"></canvas>
                                                 </div>
                                             </div>
                                         </div>
                                     </div>
+                                    @endrole
+                                    @role('school')
+                                    <div class="">
+                                        <div class="card">
+                                            <div class="card-inner" style="padding-top:0">
+                                                <div class="card-title text-center">
+                                                    <h4 class="title" style="font-size: 1.2rem;">Total Users</h4>
+                                                    <h2 class="fs-2 text-dark">{{ $totalUsers }}</h2>
+                                                </div>
+                                                <div>
+                                                    <canvas id="usersChart"
+                                                        style="display: block; box-sizing: border-box; height: 450px; width: 500px;"></canvas>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    @endrole
                                     @if (!is_null($totalSchools))
                                     <div class="col-md-6">
                                         <div class="card">
-                                            <div class="card-inner">
+                                            <div class="card-inner" style="padding-top:0">
                                                 <div class="card-title text-center">
                                                     <h4 class="title">Total Schools</h4>
                                                     <h2 class="fs-2 text-dark">{{ $totalSchools }}</h2>
                                                 </div>
                                                 <div>
                                                     <canvas id="schoolsChart"
-                                                        style="display: block; box-sizing: border-box; height: 500px; width: 500px;"></canvas>
+                                                        style="display: block; box-sizing: border-box; height: 450px; width: 500px;"></canvas>
                                                 </div>
                                             </div>
                                         </div>
                                     </div>
                                     @endif
+                                </div>
+                                <div class="row mt-4">
+                                    <div class="col-md-4">
+                                        <div class="card text-white mb-3">
+                                            <div class="card-header" style="font-size: 1.0rem;font-weight: 700;">Programs</div>
+                                            <div class="card-body" style="background-color: #d17e00a8;">
+                                                <h6 class="card-title">Count</h6>
+                                                <p class="card-text">{{ $totalPrograms }}</p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <div class="card text-white mb-3">
+                                            <div class="card-header" style="font-size: 1.0rem;font-weight: 700;">Classes</div>
+                                            <div class="card-body" style="background-color: #d17e00a8;">
+                                                <h6 class="card-title">Count</h6>
+                                                <p class="card-text">{{ $totalClasses }}</p>
+                                            </div>
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -101,7 +139,7 @@
             datasets: [{
                 label: 'Total Users',
                 data: [studentsInSchool, teachersInSchool],
-                backgroundColor: ['#4CAF50', '#FF9800'],
+                backgroundColor: ['#d17e00', '#FF9800'],
                 hoverBackgroundColor: ['#66BB6A', '#FFB74D'],
                 borderWidth: 1
             }]
@@ -130,8 +168,8 @@
             datasets: [{
                 label: 'Total Schools',
                 data: [nationalSchools, internationalSchools],
-                backgroundColor: ['#1E88E5', '#E53935'],
-                hoverBackgroundColor: ['#42A5F5', '#EF5350'],
+                backgroundColor: ['#FF9800', '#d17e00'],
+                hoverBackgroundColor: ['#FFB74D', '#66BB6A'],
                 borderWidth: 1
             }]
         },

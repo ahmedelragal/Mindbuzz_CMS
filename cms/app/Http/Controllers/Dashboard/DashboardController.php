@@ -5,6 +5,8 @@ namespace App\Http\Controllers\Dashboard;
 use App\Http\Controllers\Controller;
 use App\Models\School;
 use App\Models\User;
+use App\Models\Program;
+use App\Models\Group;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -56,6 +58,18 @@ class DashboardController extends Controller
             })->role('school')->count();
         }
         $totalUsers = $studentsInSchool + $teachersInSchool;
+        if (auth()->user()->hasRole('school')) {
+            $totalPrograms = Program::with(['course', 'stage'])
+                ->whereHas('schoolProgram', function ($query) use ($schoolId) {
+                    $query->where('school_id', $schoolId);
+                })
+                ->count();
+
+            $totalClasses = Group::where('school_id', auth()->user()->school_id)->count();
+        } else {
+            $totalPrograms = Program::all()->count();
+            $totalClasses = Group::all()->count();
+        }
         return view(
             'dashboard.index',
             compact(
@@ -64,7 +78,9 @@ class DashboardController extends Controller
                 'totalUsers',
                 'totalSchools',
                 'nationalSchools',
-                'internationalSchools'
+                'internationalSchools',
+                'totalPrograms',
+                'totalClasses'
             )
         );
     }
