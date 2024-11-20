@@ -21,7 +21,7 @@
                                             <div class="col-md-6">
                                                 @role('Admin')
                                                 <label for="school_id">Select School</label>
-                                                <select class="form-select js-select2" name="school_id" id="school_id">
+                                                <select class="form-select js-select2" name="school_id" id="school_id" required>
                                                     <option value="" selected disabled>Choose a School</option>
                                                     @foreach ($schools as $school)
                                                     <option value="{{ $school->id }}" data-school="{{ $school->id }}" {{ old('school_id', $request['school_id'] ?? '') == $school->id ? 'selected' : '' }}>
@@ -37,10 +37,10 @@
                                             </div>
                                         </div>
 
-                                        <div class="row">
+                                        <div class="row mt-3">
                                             <div class="col-md-6">
                                                 <label for="student_id">Select Student</label>
-                                                <select class="form-select js-select2" name="student_id" id="student_id">
+                                                <select class="form-select js-select2" name="student_id" id="student_id" required>
                                                     @role('Admin')
                                                     <option value="" selected disabled>Choose a Student</option>
                                                     @endrole
@@ -61,7 +61,7 @@
                                             </div>
                                         </div>
 
-                                        <div class="form-row mt-3">
+                                        <div class="form-row mt-4">
                                             <div class="col-md-12 text-right">
                                                 <button type="submit" class="btn btn-primary">View Report</button>
                                             </div>

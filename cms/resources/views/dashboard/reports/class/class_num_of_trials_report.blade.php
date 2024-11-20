@@ -173,10 +173,9 @@
                     </div>
                 </div>
             </div>
+            @include('dashboard.layouts.footer')
         </div>
-        @include('dashboard.layouts.footer')
     </div>
-</div>
 </div>
 @endsection
 @php
@@ -206,8 +205,8 @@ $data = [$oneStarDisplayedPercentage, $twoStarDisplayedPercentage, $threeStarDis
                 datasets: [{
                     label: 'Percentage',
                     data: values,
-                    backgroundColor: ['#1cd0a0', '#d84d42', '#e3b00d'],
-                    borderColor: ['#1cd0a0', '#d84d42', '#e3b00d'],
+                    backgroundColor: ['#1cd0a0', '#f4bd0eb3', '#d84d42'],
+                    borderColor: ['#1cd0a0', '#f4bd0eb3', '#d84d42'],
                     borderWidth: 1,
                     barThickness: 100
                 }]

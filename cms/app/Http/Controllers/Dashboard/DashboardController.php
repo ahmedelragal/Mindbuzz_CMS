@@ -65,8 +65,39 @@ class DashboardController extends Controller
                 })
                 ->count();
 
+            $boyCount = User::where('school_id', $schoolId)
+                ->where('role', 2)
+                ->where('is_student', 1)->where('gender', 'boy')->count();
+
+            $girlCount = User::where('school_id', $schoolId)
+                ->where('role', 2)
+                ->where('is_student', 1)->where('gender', 'girl')->count();
+
+            $totalStudentswithGender = $boyCount + $girlCount;
+            if ($totalStudentswithGender > 0) {
+                $boyPercentage = round(($boyCount / $totalStudentswithGender) * 100);
+                $girlPercentage = round(($girlCount / $totalStudentswithGender) * 100);
+            } else {
+                $boyPercentage = 0;
+                $girlPercentage = 0;
+            }
+
             $totalClasses = Group::where('school_id', auth()->user()->school_id)->count();
         } else {
+            $boyCount = User::where('role', 2)
+                ->where('is_student', 1)->where('gender', 'boy')->count();
+            $girlCount = User::where('role', 2)
+                ->where('is_student', 1)->where('gender', 'girl')->count();
+
+            $totalStudentswithGender = $boyCount + $girlCount;
+            if ($totalStudentswithGender > 0) {
+                $boyPercentage = round(($boyCount / $totalStudentswithGender) * 100);
+                $girlPercentage = round(($girlCount / $totalStudentswithGender) * 100);
+            } else {
+                $boyPercentage = 0;
+                $girlPercentage = 0;
+            }
+
             $totalPrograms = Program::all()->count();
             $totalClasses = Group::all()->count();
         }
@@ -80,7 +111,9 @@ class DashboardController extends Controller
                 'nationalSchools',
                 'internationalSchools',
                 'totalPrograms',
-                'totalClasses'
+                'totalClasses',
+                'boyPercentage',
+                'girlPercentage'
             )
         );
     }

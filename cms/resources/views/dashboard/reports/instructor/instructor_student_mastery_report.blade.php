@@ -25,7 +25,7 @@
                                             @role('Admin')
                                             <div class="col-md-4">
                                                 <label for="school_id">Select School</label>
-                                                <select class="form-select js-select2" name="school_id" id="school_id">
+                                                <select class="form-select js-select2" name="school_id" id="school_id" required>
                                                     <option value="" selected disabled>Choose a School</option>
                                                     @foreach ($schools as $school)
                                                     <option value="{{ $school->id }}" data-school="{{ $school->id }}" {{ old('school_id', $request['school_id'] ?? '') == $school->id ? 'selected' : '' }}>
@@ -41,7 +41,7 @@
 
                                             <div class="col-md-4">
                                                 <label for="teacher_id">Select Teacher</label>
-                                                <select class="form-select js-select2" name="teacher_id" id="teacher_id">
+                                                <select class="form-select js-select2" name="teacher_id" id="teacher_id" required>
                                                     <option value="" selected disabled>No Available Teachers</option>
                                                 </select>
                                             </div>

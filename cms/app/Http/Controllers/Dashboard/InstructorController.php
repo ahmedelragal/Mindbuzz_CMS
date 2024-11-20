@@ -116,7 +116,6 @@ class InstructorController extends Controller
                 ->groupBy('name')
                 ->get();
         }
-
         return view('dashboard.instructors.create', compact('schools', 'programs', 'stages', 'groups', 'uniqueClasses'));
     }
 
@@ -313,9 +312,6 @@ class InstructorController extends Controller
         //     ]);
         //     }
         // }
-
-        $teacher->assignRole('teacher');
-
         if ($request->hasFile('parent_image')) {
             $imagePath = $request->file('parent_image')->store('images', 'public');
             $teacher->update(['parent_image' => $imagePath]);

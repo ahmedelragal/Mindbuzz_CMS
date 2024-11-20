@@ -23,6 +23,7 @@ use App\Models\UserCourse;
 use App\Models\TestTypes;
 use App\Models\User;
 use App\Models\TestQuestion;
+use App\Models\GameSkills;
 use Carbon\Carbon;
 use DB;
 use Illuminate\Support\Facades\Auth;
@@ -194,17 +195,17 @@ class ReportController extends Controller
                 return view('dashboard.reports.student.student_completion_report', $data);
             }
 
+            // Add the 'from_date' filter if it exists
+            $progressQuery->when($request->filled('from_date'), function ($progressQuery) use ($request) {
+                $fromDate = Carbon::parse($request->from_date)->startOfDay();
+                return $progressQuery->where('created_at', '>=', $fromDate);
+            });
+
             // Add the 'to_date' filter if it exists
             $progressQuery->when($request->filled('to_date'), function ($progressQuery) use ($request) {
                 $toDate = Carbon::parse($request->to_date)->endOfDay();
                 return $progressQuery->where('created_at', '<=', $toDate);
             });
-
-            if ($progressQuery->get()->isEmpty()) {
-                $data['error'] = 'No Results Found for this Date';
-                return view('dashboard.reports.student.student_completion_report', $data);
-            }
-
 
             if ($progressQuery->get()->isEmpty()) {
                 $data['error'] = 'No Results Found for this Date';
@@ -257,7 +258,9 @@ class ReportController extends Controller
             }
             // Execute the query
             $tests = $progressQuery->orderBy('due_date', 'DESC')->get();
-
+            foreach ($tests as $test) {
+                $test->start_date = Carbon::parse($test->start_date)->format('Y-m-d');
+            }
             // Prepare response data
             $data['counts'] = [
                 'completed' => $finishedCount,
@@ -368,11 +371,11 @@ class ReportController extends Controller
             $lessonsMastery = [];
             $gamesMastery = [];
             $skillsMastery = [];
-
             if ($student_progress->isEmpty()) {
                 $data['error'] = 'No Student Progress Found.';
                 return view('dashboard.reports.student.student_mastery_report', $data);
             }
+            // dd($student_progress);
             foreach ($student_progress as $progress) {
                 // Retrieve the test and its related game, game type, and skills
                 $test = Test::with(['game.gameTypes.skills.skill'])->where('lesson_id', $progress->lesson_id)->find($progress->test_id);
@@ -384,7 +387,6 @@ class ReportController extends Controller
 
                 // Get the game type (since each game has one game type)
                 $gameType = $test->game->gameTypes;
-
                 // Group by unit
                 if (!isset($unitsMastery[$progress->unit_id])) {
                     $unitsMastery[$progress->unit_id] = [
@@ -547,6 +549,44 @@ class ReportController extends Controller
                 $unitsMastery[$progress->unit_id]['lessons'][$progress->lesson_id]['mastered'] += $lessonsMastery[$progress->lesson_id]['mastered'];
                 $unitsMastery[$progress->unit_id]['lessons'][$progress->lesson_id]['total_attempts'] += $lessonsMastery[$progress->lesson_id]['total_attempts'];
                 $unitsMastery[$progress->unit_id]['lessons'][$progress->lesson_id]['total_score'] += $lessonsMastery[$progress->lesson_id]['total_score'];
+                // if (!isset($unitsMastery[$progress->unit_id]['lessons'][$progress->lesson_id]['games'][$test->game_id])) {
+                //     $unitsMastery[$progress->unit_id]['lessons'][$progress->lesson_id]['games'][$test->game_id] = [
+                //         'game_id' => $test->game_id,
+                //         'game_name' => Game::find($test->game_id)->name
+
+                //     ];
+                // }
+            }
+
+            $gameIds = collect($gameTypesMastery)->flatMap(function ($gameType) {
+                return collect($gameType['games'])->pluck('game_id');
+            })->toArray();
+
+            $games = Game::whereIn('id', $gameIds)->with('lesson.unit')->get();
+
+            // $unitsMastery = [];
+            foreach ($games as $game) {
+                // dd($game);
+                $lessonId = $game->lesson->id;
+                $unitId = $game->lesson->unit->id;
+
+                if (!isset($unitsMastery[$unitId])) {
+                    $unitsMastery[$unitId] = ['lessons' => []];
+                }
+                if (!isset($unitsMastery[$unitId]['lessons'][$lessonId])) {
+                    $unitsMastery[$unitId]['lessons'][$lessonId] = ['games' => []];
+                }
+
+                $unitsMastery[$unitId]['lessons'][$lessonId]['games'][$game->id] = $gameTypesMastery[$game->game_type_id]['games'][$game->id];
+
+                $gameSkills = Skills::whereIn('id', GameSkills::where('lesson_id', $game->lesson_id)->where('game_type_id', $game->game_type_id)->pluck('skill_id'))->get();
+                if (!$gameSkills->isEmpty()) {
+                    foreach ($gameSkills as $skill) {
+                        $unitsMastery[$unitId]['lessons'][$lessonId]['games'][$game->id]['skills'][$skill->id] = $skillsMastery[$skill->id];
+                    }
+                } else {
+                    $unitsMastery[$unitId]['lessons'][$lessonId]['games'][$game->id]['skills'] = [];
+                }
             }
 
             // Ensure all lessons are included in units
@@ -620,6 +660,8 @@ class ReportController extends Controller
                 array_push($skillChartLabels, $skillData['name']);
                 array_push($skillChartPercentage, $skillData['mastery_percentage']);
             }
+
+            dd($unitsMastery, $lessonsMastery, $gamesMastery, $gameTypesMastery, $skillsMastery);
             // Prepare the response data
             if ($request->has('filter')) {
                 switch ($request->filter) {
@@ -1877,6 +1919,9 @@ class ReportController extends Controller
 
             // Execute the query
             $tests = $progressQuery->orderBy('due_date', 'DESC')->get();
+            foreach ($tests as $test) {
+                $test->start_date = Carbon::parse($test->start_date)->format('Y-m-d');
+            }
 
             // Prepare response data
             $data['counts'] = [
@@ -2325,7 +2370,7 @@ class ReportController extends Controller
             // Check if student progress exists for the given program
             if ($request->filled('program_id')) {
                 // Initialize query builder with student IDs and program ID
-                $selectedPrograms = $request->program_id;
+                $selectedPrograms[] = $request->program_id;
                 $progressQuery = StudentProgress::whereIn('student_id', $students)
                     ->where('program_id', $selectedPrograms);
                 if ($progressQuery->get()->isEmpty()) {
@@ -2543,9 +2588,8 @@ class ReportController extends Controller
                     ->when($request->filled('to_date'), function ($division) use ($request) {
                         $toDate = Carbon::parse($request->to_date)->endOfDay();
                         return $division->where('student_progress.created_at', '<=', $toDate);
-                    });
-
-
+                    })
+                    ->count();
 
                 if ($division == 0) {
                     $division = 1;
@@ -2959,7 +3003,9 @@ class ReportController extends Controller
 
             // Execute the query
             $tests = $progressQuery->orderBy('due_date', 'DESC')->get();
-
+            foreach ($tests as $test) {
+                $test->start_date = Carbon::parse($test->start_date)->format('Y-m-d');
+            }
 
             // Prepare response data
             $data['counts'] = [
@@ -3127,7 +3173,9 @@ class ReportController extends Controller
             }
             // Execute the query
             $tests = $progressQuery->orderBy('due_date', 'DESC')->get();
-
+            foreach ($tests as $test) {
+                $test->start_date = Carbon::parse($test->start_date)->format('Y-m-d');
+            }
 
             // Prepare response data
             $data['counts'] = [

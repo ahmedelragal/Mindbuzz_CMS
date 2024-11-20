@@ -12,7 +12,12 @@
                             <div class="nk-block-head nk-block-head-sm">
                                 <div class="nk-block-between">
                                     <div class="nk-block-head-content">
-                                        <h3 class="nk-block-title page-title">User Dashboard</h3>
+                                        @role('Admin')
+                                        <h3 class="nk-block-title page-title">Super Admin Dashboard</h3>
+                                        @endrole
+                                        @role('school')
+                                        <h3 class="nk-block-title page-title">School Admin Dashboard</h3>
+                                        @endrole
                                         <!-- <div class="nk-block-des text-soft">
                                             <p>Welcome to Your Dashboard.</p>
                                         </div> -->
@@ -89,20 +94,33 @@
                                 </div>
                                 <div class="row mt-4">
                                     <div class="col-md-4">
-                                        <div class="card text-white mb-3">
-                                            <div class="card-header" style="font-size: 1.0rem;font-weight: 700;">Programs</div>
-                                            <div class="card-body" style="background-color: #d17e00a8;">
+                                        <div class="card mb-3">
+                                            <div class="card-header text-white" style="font-size: 1.0rem;font-weight: 700;">Total Programs</div>
+                                            <div class="card-body" style="background-color: white; height:95px; max-height:95px;">
                                                 <h6 class="card-title">Count</h6>
                                                 <p class="card-text">{{ $totalPrograms }}</p>
                                             </div>
                                         </div>
                                     </div>
                                     <div class="col-md-4">
-                                        <div class="card text-white mb-3">
-                                            <div class="card-header" style="font-size: 1.0rem;font-weight: 700;">Classes</div>
-                                            <div class="card-body" style="background-color: #d17e00a8;">
+                                        <div class="card mb-3">
+                                            <div class="card-header text-white" style="font-size: 1.0rem;font-weight: 700;">Total Classes</div>
+                                            <div class="card-body" style="background-color: white; height:95px; max-height:95px;">
                                                 <h6 class="card-title">Count</h6>
                                                 <p class="card-text">{{ $totalClasses }}</p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <div class="card mb-3">
+                                            <div class="card-header text-white" style="font-size: 1.0rem;font-weight: 700;">Student Gender Percentage</div>
+                                            <div class="card-body" style="background-color: white; height:95px; max-height:95px;display: flex;align-items: center;">
+
+                                                <h6 class="card-text" style="font-size:16.8px; color:#526484;">
+                                                    <p>Boys: {{$boyPercentage}}%</p>
+                                                    <p style="font-size:16.8px;">Girls: {{$girlPercentage}}%</p>
+
+                                                </h6>
                                             </div>
                                         </div>
                                     </div>
@@ -139,8 +157,8 @@
             datasets: [{
                 label: 'Total Users',
                 data: [studentsInSchool, teachersInSchool],
-                backgroundColor: ['#d17e00', '#FF9800'],
-                hoverBackgroundColor: ['#66BB6A', '#FFB74D'],
+                backgroundColor: ['#66BB6A', '#FF9800'],
+                hoverBackgroundColor: ['#d17e00', '#FFB74D'],
                 borderWidth: 1
             }]
         },
@@ -168,8 +186,8 @@
             datasets: [{
                 label: 'Total Schools',
                 data: [nationalSchools, internationalSchools],
-                backgroundColor: ['#FF9800', '#d17e00'],
-                hoverBackgroundColor: ['#FFB74D', '#66BB6A'],
+                backgroundColor: ['#66BB6A', '#FF9800'],
+                hoverBackgroundColor: ['#d17e00', '#FFB74D'],
                 borderWidth: 1
             }]
         },

@@ -26,7 +26,7 @@
                                             @role('Admin')
                                             <div class="col-md-4">
                                                 <label for="school_id">Select School</label>
-                                                <select class="form-select js-select2" name="school_id" id="school_id">
+                                                <select class="form-select js-select2" name="school_id" id="school_id" required>
                                                     <option value="" selected disabled>Choose a School</option>
                                                     @foreach ($schools as $school)
                                                     <option value="{{ $school->id }}" data-school="{{ $school->id }}" {{ old('school_id', $request['school_id'] ?? '') == $school->id ? 'selected' : '' }}>
@@ -43,14 +43,14 @@
 
                                             <div class="col-md-4">
                                                 <label for="student_id">Select Student</label>
-                                                <select class="form-select js-select2" name="student_id" id="student_id">
+                                                <select class="form-select js-select2" name="student_id" id="student_id" required>
                                                     <option value="" selected disabled>No Available Students</option>
                                                 </select>
                                             </div>
                                             <!-- Program Filter -->
                                             <div class="col-md-4">
                                                 <label for="program_id">Select Program</label>
-                                                <select class="form-select js-select2" name="program_id" id="program_id">
+                                                <select class="form-select js-select2" name="program_id" id="program_id" required>
                                                     <option value="" disabled selected>No Available Programs</option>
                                                 </select>
                                             </div>
@@ -110,12 +110,14 @@
                                 <div class="card mt-4">
                                     <div class="card-body">
                                         <!-- Display Chart if Data is Available -->
+                                        <div class="chart-buttons" id="chart-buttons" style="display: none; justify-content: flex-end; gap: 10px; padding-top:20px">
+                                            <button class="btn btn-primary" id="prevBtn" onclick="previousPage()">Previous</button>
+                                            <button class="btn btn-primary" id="nextBtn" onclick="nextPage()">Next</span></button>
+                                        </div>
                                         <div class="container mt-5">
                                             <canvas id="masteryChart" width="400" height="200"></canvas>
                                         </div>
-                                        <div class="container mt-5">
-                                            <canvas id="masteryChartNumbers" width="400" height="200" style="display:none;"></canvas>
-                                        </div>
+
                                     </div>
                                 </div>
 
@@ -251,16 +253,144 @@
                     </div>
                 </div>
             </div>
+            <!-- Footer -->
+            @include('dashboard.layouts.footer')
         </div>
     </div>
-    <!-- Footer -->
-    @include('dashboard.layouts.footer')
 </div>
 @endsection
 
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 @section('page_js')
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+@if (isset($gamesLabels) || isset($gamesValues))
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Data from controller
+        const gamesLabels = @json($gamesLabels);
+        const gamesValues = @json($gamesValues);
+
+        // Group lessons by unit using the "-" separator
+        const units = [];
+        let currentUnit = [];
+        gamesLabels.forEach((label, index) => {
+            if (label !== "-") {
+                currentUnit.push({
+                    label: label,
+                    value: gamesValues[index]
+                });
+            } else if (currentUnit.length > 0) {
+                units.push(currentUnit);
+                currentUnit = [];
+            }
+        });
+        // Push the last unit if it's not empty
+        if (currentUnit.length > 0) {
+            units.push(currentUnit);
+        }
+
+        // Initialize dynamic pagination variables
+        let currentPage = 0;
+
+        const ctx = document.getElementById('masteryChart').getContext('2d');
+        const btnContainer = document.getElementById('chart-buttons').style.display = 'flex';
+        toggleButtons();
+        // Initialize the chart with the first unit's data
+        let usageChart = initializeChart(ctx, units[currentPage].map(item => item.label), units[currentPage].map(item => item.value));
+
+        // Function to initialize chart
+        function initializeChart(ctx, labels, data) {
+            return new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'Assigned Games',
+                        data: data, // Expecting values between 0 and 100
+                        backgroundColor: '#E9C874',
+                        borderColor: '#E9C874',
+                        borderWidth: 1,
+                        maxBarThickness: 120
+                    }]
+                },
+                options: {
+                    scales: {
+                        x: {
+                            grid: {
+                                display: false
+                            }
+                        },
+                        y: {
+                            beginAtZero: true,
+                            max: 1, // Set the max value to 100 for percentage
+                        }
+                    },
+                    responsive: true,
+                    maintainAspectRatio: true,
+                    plugins: {
+                        legend: {
+                            display: true,
+                            position: 'top'
+                        },
+                    },
+                    layout: {
+                        padding: {
+                            left: 50,
+                            right: 50
+                        }
+                    }
+                }
+            });
+        }
+
+
+
+        // Function to update the chart with the current page data (current unit)
+        function updateChart() {
+            const currentUnit = units[currentPage];
+            if (usageChart) {
+                usageChart.data.labels = currentUnit.map(item => item.label);
+                usageChart.data.datasets[0].data = currentUnit.map(item => item.value);
+                usageChart.update();
+            }
+            toggleButtons();
+        }
+
+        // Function to go to the previous unit (previous page)
+        window.previousPage = function() {
+            if (currentPage > 0) {
+                currentPage--;
+                updateChart(); // Call updateChart to refresh with new data
+            }
+        }
+
+        // Function to go to the next unit (next page)
+        window.nextPage = function() {
+            if (currentPage < units.length - 1) {
+                currentPage++;
+                updateChart(); // Call updateChart to refresh with new data
+            }
+        }
+
+        // Function to toggle the visibility of the previous and next buttons
+        function toggleButtons() {
+            const prevButton = document.getElementById('prevBtn');
+            const nextButton = document.getElementById('nextBtn');
+
+            // If only one page, hide both buttons
+            if (units.length <= 1) {
+                prevButton.style.display = 'none';
+                nextButton.style.display = 'none';
+            } else {
+                // Show or hide buttons based on the current page
+                prevButton.style.display = (currentPage === 0) ? 'none' : 'block';
+                nextButton.style.display = (currentPage === units.length - 1) ? 'none' : 'block';
+            }
+        }
+    });
+</script>
+@endif
 @if(isset($chartLabels) && isset($chartPercentage))
 <script>
     document.addEventListener('DOMContentLoaded', function() {

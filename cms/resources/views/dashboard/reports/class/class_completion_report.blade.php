@@ -134,41 +134,41 @@
                                         </div>
                                     </div>
                                 </div>
+                                <div class="row mt-4">
+                                    <div class="col-md-4">
+                                        <div class="card">
+                                            <div class="card-header text-white bg-success" style="font-size: 1.0rem;font-weight: 700;">Completed</div>
+                                            <div class=" card-body" style="background-color: white;">
+                                                <h6 class="card-title">Count: {{ $counts['completed'] }}</h6>
+                                                <p class="card-text">Percentage: {{ $assignments_percentages['completed'] }}%</p>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div class="col-md-4">
+                                        <div class="card">
+                                            <div class="card-header text-white" style="font-size: 1.0rem;font-weight: 700;background-color: #f4bd0eb3;">Pending</div>
+                                            <div class=" card-body" style="background-color: white;">
+                                                <h6 class="card-title">Count: {{ $counts['pending'] }}</h6>
+                                                <p class="card-text">Percentage: {{ $assignments_percentages['pending'] }}%</p>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div class="col-md-4">
+                                        <div class="card">
+                                            <div class="card-header text-white bg-danger" style="font-size: 1.0rem;font-weight: 700;">Overdue</div>
+                                            <div class=" card-body" style="background-color: white;">
+                                                <h6 class="card-title">Count: {{ $counts['overdue'] }}</h6>
+                                                <p class="card-text">Percentage: {{ $assignments_percentages['overdue'] }}%</p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
 
                                 <div class="card mt-4">
                                     <div class="card-body">
                                         <h5 class="mb-4">Details</h5>
-                                        <div class="row">
-                                            <div class="col-md-4">
-                                                <div class="card text-white mb-3">
-                                                    <div class="card-header">Completed</div>
-                                                    <div class="card-body" style="background-color: #d17e00a8;">
-                                                        <h5 class="card-title">{{ $counts['completed'] }}</h5>
-                                                        <p class="card-text">{{ $assignments_percentages['completed'] }}%</p>
-                                                    </div>
-                                                </div>
-                                            </div>
-
-                                            <div class="col-md-4">
-                                                <div class="card text-white mb-3">
-                                                    <div class="card-header bg-warning">Pending</div>
-                                                    <div class=" card-body" style="background-color: #f4bd0ea3;">
-                                                        <h5 class="card-title">{{ $counts['pending'] }}</h5>
-                                                        <p class="card-text">{{ $assignments_percentages['pending'] }}%</p>
-                                                    </div>
-                                                </div>
-                                            </div>
-
-                                            <div class="col-md-4">
-                                                <div class="card text-white mb-3">
-                                                    <div class="card-header" style="background-color: #ff0000cf;">Overdue</div>
-                                                    <div class="card-body bg-danger">
-                                                        <h5 class="card-title">{{ $counts['overdue'] }}</h5>
-                                                        <p class="card-text">{{ $assignments_percentages['overdue'] }}%</p>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        </div>
                                         <table class="table">
                                             <thead>
                                                 <tr>
@@ -234,8 +234,8 @@
                 datasets: [{
                     label: 'Count',
                     data: values,
-                    backgroundColor: ['#D17E00', '#ff0000cf', '#f4bd0e'],
-                    borderColor: ['#D17E00', '#ff0000cf', '#f4bd0e'],
+                    backgroundColor: ['#1cd0a0', '#ff0000cf', '#f4bd0eb3'],
+                    borderColor: ['#1cd0a0', '#ff0000cf', '#f4bd0eb3'],
                     borderWidth: 1,
                     barThickness: 100
                 }]

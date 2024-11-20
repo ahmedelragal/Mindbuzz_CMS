@@ -213,12 +213,12 @@
                     </div>
                 </div>
             </div>
+            <!-- Footer -->
+            @include('dashboard.layouts.footer')
         </div>
-        <!-- Footer -->
-        @include('dashboard.layouts.footer')
     </div>
 </div>
-</div>
+
 @endsection
 
 

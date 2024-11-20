@@ -42,7 +42,7 @@
 
                                             <div class="col-md-4">
                                                 <label for="student_id">Select Student</label>
-                                                <select class="form-select js-select2" name="student_id" id="student_id">
+                                                <select class="form-select js-select2" name="student_id" id="student_id" required>
                                                     @role('Admin')
                                                     <option value="" selected disabled>Choose a Student</option>
                                                     @endrole

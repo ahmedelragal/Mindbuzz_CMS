@@ -344,18 +344,6 @@
     crossorigin="anonymous" referrerpolicy="no-referrer"></script>
 
 <!-- SweetAlert validation messages -->
-@if($errors->any())
-<script>
-    Swal.fire({
-        title: 'Error!',
-        text: '{{ implode('\
-        n ', $errors->all()) }}',
-        icon: 'error',
-        confirmButtonText: 'Ok'
-    });
-</script>
-@endif
-
 @if(session('success'))
 <script>
     Swal.fire({

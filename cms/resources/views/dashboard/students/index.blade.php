@@ -152,8 +152,8 @@ session(['students_previous_url' => url()->full()]);
                                                 <td class="align-middle" style="padding-left:8px;"><input type="checkbox" class="student-checkbox" name="ids[]" value="{{ $student->id }}"></td>
                                                 <td class style="text-align: left;padding: 15px;">
                                                     <div class="d-flex align-items-center">
-                                                        <div class="user-avatar" style><img src="../images/avatar/a-sm.jpg" alt=""></div>
-                                                        <div class="user-info ms-2">
+                                                        <!-- <div class="user-avatar"><img src="../images/avatar/a-sm.jpg" alt=""></div> -->
+                                                        <div class="user-info">
                                                             <span class="tb-lead">{{ $student->name }}<br><span>{{ $student->email }}</span>
                                                         </div>
                                                     </div>
