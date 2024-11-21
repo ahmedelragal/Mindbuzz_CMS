@@ -407,7 +407,7 @@ class ReportController extends Controller
                 if (!isset($lessonsMastery[$progress->lesson_id])) {
                     $lessonsMastery[$progress->lesson_id] = [
                         'lesson_id' => $progress->lesson_id,
-                        'name' => Unit::find(Lesson::find($progress->lesson_id)->unit_id)->name . " | " . Lesson::find($progress->lesson_id)->name,
+                        'name' => Lesson::find($progress->lesson_id)->name,
                         'failed' => 0,
                         'introduced' => 0,
                         'practiced' => 0,
@@ -543,12 +543,14 @@ class ReportController extends Controller
                 }
 
                 // Aggregate lesson data under the unit
+                $unitsMastery[$progress->unit_id]['lessons'][$progress->lesson_id]['name'] = Lesson::find($progress->lesson_id)->name;
                 $unitsMastery[$progress->unit_id]['lessons'][$progress->lesson_id]['failed'] += $lessonsMastery[$progress->lesson_id]['failed'];
                 $unitsMastery[$progress->unit_id]['lessons'][$progress->lesson_id]['introduced'] += $lessonsMastery[$progress->lesson_id]['introduced'];
                 $unitsMastery[$progress->unit_id]['lessons'][$progress->lesson_id]['practiced'] += $lessonsMastery[$progress->lesson_id]['practiced'];
                 $unitsMastery[$progress->unit_id]['lessons'][$progress->lesson_id]['mastered'] += $lessonsMastery[$progress->lesson_id]['mastered'];
                 $unitsMastery[$progress->unit_id]['lessons'][$progress->lesson_id]['total_attempts'] += $lessonsMastery[$progress->lesson_id]['total_attempts'];
                 $unitsMastery[$progress->unit_id]['lessons'][$progress->lesson_id]['total_score'] += $lessonsMastery[$progress->lesson_id]['total_score'];
+
                 // if (!isset($unitsMastery[$progress->unit_id]['lessons'][$progress->lesson_id]['games'][$test->game_id])) {
                 //     $unitsMastery[$progress->unit_id]['lessons'][$progress->lesson_id]['games'][$test->game_id] = [
                 //         'game_id' => $test->game_id,
@@ -557,85 +559,32 @@ class ReportController extends Controller
                 //     ];
                 // }
             }
-
-            $gameIds = collect($gameTypesMastery)->flatMap(function ($gameType) {
-                return collect($gameType['games'])->pluck('game_id');
-            })->toArray();
-
-            $games = Game::whereIn('id', $gameIds)->with('lesson.unit')->get();
-
-            // $unitsMastery = [];
-            foreach ($games as $game) {
-                // dd($game);
-                $lessonId = $game->lesson->id;
-                $unitId = $game->lesson->unit->id;
-
-                if (!isset($unitsMastery[$unitId])) {
-                    $unitsMastery[$unitId] = ['lessons' => []];
-                }
-                if (!isset($unitsMastery[$unitId]['lessons'][$lessonId])) {
-                    $unitsMastery[$unitId]['lessons'][$lessonId] = ['games' => []];
-                }
-
-                $unitsMastery[$unitId]['lessons'][$lessonId]['games'][$game->id] = $gameTypesMastery[$game->game_type_id]['games'][$game->id];
-
-                $gameSkills = Skills::whereIn('id', GameSkills::where('lesson_id', $game->lesson_id)->where('game_type_id', $game->game_type_id)->pluck('skill_id'))->get();
-                if (!$gameSkills->isEmpty()) {
-                    foreach ($gameSkills as $skill) {
-                        $unitsMastery[$unitId]['lessons'][$lessonId]['games'][$game->id]['skills'][$skill->id] = $skillsMastery[$skill->id];
-                    }
-                } else {
-                    $unitsMastery[$unitId]['lessons'][$lessonId]['games'][$game->id]['skills'] = [];
-                }
-            }
-
             // Ensure all lessons are included in units
-            foreach ($unitsMastery as &$unit) {
-                foreach ($lessonsMastery as $lessonId => $lessonData) {
-                    if (!isset($unit['lessons'][$lessonId])) {
-                        $unit['lessons'][$lessonId] = [
-                            'lesson_id' => $lessonId,
-                            'failed' => 0,
-                            'introduced' => 0,
-                            'practiced' => 0,
-                            'mastered' => 0,
-                            'total_attempts' => 0,
-                            'total_score' => 0,
-                            'mastery_percentage' => 0,
-                        ];
-                    }
-                }
-            }
-            // Calculate mastery percentages for units, lessons, games, and game types
-            $unitChartLabels = [];
-            $unitChartPercentage = [];
-            foreach ($unitsMastery as &$unitData) {
-                $unitData['mastery_percentage'] = $unitData['total_attempts'] > 0 ? round(($unitData['total_score'] / $unitData['total_attempts']), 2) : 0;
+            // foreach ($unitsMastery as &$unit) {
+            //     foreach ($lessonsMastery as $lessonId => $lessonData) {
+            //         if (!isset($unit['lessons'][$lessonId])) {
+            //             $unit['lessons'][$lessonId] = [
+            //                 'lesson_id' => $lessonId,
+            //                 'name' => Lesson::find($lessonId)->name,
+            //                 'failed' => 0,
+            //                 'introduced' => 0,
+            //                 'practiced' => 0,
+            //                 'mastered' => 0,
+            //                 'total_attempts' => 0,
+            //                 'total_score' => 0,
+            //                 'mastery_percentage' => 0,
+            //                 'games' => []
+            //             ];
+            //         }
+            //     }
+            // }
 
-                foreach ($unitData['lessons'] as &$lessonData) {
-                    $lessonData['mastery_percentage'] = $lessonData['total_attempts'] > 0 ? round(($lessonData['total_score'] / $lessonData['total_attempts']), 2) : 0;
-                }
-
-                $unitData['lessons'] = array_values($unitData['lessons']); // Convert lessons to array
-                array_push($unitChartLabels, $unitData['name']);
-                array_push($unitChartPercentage, $unitData['mastery_percentage']);
-            }
-            $lessonChartPercentage = [];
-            $lessonChartLabels = [];
-            foreach ($lessonsMastery as &$lessonData) {
-                $lessonData['mastery_percentage'] = $lessonData['total_attempts'] > 0 ? round(($lessonData['total_score'] / $lessonData['total_attempts']), 2) : 0;
-                array_push($lessonChartLabels, $lessonData['name']);
-                array_push($lessonChartPercentage, $lessonData['mastery_percentage']);
-            }
             $gameChartPercentage = [];
             $gameChartLabels = [];
             foreach ($gameTypesMastery as &$gameTypeData) {
                 foreach ($gameTypeData['games'] as &$gameData) {
                     $gameData['mastery_percentage'] = $gameData['total_attempts'] > 0 ? round(($gameData['total_score'] / $gameData['total_attempts']), 2) : 0;
-                    array_push($gameChartLabels, $gameData['name']);
-                    array_push($gameChartPercentage, $gameData['mastery_percentage']);
                 }
-                $gameTypeData['games'] = array_values($gameTypeData['games']); // Convert games to array
 
                 $gameTypeData['mastery_percentage'] = $gameTypeData['total_attempts'] > 0 ? round(($gameTypeData['total_score'] / $gameTypeData['total_attempts']), 2) : 0;
             }
@@ -657,19 +606,130 @@ class ReportController extends Controller
                     $skillData['current_level'] = 'failed';
                     $skillData['mastery_percentage'] = $skillData['total_score'] / $skillData['total_attempts'] > 100 ? 100 : round($skillData['total_score'] / $skillData['total_attempts'], 2);
                 }
-                array_push($skillChartLabels, $skillData['name']);
-                array_push($skillChartPercentage, $skillData['mastery_percentage']);
+                // array_push($skillChartLabels, $skillData['name']);
+                // array_push($skillChartPercentage, $skillData['mastery_percentage']);
             }
 
-            dd($unitsMastery, $lessonsMastery, $gamesMastery, $gameTypesMastery, $skillsMastery);
+
+
+            // Calculate mastery percentages for units, lessons, games, and game types
+            $unitChartLabels = [];
+            $unitChartPercentage = [];
+            foreach ($unitsMastery as &$unitData) {
+                $unitData['mastery_percentage'] = $unitData['total_attempts'] > 0 ? round(($unitData['total_score'] / $unitData['total_attempts']), 2) : 0;
+
+                foreach ($unitData['lessons'] as &$lessonData) {
+                    $lessonData['mastery_percentage'] = $lessonData['total_attempts'] > 0 ? round(($lessonData['total_score'] / $lessonData['total_attempts']), 2) : 0;
+                }
+
+                // $unitData['lessons'] = array_values($unitData['lessons']); // Convert lessons to array
+            }
+            $lessonChartPercentage = [];
+            $lessonChartLabels = [];
+            foreach ($lessonsMastery as &$lessonData) {
+                $lessonData['mastery_percentage'] = $lessonData['total_attempts'] > 0 ? round(($lessonData['total_score'] / $lessonData['total_attempts']), 2) : 0;
+            }
+
+            $gameIds = collect($gameTypesMastery)->flatMap(function ($gameType) {
+                return collect($gameType['games'])->pluck('game_id');
+            })->toArray();
+
+            $games = Game::whereIn('id', $gameIds)->with('lesson.unit')->get();
+            $testarr = [];
+            // $unitsMastery = [];
+            foreach ($games as $game) {
+                // dd($game);
+                $lessonId = $game->lesson->id;
+                $unitId = $game->lesson->unit->id;
+
+                if (!isset($unitsMastery[$unitId])) {
+                    $unitsMastery[$unitId] = ['lessons' => []];
+                }
+                if (!isset($unitsMastery[$unitId]['lessons'][$lessonId])) {
+                    $unitsMastery[$unitId]['lessons'][$lessonId] = ['games' => []];
+                }
+                $unitsMastery[$unitId]['lessons'][$lessonId] = $lessonsMastery[$lessonId];
+                $unitsMastery[$unitId]['lessons'][$lessonId]['games'][$game->id] = $gameTypesMastery[$game->game_type_id]['games'][$game->id];
+                $testarr[] = $gameTypesMastery[$game->game_type_id]['games'][$game->id];
+                $gameSkills = Skills::whereIn('id', GameSkills::where('lesson_id', $game->lesson_id)->where('game_type_id', $game->game_type_id)->pluck('skill_id'))->get();
+                if (!$gameSkills->isEmpty()) {
+                    foreach ($gameSkills as $skill) {
+                        $unitsMastery[$unitId]['lessons'][$lessonId]['games'][$game->id]['skills'][$skill->id] = $skillsMastery[$skill->id];
+                    }
+                } else {
+                    $unitsMastery[$unitId]['lessons'][$lessonId]['games'][$game->id]['skills'] = [];
+                }
+            }
+            dd($testarr);
+            // dd($unitsMastery, $lessonsMastery, $gamesMastery, $gameTypesMastery, $skillsMastery);
+
             // Prepare the response data
+            function sortUnitsMastery(&$unitsMastery)
+            {
+                // Sort units by `unit_id`
+                usort($unitsMastery, function ($a, $b) {
+                    return $a['unit_id'] <=> $b['unit_id'];
+                });
+
+                foreach ($unitsMastery as &$unit) {
+                    // Sort lessons by `lesson_id`
+                    if (isset($unit['lessons'])) {
+                        usort($unit['lessons'], function ($a, $b) {
+                            return $a['lesson_id'] <=> $b['lesson_id'];
+                        });
+
+                        foreach ($unit['lessons'] as &$lesson) {
+                            // Sort games by `game_id`
+                            if (isset($lesson['games'])) {
+                                usort($lesson['games'], function ($a, $b) {
+                                    return $a['game_id'] <=> $b['game_id'];
+                                });
+
+                                foreach ($lesson['games'] as &$game) {
+                                    // Sort skills by `skill_id`
+                                    if (isset($game['skills'])) {
+                                        usort($game['skills'], function ($a, $b) {
+                                            return $a['skill_id'] <=> $b['skill_id'];
+                                        });
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+            // Break references and prepare data
+            $unitsMastery = unserialize(serialize(array_values($unitsMastery)));
+
+            // Apply sorting
+            sortUnitsMastery($unitsMastery);
+
+            // Check the result
+            // dd($unitsMastery);
+
+            $chartLabels = [];
+            $chartValues = [];
             if ($request->has('filter')) {
                 switch ($request->filter) {
                     case 'Skill':
                         if ($skillsMastery) {
-                            $data['skills'] = array_values($skillsMastery);
-                            $data['chartLabels'] = $skillChartLabels;
-                            $data['chartPercentage'] = $skillChartPercentage;
+                            $data['skillsMastery'] = $unitsMastery;
+                            foreach ($unitsMastery as $unit) {
+                                foreach ($unit['lessons'] as $lesson) {
+                                    $chartLabels[] = '-';
+                                    $chartValues[] = '-';
+                                    foreach ($lesson['games'] as $game) {
+                                        foreach ($game['skills'] as $skill) {
+                                            // $gameData[] = $game;
+                                            $chartLabels[] = $skill['name'];
+                                            $chartValues[] = $skill['mastery_percentage'];
+                                        }
+                                    }
+                                }
+                            }
+                            $data['chartLabels'] =  $chartLabels;
+                            $data['chartValues'] =  $chartValues;
                         } else {
                             $data['error'] = "No Skills Found";
                             return view('dashboard.reports.student.student_mastery_report', $data);
@@ -677,19 +737,47 @@ class ReportController extends Controller
 
                         break;
                     case 'Unit':
-                        $data['units'] = array_values($unitsMastery);
-                        $data['chartLabels'] = $unitChartLabels;
-                        $data['chartPercentage'] = $unitChartPercentage;
+                        $unitsMastery = unserialize(serialize(array_values($unitsMastery)));
+                        $data['unitsMastery'] = $unitsMastery;
+                        foreach ($unitsMastery as $unit) {
+                            $chartLabels[] = $unit['name'];
+                            $chartValues[] = $unit['mastery_percentage'];
+                        }
+                        // $data['unitsMastery'] = array_values($unitsMastery);
+                        $data['chartLabels'] =  $chartLabels;
+                        $data['chartValues'] =  $chartValues;
+                        // dd($data);
                         break;
                     case 'Lesson':
-                        $data['lessons'] = array_values($lessonsMastery);
-                        $data['chartLabels'] = $lessonChartLabels;
-                        $data['chartPercentage'] = $lessonChartPercentage;
+                        $unitsMastery = unserialize(serialize(array_values($unitsMastery)));
+                        $data['lessonsMastery'] = $unitsMastery;
+                        foreach ($unitsMastery as $unit) {
+                            $chartLabels[] = '-';
+                            $chartValues[] = '-';
+                            foreach ($unit['lessons'] as $lesson) {
+                                $chartLabels[] = $lesson['name'];
+                                $chartValues[] = $lesson['mastery_percentage'];
+                            }
+                        }
+                        $data['chartLabels'] =  $chartLabels;
+                        $data['chartValues'] =  $chartValues;
                         break;
                     case 'Game':
-                        $data['games'] = array_values($gameTypesMastery);
-                        $data['chartLabels'] = $gameChartLabels;
-                        $data['chartPercentage'] = $gameChartPercentage;
+                        $unitsMastery = unserialize(serialize(array_values($unitsMastery)));
+                        $data['gamesMastery'] = $unitsMastery;
+                        foreach ($unitsMastery as $unit) {
+                            foreach ($unit['lessons'] as $lesson) {
+                                $chartLabels[] = '-';
+                                $chartValues[] = '-';
+                                foreach ($lesson['games'] as $game) {
+                                    // $gameData[] = $game;
+                                    $chartLabels[] = $game['name'];
+                                    $chartValues[] = $game['mastery_percentage'];
+                                }
+                            }
+                        }
+                        $data['chartLabels'] =  $chartLabels;
+                        $data['chartValues'] =  $chartValues;
                         break;
                     default:
                         $data['skills'] = array_values($skillsMastery);
