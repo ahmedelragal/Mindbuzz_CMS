@@ -147,6 +147,12 @@
                                         <thead>
                                             <tr>
                                                 <th>Student Name</th>
+                                                @if ($ProgramFlag == 0)
+                                                <th>Program</th>
+                                                @endif
+                                                <th>Unit</th>
+                                                <th>Lesson</th>
+                                                <th>Game</th>
                                                 <th>Test Name</th>
                                                 <th>Number of Trials</th>
                                                 <th>Score</th>
@@ -156,7 +162,17 @@
                                         <tbody>
                                             @foreach ($progress as $prog)
                                             <tr>
+                                                @php
+                                                $program = App\Models\Program::find($prog->program_id);
+                                                $gameName = App\Models\Game::find(App\Models\Test::find($prog->test_id)->game_id)->name
+                                                @endphp
                                                 <td>{{ App\Models\User::find($prog->student_id)->name }}</td>
+                                                @if ($ProgramFlag == 0)
+                                                <td>{{ $program->course->name . ' - ' . $program->stage->name }}</td>
+                                                @endif
+                                                <td>{{ App\Models\Unit::find($prog->unit_id)->name }}</td>
+                                                <td>{{App\Models\Lesson::find($prog->lesson_id)->name }}</td>
+                                                <td>{{ $gameName }}</td>
                                                 <td>{{ App\Models\Test::find($prog->test_id)->name }}</td>
                                                 <td>{{ $prog->mistake_count + 1 }}</td>
                                                 <td>{{ $prog->score }}</td>

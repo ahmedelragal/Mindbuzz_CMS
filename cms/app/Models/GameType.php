@@ -9,13 +9,12 @@ class GameType extends Model
 {
     use HasFactory;
     protected $guarded = [];
-        public function lesson()
+    public function lesson()
     {
         return $this->belongsTo(Lesson::class);
     }
-        public function skills()
+    public function skills()
     {
         return $this->hasMany(GameSkills::class);
     }
-
 }

@@ -108,8 +108,22 @@
 
                                         <div class="container mt-3">
                                             <div class="chart-buttons" id="chart-buttons" style="display: none; justify-content: flex-end; gap: 10px;">
-                                                <button class="btn btn-primary" id="prevBtn" onclick="previousPage()">Previous Unit</button>
-                                                <button class="btn btn-primary" id="nextBtn" onclick="nextPage()">Next Unit</button>
+                                                <button class="btn btn-primary" id="prevBtn" onclick="previousPage()">
+                                                    @if (isset($UnitFlag))
+                                                    Previous
+                                                    @endif
+                                                    @if (isset($LessonFlag))
+                                                    Previous Unit
+                                                    @endif
+                                                </button>
+                                                <button class="btn btn-primary" id="nextBtn" onclick="nextPage()">
+                                                    @if (isset($UnitFlag))
+                                                    Next
+                                                    @endif
+                                                    @if (isset($LessonFlag))
+                                                    Next Unit
+                                                    @endif
+                                                </button>
                                             </div>
                                             <canvas id="coverageChart" width="400" height="200"></canvas>
                                         </div>

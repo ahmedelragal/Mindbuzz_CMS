@@ -118,22 +118,24 @@
                                 </div>
                             </div>
                             <!-- Report Section -->
-                            @if(isset($highEngagementLabels) || isset($highEngagementValues) || isset($lowEngagementLabels) || isset($lowEngagementValues))
+                            @if (isset($chartLabels) || isset($chartValues))
                             <div class="card mt-4">
                                 <div class="card-body">
                                     <!-- Display Chart if Data is Available -->
-                                    <div class="container mt-5">
-                                        <canvas id="masteryChart" width="400" height="200"></canvas>
+                                    <div class="chart-buttons" id="chart-buttons" style="display: none; justify-content: flex-end; gap: 10px; padding-top:20px">
+                                        <button class="btn btn-primary" id="prevBtn" onclick="previousPage()">Previous</button>
+                                        <button class="btn btn-primary" id="nextBtn" onclick="nextPage()">Next</span></button>
                                     </div>
                                     <div class="container mt-5">
-                                        <canvas id="masteryChartNumbers" width="400" height="200" style="display:none;"></canvas>
+                                        <canvas id="engagementChart" width="400" height="200"></canvas>
                                     </div>
+
                                 </div>
                             </div>
 
                             <div class="card mt-4">
                                 <div class="card-body">
-                                    @if (isset($unitsEngagement) || isset($lessonsEngagement) || isset($gameEngagement) || isset($skillsEngagement))
+                                    @if (isset($unitsEngagement) || isset($lessonsEngagement) || isset($gamesEngagement) || isset($skillsEngagement))
 
                                     @if (isset($unitsEngagement))
                                     <h5>Units Engagement</h5>
@@ -160,36 +162,84 @@
                                     <table class="table">
                                         <thead>
                                             <tr>
+                                                <th>Unit</th>
                                                 <th>Lesson</th>
                                                 <th>Engagement Percentage</th>
                                             </tr>
                                         </thead>
                                         <tbody>
-                                            @foreach ($lessonsEngagement as $engagement)
+                                            @foreach ($lessonsEngagement as $unit)
+                                            <?php $inc = 0; ?>
+                                            @foreach ($unit['lessons'] as $lesson)
+                                            @if ($inc==0)
                                             <tr>
-                                                <td>{{ $engagement['name'] }}</td>
-                                                <td>{{ $engagement['engagement_percentage'] }}%</td>
+                                                <td>{{$unit['name']}}</td>
+                                                <td>{{$lesson['name']}}</td>
+                                                <td>{{ $lesson['engagement_percentage'] }}%</td>
                                             </tr>
+                                            <?php $inc = 1; ?>
+                                            @else
+                                            <tr>
+                                                <td></td>
+                                                <td>{{$lesson['name']}}</td>
+                                                <td>{{ $lesson['engagement_percentage'] }}%</td>
+                                            </tr>
+                                            @endif
+                                            @endforeach
                                             @endforeach
                                         </tbody>
                                     </table>
                                     @endif
 
-                                    @if (isset($gameEngagement))
+                                    @if (isset($gamesEngagement))
                                     <h5>Game Engagement</h5>
                                     <table class="table">
                                         <thead>
                                             <tr>
+                                                <th>Unit</th>
+                                                <th>Lesson</th>
                                                 <th>Game</th>
                                                 <th>Engagement Percentage</th>
                                             </tr>
                                         </thead>
                                         <tbody>
-                                            @foreach ($gameEngagement as $engagement)
+                                            @foreach ($gamesEngagement as $unit)
+                                            <?php $unitPrinted = false; ?>
+                                            @foreach ($unit['lessons'] as $lesson)
+                                            <?php $lessonPrinted = false; ?>
+                                            @foreach ($lesson['games'] as $game)
+                                            <?php $gamePrinted = false; ?>
                                             <tr>
-                                                <td>{{ $engagement['name'] }}</td>
-                                                <td>{{ $engagement['engagement_percentage'] }}%</td>
+                                                <!-- Print unit name only once per unit -->
+                                                @if (!$unitPrinted)
+                                                <td>{{ $unit['name'] }}</td>
+                                                <?php $unitPrinted = true; ?>
+                                                @else
+                                                <td></td>
+                                                @endif
+
+                                                <!-- Print lesson name only once per lesson -->
+                                                @if (!$lessonPrinted)
+                                                <td>{{ $lesson['name'] }}</td>
+                                                <?php $lessonPrinted = true; ?>
+                                                @else
+                                                <td></td>
+                                                @endif
+
+                                                <!-- Print game name only once per game -->
+                                                @if (!$gamePrinted)
+                                                <td>{{ $game['name'] }}</td>
+                                                <?php $gamePrinted = true; ?>
+                                                @else
+                                                <td></td>
+                                                @endif
+
+                                                <!-- Game details (always printed) -->
+                                                <td>{{ $game['engagement_percentage'] }}%</td>
                                             </tr>
+                                            @endforeach
+                                            @endforeach
+
                                             @endforeach
                                         </tbody>
                                     </table>
@@ -200,16 +250,53 @@
                                     <table class="table">
                                         <thead>
                                             <tr>
+                                                <th>Unit</th>
+                                                <th>Lesson</th>
+                                                <th>Game</th>
                                                 <th>Skill</th>
                                                 <th>Engagement Percentage</th>
                                             </tr>
                                         </thead>
                                         <tbody>
-                                            @foreach ($skillsEngagement as $engagement)
+                                            @foreach ($skillsEngagement as $unit)
+                                            <?php $unitPrinted = false; ?>
+                                            @foreach ($unit['lessons'] as $lesson)
+                                            <?php $lessonPrinted = false; ?>
+                                            @foreach ($lesson['games'] as $game)
+                                            <?php $gamePrinted = false; ?>
+                                            @foreach ($game['skills'] as $skill)
                                             <tr>
-                                                <td>{{ $engagement['name'] }}</td>
-                                                <td>{{ $engagement['engagement_percentage'] }}%</td>
+                                                <!-- Print unit name only once per unit -->
+                                                @if (!$unitPrinted)
+                                                <td>{{ $unit['name'] }}</td>
+                                                <?php $unitPrinted = true; ?>
+                                                @else
+                                                <td></td>
+                                                @endif
+
+                                                <!-- Print lesson name only once per lesson -->
+                                                @if (!$lessonPrinted)
+                                                <td>{{ $lesson['name'] }}</td>
+                                                <?php $lessonPrinted = true; ?>
+                                                @else
+                                                <td></td>
+                                                @endif
+
+                                                <!-- Print game name only once per game -->
+                                                @if (!$gamePrinted)
+                                                <td>{{ $game['name'] }}</td>
+                                                <?php $gamePrinted = true; ?>
+                                                @else
+                                                <td></td>
+                                                @endif
+
+                                                <!-- Skill details (always printed for each skill) -->
+                                                <td>{{ $skill['name'] }}</td>
+                                                <td>{{ $skill['engagement_percentage'] }}%</td>
                                             </tr>
+                                            @endforeach
+                                            @endforeach
+                                            @endforeach
                                             @endforeach
                                         </tbody>
                                     </table>
@@ -238,92 +325,214 @@
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
 
-@if (isset($highEngagementLabels) || isset($highEngagementValues) || isset($lowEngagementLabels) || isset($lowEngagementValues))
+@if (isset($chartLabels) || isset($chartValues))
 <script>
     document.addEventListener('DOMContentLoaded', function() {
-        // Data from your controller
-        var highEngagementLabels = @json($highEngagementLabels);
-        var highEngagementValues = @json($highEngagementValues);
-        var lowEngagementLabels = @json($lowEngagementLabels);
-        var lowEngagementValues = @json($lowEngagementValues);
-        // Create the bar chart
-        var ctx = document.getElementById('masteryChart').getContext('2d');
+        // Data from controller
+        const names = @json($chartLabels);
+        const usageCounts = @json($chartValues);
+        const chartNames = @json($chartNames);
 
-
-        function getRandomColor() {
-            // Decide whether to generate a blue or gray shade
-            var isBlue = Math.random() < 0.5; // 50% chance to pick blue or gray
-
-            if (isBlue) {
-                // Blue shades
-                var hue = Math.floor(Math.random() * 21) + 200; // Random hue between 200 and 220 for blue tones
-                var saturation = Math.floor(Math.random() * 22) + 60; // Saturation between 60% and 80% for pastel effect
-                var lightness = Math.floor(Math.random() * 22) + 60; // Lightness between 60% and 80% for pastel shades
-                return `hsl(${hue}, ${saturation}%, ${lightness}%)`; // HSL format for pastel blue colors
-            } else {
-                // Gray shades
-                var lightness = Math.floor(Math.random() * 41) + 40; // Lightness between 40% and 80% for gray shades
-                return `hsl(0, 0%, ${lightness}%)`; // HSL format for gray colors
-            }
-        }
-
-
-
-
-        var datasets = [];
-
-        // Low Engagement datasets
-        for (var i = 0; i < lowEngagementLabels.length; i++) {
-            datasets.push({
-                label: lowEngagementLabels[i] + ' (' + lowEngagementValues[i] + '%)',
-                data: [lowEngagementValues[i], 0],
-                backgroundColor: getRandomColor()
-            });
-        }
-
-        // High Engagement datasets
-        for (var i = 0; i < highEngagementLabels.length; i++) {
-            datasets.push({
-                label: highEngagementLabels[i] + ' (' + highEngagementValues[i] + '%)',
-                data: [0, highEngagementValues[i]],
-                backgroundColor: getRandomColor()
-            });
-        }
-
-        // Create the chart
-        var myChart = new Chart(ctx, {
-            type: 'bar',
-            data: {
-                labels: ['Low Engagement', 'High Engagement'],
-                datasets: datasets
-            },
-            options: {
-                plugins: {
-                    title: {
-                        display: true,
-                        text: 'Engagements - Low vs High'
-                    },
-                    tooltip: {
-                        callbacks: {
-                            label: function(tooltipItem) {
-                                return tooltipItem.dataset.label;
-                            }
-                        }
-                    }
-                },
-                scales: {
-                    x: {
-                        stacked: true
-                    },
-                    y: {
-                        beginAtZero: true,
-                        stacked: true
-                    }
-                }
+        // Group lessons by unit using the "-" separator
+        const units = [];
+        let currentUnit = [];
+        names.forEach((label, index) => {
+            if (label !== "-") {
+                currentUnit.push({
+                    label: label,
+                    value: usageCounts[index],
+                    chartName: chartNames[index]
+                });
+            } else if (currentUnit.length > 0) {
+                units.push(currentUnit);
+                currentUnit = [];
             }
         });
+        // Push the last unit if it's not empty
+        if (currentUnit.length > 0) {
+            units.push(currentUnit);
+        }
+
+        // Initialize dynamic pagination variables
+        let currentPage = 0;
+
+        const ctx = document.getElementById('engagementChart').getContext('2d');
+        const btnContainer = document.getElementById('chart-buttons').style.display = 'flex';
+        toggleButtons();
+        // Initialize the chart with the first unit's data
+        let usageChart = initializeChart(
+            ctx,
+            units[currentPage].map(item => item.label), // x-axis labels
+            units[currentPage].map(item => item.value), // bar values
+            units[currentPage].map(item => item.chartName) // game names from controller
+        );
+
+        // Function to initialize chart
+        function initializeChart(ctx, labels, data, chartNames) {
+            // Function to determine color based on percentage
+            function getBarColor(value) {
+                if (value <= 20) return '#ff3030';
+                if (value > 20 && value <= 40) return '#ff6230';
+                if (value > 40 && value <= 60) return '#f7d156';
+                if (value > 60 && value <= 80) return '#f77556';
+                return '#1cd0a0';
+            }
+
+            // Generate the backgroundColor array dynamically
+            const backgroundColors = data.map(value => getBarColor(value));
+
+            return new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: labels, // x-axis labels
+                    datasets: [{
+                        label: 'Engagement Levels',
+                        data: data, // bar values
+                        chartNames: chartNames, // store the game names
+                        backgroundColor: backgroundColors, // Dynamically set colors
+                        borderWidth: 1,
+                        maxBarThickness: 120
+                    }]
+                },
+                options: {
+                    scales: {
+                        x: {
+                            grid: {
+                                display: false
+                            }
+                        },
+                        y: {
+                            beginAtZero: true,
+                            max: 100, // Set the max value to 100 for percentage
+                            ticks: {
+                                callback: function(value) {
+                                    return value + '%'; // Append '%' to each tick value
+                                },
+                                stepSize: 10 // Set the step size (optional)
+                            }
+                        }
+                    },
+                    responsive: true,
+                    maintainAspectRatio: true,
+                    plugins: {
+                        legend: {
+                            display: true,
+                            position: 'top',
+                            labels: {
+                                generateLabels: function(chart) {
+                                    return [{
+                                            text: 'Low (≤ 20%)',
+                                            fillStyle: '#ff3030', // Red
+                                            strokeStyle: '#ff3030',
+                                            lineWidth: 0
+                                        },
+                                        {
+                                            text: 'Low Average (21% - 40%)',
+                                            fillStyle: '#ff6230',
+                                            strokeStyle: '#ff6230',
+                                            lineWidth: 0
+                                        },
+                                        {
+                                            text: 'Average (41% - 60%)',
+                                            fillStyle: '#f7d156',
+                                            strokeStyle: '#f7d156',
+                                            lineWidth: 0
+                                        },
+                                        {
+                                            text: 'High Average (61% - 80%)',
+                                            fillStyle: '#f77556',
+                                            strokeStyle: '#f77556',
+                                            lineWidth: 0
+                                        },
+                                        {
+                                            text: 'High (> 80%)',
+                                            fillStyle: '#1cd0a0',
+                                            strokeStyle: '#1cd0a0',
+                                            lineWidth: 0
+                                        }
+                                    ];
+                                }
+                            }
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(tooltipItem) {
+                                    // Access the game name from chartNames
+                                    const chartName = tooltipItem.dataset.chartNames[tooltipItem.dataIndex];
+                                    const value = tooltipItem.raw; // Get the value (y-axis data)
+                                    return `${chartName}: ${value}%`; // Show "Game Name: Value%"
+                                }
+                            }
+                        }
+                    },
+                    layout: {
+                        padding: {
+                            left: 50,
+                            right: 50
+                        }
+                    }
+                }
+            });
+        }
+
+        // Function to update the chart with the current page data (current unit)
+        function updateChart() {
+            const currentUnit = units[currentPage];
+            if (usageChart) {
+                // Update chart labels, data, and chartNames
+                usageChart.data.labels = currentUnit.map(item => item.label);
+                usageChart.data.datasets[0].data = currentUnit.map(item => item.value);
+                usageChart.data.datasets[0].chartNames = currentUnit.map(item => item.chartName); // Update chartNames
+
+                // Dynamically update backgroundColor based on value
+                usageChart.data.datasets[0].backgroundColor = currentUnit.map(item => {
+                    if (item.value <= 20) return '#ff3030';
+                    if (item.value > 20 && item.value <= 40) return '#ff6230';
+                    if (item.value > 40 && item.value <= 60) return '#f7d156';
+                    if (item.value > 60 && item.value <= 80) return '#f77556';
+                    return '#1cd0a0';
+                });
+
+                // Update the chart
+                usageChart.update();
+            }
+            toggleButtons(); // Ensure navigation buttons are updated
+        }
 
 
+
+
+        // Function to go to the previous unit (previous page)
+        window.previousPage = function() {
+            if (currentPage > 0) {
+                currentPage--;
+                updateChart(); // Call updateChart to refresh with new data
+            }
+        }
+
+        // Function to go to the next unit (next page)
+        window.nextPage = function() {
+            if (currentPage < units.length - 1) {
+                currentPage++;
+                updateChart(); // Call updateChart to refresh with new data
+            }
+        }
+
+        // Function to toggle the visibility of the previous and next buttons
+        function toggleButtons() {
+            const prevButton = document.getElementById('prevBtn');
+            const nextButton = document.getElementById('nextBtn');
+
+            // If only one page, hide both buttons
+            if (units.length <= 1) {
+                prevButton.style.display = 'none';
+                nextButton.style.display = 'none';
+            } else {
+                // Show or hide buttons based on the current page
+                prevButton.style.display = (currentPage === 0) ? 'none' : 'block';
+                nextButton.style.display = (currentPage === units.length - 1) ? 'none' : 'block';
+            }
+        }
     });
 </script>
 @endif

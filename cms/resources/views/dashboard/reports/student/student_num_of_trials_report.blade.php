@@ -83,11 +83,15 @@
                             <section id="reports-section">
                                 <div class="card mt-4">
                                     <div class="card-body">
-                                        <div class="containerchart" style="display: flex;align-items: center;justify-content: center;">
-                                            <div>
-                                                <canvas id="trialsChart" width="1200" height="600"></canvas>
-                                            </div>
+                                        <!-- Display Chart if Data is Available -->
+                                        <div class="chart-buttons" id="chart-buttons" style="display: none; justify-content: flex-end; gap: 10px; padding-top:20px">
+                                            <button class="btn btn-primary" id="prevBtn" onclick="previousPage()">Previous</button>
+                                            <button class="btn btn-primary" id="nextBtn" onclick="nextPage()">Next</span></button>
                                         </div>
+                                        <div class="container mt-5">
+                                            <canvas id="trialsChart" width="400" height="200"></canvas>
+                                        </div>
+
                                     </div>
                                 </div>
                                 <div class="card mt-4">
@@ -96,7 +100,13 @@
                                         <table class="table table-striped mt-4">
                                             <thead>
                                                 <tr>
-                                                    <th>Test</th>
+                                                    @if ($ProgramFlag == 0)
+                                                    <th>Program</th>
+                                                    @endif
+                                                    <th>Unit</th>
+                                                    <th>Lesson</th>
+                                                    <th>Game</th>
+                                                    <th>Assignment Name</th>
                                                     <th>Completion Date</th>
                                                     <th>Number of Trials</th>
                                                     <th>Score</th>
@@ -105,6 +115,12 @@
                                             <tbody>
                                                 @foreach($testsData as $test)
                                                 <tr>
+                                                    @if ($ProgramFlag == 0)
+                                                    <td>{{ $test['test_program'] }}</td>
+                                                    @endif
+                                                    <td>{{ $test['test_unit'] }}</td>
+                                                    <td>{{ $test['test_lesson'] }}</td>
+                                                    <td>{{ $test['test_game'] }}</td>
                                                     <td>{{ $test['test_name'] }}</td>
                                                     <td>{{ $test['completion_date'] }}</td>
                                                     <td>{{ $test['num_trials'] }}</td>
@@ -136,63 +152,174 @@ $data = [$oneStarDisplayedPercentage, $twoStarDisplayedPercentage, $threeStarDis
 @section('page_js')
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
-@if(isset($chartLabels) && isset($chartValues))
+@if (isset($chartLabels) || isset($chartValues))
 <script>
     document.addEventListener('DOMContentLoaded', function() {
-        // Make sure you have a canvas element in your HTML with id 'myChart'
+        // Data from controller
+        const names = @json($chartLabels);
+        const usageCounts = @json($chartValues);
+        const chartNames = @json($chartNames);
+
+        // Define constants and variables for pagination
+        const itemsPerPage = 10; // Number of entries per graph page
+        const totalEntries = names.length;
+        const totalPages = Math.ceil(totalEntries / itemsPerPage); // Calculate total pages
+        let currentPage = 0; // Start from the first page
+
+        // Initialize the chart
         const ctx = document.getElementById('trialsChart').getContext('2d');
-        var labels = @json($chartLabels);
-        var chartValues = @json($chartValues);
-        new Chart(ctx, {
-            type: 'bar',
-            data: {
-                labels: labels,
-                datasets: [{
-                    label: 'Trial Count',
-                    data: chartValues,
-                    backgroundColor: 'rgba(54, 162, 235, 0.5)',
-                    borderColor: 'rgba(54, 162, 235, 1)',
-                    borderWidth: 1,
-                    maxBarThickness: 100
-                }]
-            },
-            options: {
-                scales: {
-                    x: {
-                        min: 0,
-                        max: labels.length > 1 ? labels.length - 1 : 1,
-                        grid: {
-                            display: false
+        const btnContainer = document.getElementById('chart-buttons').style.display = 'flex';
+        toggleButtons();
+
+        // Create the chart with the initial data
+        let usageChart = initializeChart(
+            ctx,
+            names.slice(0, itemsPerPage), // First 7 entries for labels
+            usageCounts.slice(0, itemsPerPage), // First 7 entries for data
+            chartNames.slice(0, itemsPerPage) // First 7 entries for chart names
+        );
+
+        // Function to initialize chart
+        function initializeChart(ctx, labels, data, chartNames) {
+            // Function to determine color based on percentage
+            function getBarColor(value) {
+                if (value <= 1) return '#1cd0a0';
+                if (value <= 2) return '#f7d156';
+                return '#ff3030';
+            }
+
+            // Generate the backgroundColor array dynamically
+            const backgroundColors = data.map(value => getBarColor(value));
+
+            return new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: labels, // x-axis labels
+                    datasets: [{
+                        label: 'Trials Count',
+                        data: data, // bar values
+                        chartNames: chartNames, // Store the game names
+                        backgroundColor: backgroundColors, // Dynamically set colors
+                        borderColor: backgroundColors, // Match border color with bar color
+                        borderWidth: 1,
+                        maxBarThickness: 80
+                    }]
+                },
+                options: {
+                    scales: {
+                        x: {
+                            grid: {
+                                display: false
+                            }
+                        },
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                stepSize: 1
+                            }
                         }
                     },
-                    y: {
-                        beginAtZero: true,
-                        ticks: {
-                            stepSize: 1,
-                            // callback: function(value) {
-                            //     if (Number.isInteger(value)) {
-                            //         return value;
-                            //     }
-                            // }
+                    responsive: true,
+                    maintainAspectRatio: true,
+                    plugins: {
+                        legend: {
+                            display: true,
+                            position: 'top',
+                            labels: {
+                                generateLabels: function(chart) {
+                                    return [{
+                                            text: 'First Trial (1st)',
+                                            fillStyle: '#1cd0a0', // Green
+                                            strokeStyle: '#1cd0a0',
+                                            lineWidth: 0
+                                        },
+                                        {
+                                            text: 'Second Trial (2nd)',
+                                            fillStyle: '#f7d156', // Yellow
+                                            strokeStyle: '#f7d156',
+                                            lineWidth: 0
+                                        },
+                                        {
+                                            text: 'Third Trial or More (3rd+)',
+                                            fillStyle: '#ff3030', // Red
+                                            strokeStyle: '#ff3030',
+                                            lineWidth: 0
+                                        }
+                                    ];
+                                }
+                            }
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(tooltipItem) {
+                                    // Access the game name from chartNames
+                                    const chartName = tooltipItem.dataset.chartNames[tooltipItem.dataIndex];
+                                    const value = tooltipItem.raw;
+                                    return [`${chartName}`, `Number of Trials: ${value}`];
+                                }
+                            }
                         }
-                    }
-                },
-                responsive: true,
-                maintainAspectRatio: true,
-                plugins: {
-                    legend: {
-                        display: true,
-                        position: 'top'
                     },
-                },
-                layout: {
-                    padding: {
-                        left: 50,
-                        right: 50
+                    layout: {
+                        padding: {
+                            left: 50,
+                            right: 50
+                        }
                     }
                 }
+            });
+        }
+
+        // Function to update the chart with the current page data
+        function updateChart() {
+            // Calculate the slice of data for the current page
+            const startIndex = currentPage * itemsPerPage;
+            const endIndex = startIndex + itemsPerPage;
+
+            // Update chart labels, data, and chartNames
+            usageChart.data.labels = names.slice(startIndex, endIndex);
+            usageChart.data.datasets[0].data = usageCounts.slice(startIndex, endIndex);
+            usageChart.data.datasets[0].chartNames = chartNames.slice(startIndex, endIndex);
+
+            // Dynamically update backgroundColor based on value
+            usageChart.data.datasets[0].backgroundColor = usageCounts.slice(startIndex, endIndex).map(value => {
+                if (value <= 1) return '#1cd0a0';
+                if (value <= 2) return '#f7d156';
+                return '#ff3030';
+            });
+
+            // Update the chart
+            usageChart.update();
+
+            // Update button visibility
+            toggleButtons();
+        }
+
+        // Function to go to the previous page
+        window.previousPage = function() {
+            if (currentPage > 0) {
+                currentPage--;
+                updateChart();
             }
-        });
+        };
+
+        // Function to go to the next page
+        window.nextPage = function() {
+            if (currentPage < totalPages - 1) {
+                currentPage++;
+                updateChart();
+            }
+        };
+
+        // Function to toggle the visibility of the previous and next buttons
+        function toggleButtons() {
+            const prevButton = document.getElementById('prevBtn');
+            const nextButton = document.getElementById('nextBtn');
+
+            // Show or hide buttons based on the current page
+            prevButton.style.display = (currentPage === 0) ? 'none' : 'block';
+            nextButton.style.display = (currentPage === totalPages - 1) ? 'none' : 'block';
+        }
     });
 </script>
 

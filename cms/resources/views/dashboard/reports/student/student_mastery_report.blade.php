@@ -131,7 +131,6 @@
                                             <thead>
                                                 <tr>
                                                     <th>Unit</th>
-                                                    <th>Failed</th>
                                                     <th>Introduced</th>
                                                     <th>Practiced</th>
                                                     <th>Mastered</th>
@@ -142,7 +141,6 @@
                                                 @foreach ($unitsMastery as $unit)
                                                 <tr>
                                                     <td>{{ $unit['name'] }}</td>
-                                                    <td>{{ $unit['failed'] }}</td>
                                                     <td>{{ $unit['introduced'] }}</td>
                                                     <td>{{ $unit['practiced'] }}</td>
                                                     <td>{{ $unit['mastered'] }}</td>
@@ -161,7 +159,6 @@
                                                 <tr>
                                                     <th class="col-1">Unit</th>
                                                     <th class="col-1">Lesson</th>
-                                                    <th class="col-1">Failed</th>
                                                     <th class="col-1">Introduced</th>
                                                     <th class="col-1">Practiced</th>
                                                     <th class="col-1">Mastered</th>
@@ -178,7 +175,6 @@
                                                 <tr>
                                                     <td>{{$unit['name']}}</td>
                                                     <td>{{$lesson['name']}}</td>
-                                                    <td>{{ $lesson['failed'] }}</td>
                                                     <td>{{ $lesson['introduced'] }}</td>
                                                     <td>{{ $lesson['practiced'] }}</td>
                                                     <td>{{ $lesson['mastered'] }}</td>
@@ -189,7 +185,6 @@
                                                 <tr>
                                                     <td></td>
                                                     <td>{{$lesson['name']}}</td>
-                                                    <td>{{ $lesson['failed'] }}</td>
                                                     <td>{{ $lesson['introduced'] }}</td>
                                                     <td>{{ $lesson['practiced'] }}</td>
                                                     <td>{{ $lesson['mastered'] }}</td>
@@ -213,7 +208,6 @@
                                                     <th>Unit</th>
                                                     <th>Lesson</th>
                                                     <th>Game</th>
-                                                    <th>Failed</th>
                                                     <th>Introduced</th>
                                                     <th>Practiced</th>
                                                     <th>Mastered</th>
@@ -223,37 +217,46 @@
                                             <tbody>
 
                                                 @foreach ($gamesMastery as $unit)
-                                                <?php $inc = 0; ?>
+                                                <?php $unitPrinted = false; ?>
                                                 @foreach ($unit['lessons'] as $lesson)
+                                                <?php $lessonPrinted = false; ?>
                                                 @foreach ($lesson['games'] as $game)
-                                                @if ($inc == 0)
+                                                <?php $gamePrinted = false; ?>
                                                 <tr>
-                                                    <td>{{$unit['name']}}</td>
-                                                    <td>{{$lesson['name']}}</td>
-                                                    <td>{{ $game['name'] }}</td>
-                                                    <td>{{ $game['failed'] }}</td>
-                                                    <td>{{ $game['introduced'] }}</td>
-                                                    <td>{{ $game['practiced'] }}</td>
-                                                    <td>{{ $game['mastered'] }}</td>
-                                                    <td>{{ $game['mastery_percentage'] }}%</td>
-                                                </tr>
-                                                <?php $inc = 1; ?>
-                                                @else
-                                                <tr>
+                                                    <!-- Print unit name only once per unit -->
+                                                    @if (!$unitPrinted)
+                                                    <td>{{ $unit['name'] }}</td>
+                                                    <?php $unitPrinted = true; ?>
+                                                    @else
                                                     <td></td>
-                                                    <td>{{$lesson['name']}}</td>
+                                                    @endif
+
+                                                    <!-- Print lesson name only once per lesson -->
+                                                    @if (!$lessonPrinted)
+                                                    <td>{{ $lesson['name'] }}</td>
+                                                    <?php $lessonPrinted = true; ?>
+                                                    @else
+                                                    <td></td>
+                                                    @endif
+
+                                                    <!-- Print game name only once per game -->
+                                                    @if (!$gamePrinted)
                                                     <td>{{ $game['name'] }}</td>
-                                                    <td>{{ $game['failed'] }}</td>
+                                                    <?php $gamePrinted = true; ?>
+                                                    @else
+                                                    <td></td>
+                                                    @endif
+
+                                                    <!-- Game details (always printed) -->
                                                     <td>{{ $game['introduced'] }}</td>
                                                     <td>{{ $game['practiced'] }}</td>
                                                     <td>{{ $game['mastered'] }}</td>
                                                     <td>{{ $game['mastery_percentage'] }}%</td>
                                                 </tr>
-                                                @endif
+                                                @endforeach
+                                                @endforeach
+                                                @endforeach
 
-                                                @endforeach
-                                                @endforeach
-                                                @endforeach
 
                                             </tbody>
                                         </table>
@@ -268,7 +271,6 @@
                                                     <th>Lesson</th>
                                                     <th>Game</th>
                                                     <th>Skill</th>
-                                                    <th>Failed</th>
                                                     <th>Introduced</th>
                                                     <th>Practiced</th>
                                                     <th>Mastered</th>
@@ -280,55 +282,59 @@
 
 
                                                 @foreach ($skillsMastery as $unit)
-                                                <?php $inc = 0; ?>
+                                                <?php $unitPrinted = false; ?>
                                                 @foreach ($unit['lessons'] as $lesson)
+                                                <?php $lessonPrinted = false; ?>
                                                 @foreach ($lesson['games'] as $game)
+                                                <?php $gamePrinted = false; ?>
                                                 @foreach ($game['skills'] as $skill)
-                                                @if ($inc == 0)
                                                 <tr>
-                                                    <td>{{$unit['name']}}</td>
-                                                    <td>{{$lesson['name']}}</td>
-                                                    <td>{{$game['name']}}</td>
-                                                    <td>{{ $skill['name'] }}</td>
-                                                    <td>{{ $skill['failed'] }}</td>
-                                                    <td>{{ $skill['introduced'] }}</td>
-                                                    <td>{{ $skill['practiced'] }}</td>
-                                                    <td>{{ $skill['mastered'] }}</td>
-                                                    <td>{{ $skill['mastery_percentage'] }}%</td>
-                                                </tr>
-                                                <?php $inc = 1; ?>
-                                                @else
-                                                <tr>
+                                                    <!-- Print unit name only once per unit -->
+                                                    @if (!$unitPrinted)
+                                                    <td>{{ $unit['name'] }}</td>
+                                                    <?php $unitPrinted = true; ?>
+                                                    @else
                                                     <td></td>
-                                                    <td>{{$lesson['name']}}</td>
-                                                    <td>{{$game['name']}}</td>
+                                                    @endif
+
+                                                    <!-- Print lesson name only once per lesson -->
+                                                    @if (!$lessonPrinted)
+                                                    <td>{{ $lesson['name'] }}</td>
+                                                    <?php $lessonPrinted = true; ?>
+                                                    @else
+                                                    <td></td>
+                                                    @endif
+
+                                                    <!-- Print game name only once per game -->
+                                                    @if (!$gamePrinted)
+                                                    <td>{{ $game['name'] }}</td>
+                                                    <?php $gamePrinted = true; ?>
+                                                    @else
+                                                    <td></td>
+                                                    @endif
+
+                                                    <!-- Skill details (always printed for each skill) -->
                                                     <td>{{ $skill['name'] }}</td>
-                                                    <td>{{ $skill['failed'] }}</td>
                                                     <td>{{ $skill['introduced'] }}</td>
                                                     <td>{{ $skill['practiced'] }}</td>
                                                     <td>{{ $skill['mastered'] }}</td>
                                                     <td>{{ $skill['mastery_percentage'] }}%</td>
                                                 </tr>
-                                                @endif
+                                                @endforeach
+                                                @endforeach
+                                                @endforeach
+                                                @endforeach
 
-                                                @endforeach
-                                                @endforeach
-                                                @endforeach
-                                                @endforeach
                                             </tbody>
                                         </table>
                                         @endif
 
-                                        <!-- @else
-                                    <p>No data available for the selected filters.</p> -->
                                         @endif
                                     </div>
                                 </div>
                             </section>
 
-                            <!-- <div style="margin-top: 20px; margin-left:10px;">
-                                <p>No data available for the selected filters.</p>
-                            </div> -->
+
                             @endif
 
                         </div>
@@ -353,6 +359,7 @@
         // Data from controller
         const names = @json($chartLabels);
         const usageCounts = @json($chartValues);
+        const chartNames = @json($chartNames);
 
         // Group lessons by unit using the "-" separator
         const units = [];
@@ -361,7 +368,8 @@
             if (label !== "-") {
                 currentUnit.push({
                     label: label,
-                    value: usageCounts[index]
+                    value: usageCounts[index],
+                    chartName: chartNames[index]
                 });
             } else if (currentUnit.length > 0) {
                 units.push(currentUnit);
@@ -380,19 +388,35 @@
         const btnContainer = document.getElementById('chart-buttons').style.display = 'flex';
         toggleButtons();
         // Initialize the chart with the first unit's data
-        let usageChart = initializeChart(ctx, units[currentPage].map(item => item.label), units[currentPage].map(item => item.value));
+        let usageChart = initializeChart(
+            ctx,
+            units[currentPage].map(item => item.label), // x-axis labels
+            units[currentPage].map(item => item.value), // bar values
+            units[currentPage].map(item => item.chartName) // game names from controller
+        );
 
         // Function to initialize chart
-        function initializeChart(ctx, labels, data) {
+        function initializeChart(ctx, labels, data, chartNames) {
+            // Function to determine color based on percentage
+            function getBarColor(value) {
+                if (value <= 30) return '#ff3030'; // Red for ≤30%
+                if (value <= 60) return '#f7d156'; // Yellow for 31%-60%
+                return '#1cd0a0'; // Green for 61%-100%
+            }
+
+            // Generate the backgroundColor array dynamically
+            const backgroundColors = data.map(value => getBarColor(value));
+
             return new Chart(ctx, {
                 type: 'bar',
                 data: {
-                    labels: labels,
+                    labels: labels, // x-axis labels
                     datasets: [{
-                        label: 'Usage',
-                        data: data, // Expecting values between 0 and 100
-                        backgroundColor: '#E9C874',
-                        borderColor: '#E9C874',
+                        label: 'Mastery Percentage',
+                        data: data, // bar values
+                        chartNames: chartNames, // store the game names
+                        backgroundColor: backgroundColors, // Dynamically set colors
+                        borderColor: backgroundColors, // Match border color with bar color
                         borderWidth: 1,
                         maxBarThickness: 120
                     }]
@@ -420,13 +444,38 @@
                     plugins: {
                         legend: {
                             display: true,
-                            position: 'top'
+                            position: 'top',
+                            labels: {
+                                generateLabels: function(chart) {
+                                    return [{
+                                            text: 'Introduced (≤ 30%)',
+                                            fillStyle: '#ff3030', // Red
+                                            strokeStyle: '#ff3030',
+                                            lineWidth: 0
+                                        },
+                                        {
+                                            text: 'Practiced (31% - 60%)',
+                                            fillStyle: '#f7d156', // Yellow
+                                            strokeStyle: '#f7d156',
+                                            lineWidth: 0
+                                        },
+                                        {
+                                            text: 'Mastered (> 60%)',
+                                            fillStyle: '#1cd0a0', // Green
+                                            strokeStyle: '#1cd0a0',
+                                            lineWidth: 0
+                                        }
+                                    ];
+                                }
+                            }
                         },
                         tooltip: {
                             callbacks: {
                                 label: function(tooltipItem) {
-                                    let value = tooltipItem.raw; // Get the value from the tooltip item
-                                    return `${value}%`; // Append '%' to the tooltip value
+                                    // Access the game name from chartNames
+                                    const chartName = tooltipItem.dataset.chartNames[tooltipItem.dataIndex];
+                                    const value = tooltipItem.raw; // Get the value (y-axis data)
+                                    return `${chartName}: ${value}%`; // Show "Game Name: Value%"
                                 }
                             }
                         }
@@ -441,18 +490,30 @@
             });
         }
 
-
-
         // Function to update the chart with the current page data (current unit)
         function updateChart() {
             const currentUnit = units[currentPage];
             if (usageChart) {
+                // Update chart labels, data, and chartNames
                 usageChart.data.labels = currentUnit.map(item => item.label);
                 usageChart.data.datasets[0].data = currentUnit.map(item => item.value);
+                usageChart.data.datasets[0].chartNames = currentUnit.map(item => item.chartName); // Update chartNames
+
+                // Dynamically update backgroundColor based on value
+                usageChart.data.datasets[0].backgroundColor = currentUnit.map(item => {
+                    if (item.value <= 30) return '#ff3030'; // Red for ≤30%
+                    if (item.value <= 60) return '#f7d156'; // Yellow for 31%-60%
+                    return '#1cd0a0'; // Green for 61%-100%
+                });
+
+                // Update the chart
                 usageChart.update();
             }
-            toggleButtons();
+            toggleButtons(); // Ensure navigation buttons are updated
         }
+
+
+
 
         // Function to go to the previous unit (previous page)
         window.previousPage = function() {

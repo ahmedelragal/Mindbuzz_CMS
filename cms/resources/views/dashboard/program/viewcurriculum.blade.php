@@ -11,19 +11,10 @@
                 <div class="container-fluid">
                     <div class="nk-content-inner">
                         <div class="nk-content-body">
-                            @if (session('success'))
-                            <div class="alert alert-success">
-                                {{ session('success') }}
-                            </div>
-                            @elseif(session('error'))
-                            <div class="alert alert-error">
-                                {{ session('error') }}
-                            </div>
-                            @endif
                             <div class="nk-block-head nk-block-head-sm">
                                 <div class="nk-block-between">
                                     <div class="nk-block-head-content">
-                                        <h3 class="nk-block-title page-title">Curriculum</h3>
+                                        <h3 class="nk-block-title page-title">View Curriculum</h3>
                                     </div>
                                     <div class="nk-block-head-content">
                                         <div class="toggle-wrap nk-block-tools-toggle"><a href="#"
@@ -53,10 +44,10 @@
                             <table class="table">
                                 <thead class="thead-dark">
                                     <tr>
-                                        <th scope="col">#</th>
-                                        <th scope="col">Program</th>
-                                        <th scope="col">Stage</th>
-                                        <th scope="col">Action</th>
+                                        <th style="text-align:center;padding:8px; width:5%">#</th>
+                                        <th>Program</th>
+                                        <th>Stage</th>
+                                        <th style="text-align:center; width:10%">Action</th>
 
                                     </tr>
                                 </thead>
@@ -66,11 +57,14 @@
                                     @endphp
                                     @foreach ($programs as $programName => $groupedPrograms)
                                     <tr>
-                                        <td scope="row">{{ $rowIndex++ }}</td>
+                                        <td scope="row" style="text-align:center;padding:8px;">{{ $rowIndex++ }}</td>
                                         <td>{{ \App\Models\Course::find($groupedPrograms->course_id)->name}}</td>
                                         <td>{{\App\Models\Stage::find($groupedPrograms->stage_id)->name}}</td>
-                                        <td>
-                                            <div class="col-5 ">
+
+
+                                        <td class="align-middle">
+                                            <div class="d-flex align-items-center justify-content-center" style="gap:10px;">
+
                                                 <form id="delete-form-{{ $groupedPrograms->id }}"
                                                     action="{{ route('curriculum.remove', [$id,$groupedPrograms->id]) }}"
                                                     method="POST" style="display:inline-block;">
@@ -83,8 +77,9 @@
                                                     </div>
 
                                                 </form>
-                                                <button type="submit" class="btn btn-danger"
-                                                    onclick="confirmDelete({{ $groupedPrograms->id }})">Delete</button>
+                                                <button type="submit" class="btn btn-danger" title="Remove Program"
+                                                    onclick="confirmDelete({{ $groupedPrograms->id }})"><i class="fa-solid fa-trash"></i></button>
+
                                             </div>
                                         </td>
                                     <tr>
@@ -109,6 +104,27 @@
 </div>
 @endsection
 @section('page_js')
+@if(session('success'))
+<script>
+    Swal.fire({
+        title: 'Success!',
+        text: @json(session('success')),
+        icon: 'success',
+        confirmButtonText: 'Ok'
+    });
+</script>
+@endif
+
+@if(session('error'))
+<script>
+    Swal.fire({
+        title: 'Error!',
+        text: @json(session('error')),
+        icon: 'error',
+        confirmButtonText: 'Ok'
+    });
+</script>
+@endif
 <script>
     document.querySelectorAll('.view-more').forEach(button => {
         button.addEventListener('click', function() {

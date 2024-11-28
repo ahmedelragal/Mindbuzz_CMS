@@ -36,7 +36,7 @@
                                             </div>
                                         </div>
 
-                                        <div class="row">
+                                        <div class="row mt-3">
                                             <div class="col-md-6">
                                                 <label for="teacher_id">Select Teacher</label>
                                                 <select class="form-select js-select2" name="teacher_id" id="teacher_id">
@@ -65,16 +65,27 @@
                                             </div>
                                         </div>
                                     </form>
-
-                                    <!-- Display Chart if Data is Available -->
-                                    @if(isset($teacherName) && isset($numLogin))
-                                    <div class="container mt-5">
-                                        <canvas id="loginChart" width="400" height="200"></canvas>
-                                    </div>
-                                    @endif
-
                                 </div>
                             </div>
+                            <!-- Display Chart if Data is Available -->
+                            @if(isset($teacherName) && isset($numLogin))
+                            <div class="card mt-4">
+                                <section id="report_container" style="display: block;">
+                                    <div class="card-body">
+                                        <!-- Display Circle with Default Number -->
+                                        <div class="d-flex justify-content-center align-items-center mt-4" style="font-size:32px;color: #d17e00; font-weight:bold">Number of Logins</div>
+                                        <div class="container d-flex justify-content-center align-items-center" style="height: 350px;">
+                                            <!-- Circle Figure -->
+                                            <div id="circle"
+                                                class="d-flex justify-content-center align-items-center"
+                                                style="width: 250px; height: 250px; border-radius: 50%; background-color: #f5f5f5; border: 4px solid #d17e00; font-size: 92px; color: #d17e00; font-weight:500">
+                                                {{$numLogin}}
+                                            </div>
+                                        </div>
+                                    </div>
+                                </section>
+                            </div>
+                            @endif
                         </div>
                     </div>
                 </div>
@@ -88,69 +99,6 @@
 @section('page_js')
 <!-- Include Chart.js -->
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-
-@if(isset($teacherName) && isset($numLogin))
-<script>
-    document.addEventListener('DOMContentLoaded', function() {
-        // Data from your controller
-        var teacherNames = @json($teacherName);
-        var numLogins = @json($numLogin);
-        var maxLogins = Math.max(...numLogins);
-
-        // Create the bar chart
-        var ctx = document.getElementById('loginChart').getContext('2d');
-        var loginChart = new Chart(ctx, {
-            type: 'bar',
-            data: {
-                labels: teacherNames,
-                datasets: [{
-                    label: 'Number of Logins',
-                    data: numLogins,
-                    backgroundColor: '#f4bd0e',
-                    borderColor: '#f4bd0e',
-                    borderWidth: 1,
-                    barThickness: 100
-                }]
-            },
-            options: {
-                scales: {
-                    x: {
-                        min: 0,
-                        max: teacherNames.length > 1 ? teacherNames.length - 1 : 1,
-                        grid: {
-                            display: false
-                        }
-                    },
-                    y: {
-                        min: 0,
-                        max: maxLogins + 10,
-                        ticks: {
-                            stepSize: 1
-                        }
-                    }
-                },
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: {
-                    legend: {
-                        display: true,
-                        position: 'top'
-                    }
-                },
-                layout: {
-                    padding: {
-                        left: 50,
-                        right: 50
-                    }
-                }
-            }
-        });
-    });
-</script>
-
-
-@endif
-
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.min.js"
     integrity="sha512-L0Shl7nXXzIlBSUUPpxrokqq4ojqgZFQczTYlGjzONGTDAcLremjwaWv5A+EDLnxhQzY5xUZPWLOLqYRkY0Cbw=="
     crossorigin="anonymous" referrerpolicy="no-referrer"></script>

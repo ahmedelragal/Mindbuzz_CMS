@@ -70,18 +70,24 @@
                                 </div>
                             </div>
 
+                            @if(isset($studentName) && isset($numLogin))
                             <div class="card mt-4">
-                                <section id="report_container" style="display: none;">
+                                <section id="report_container" style="display: block;">
                                     <div class="card-body">
-                                        <!-- Display Chart if Data is Available -->
-                                        @if(isset($studentName) && isset($numLogin))
-                                        <div class="container mt-5">
-                                            <canvas id="loginChart" width="400" height="200"></canvas>
+                                        <!-- Display Circle with Default Number -->
+                                        <div class="d-flex justify-content-center align-items-center mt-4" style="font-size:32px;color: #d17e00; font-weight:bold">Number of Logins</div>
+                                        <div class="container d-flex justify-content-center align-items-center" style="height: 350px;">
+                                            <!-- Circle Figure -->
+                                            <div id="circle"
+                                                class="d-flex justify-content-center align-items-center"
+                                                style="width: 250px; height: 250px; border-radius: 50%; background-color: #f5f5f5; border: 4px solid #d17e00; font-size: 92px; color: #d17e00; font-weight:500">
+                                                {{$numLogin}}
+                                            </div>
                                         </div>
-                                        @endif
                                     </div>
                                 </section>
                             </div>
+                            @endif
                         </div>
                     </div>
                 </div>
@@ -95,70 +101,6 @@
 @section('page_js')
 <!-- Include Chart.js -->
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-
-@if(isset($studentName) && isset($numLogin) && !isset($error))
-<script>
-    document.addEventListener('DOMContentLoaded', function() {
-        // Data from your controller
-        var studentNames = @json($studentName);
-        var numLogins = @json($numLogin);
-        var maxLogins = Math.max(...numLogins);
-
-        // Create the bar chart
-        var ctx = document.getElementById('loginChart').getContext('2d');
-        document.getElementById('report_container').style.display = 'block';
-        var loginChart = new Chart(ctx, {
-            type: 'bar',
-            data: {
-                labels: studentNames,
-                datasets: [{
-                    label: 'Number of Logins',
-                    data: numLogins,
-                    backgroundColor: '#E9C874', // Changed the bar color
-                    borderColor: '#E9C874', // Optional: Change the border color to match
-                    borderWidth: 1,
-                    barThickness: 100
-                }]
-            },
-            options: {
-                scales: {
-                    x: {
-                        min: 0,
-                        max: studentNames.length > 1 ? studentNames.length - 1 : 1, // Ensure enough space when there is only one student
-                        grid: {
-                            display: false // Optional: hide grid lines for better spacing effect
-                        }
-                    },
-                    y: {
-                        min: 0,
-                        max: maxLogins + 10,
-                        ticks: {
-                            stepSize: 1
-                        }
-                    }
-                },
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: {
-                    legend: {
-                        display: true,
-                        position: 'top'
-                    }
-                },
-                layout: {
-                    padding: {
-                        left: 50,
-                        right: 50
-                    }
-                }
-            }
-        });
-    });
-</script>
-
-
-@endif
-
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.min.js"
     integrity="sha512-L0Shl7nXXzIlBSUUPpxrokqq4ojqgZFQczTYlGjzONGTDAcLremjwaWv5A+EDLnxhQzY5xUZPWLOLqYRkY0Cbw=="
     crossorigin="anonymous" referrerpolicy="no-referrer"></script>

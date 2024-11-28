@@ -60,11 +60,11 @@ session(['schools_previous_url' => url()->full()]);
                                         <thead class="thead-dark">
                                             <tr>
                                                 <th class="col-1" style="padding-left:8px"><input type="checkbox" id="select-all"></th>
-                                                <th class="col-3" style="text-align: left;padding-left:15px;">Name</th>
+                                                <th class="col-2" style="text-align: left;padding-left:15px;">Name</th>
                                                 <th class="col-3" style="text-align: left;padding-left:15px;">Email</th>
                                                 <th class="col-2">Students</th>
                                                 <th class="col-2">Instructors</th>
-                                                <th class="col-1" style="padding-right:8px;">Action</th>
+                                                <th class="col-2" style="padding-right:8px;">Action</th>
                                             </tr>
                                             @endif
                                         </thead>
@@ -78,8 +78,10 @@ session(['schools_previous_url' => url()->full()]);
                                                 <td class="align-middle">{{ \App\Models\User::where('school_id', $school->id)->where('role', 1)->count() }}</td>
                                                 <td class="align-middle">{{ \App\Models\User::where('school_id', $school->id)->where('role', 2)->count() }}</td>
                                                 <td class="align-middle" style="padding-right:8px;">
-                                                    <div class="d-flex align-items-center justify-content-center">
+                                                    <div class="d-flex align-items-center justify-content-center" style="gap:10px">
                                                         <a href="{{ route('schools.edit', $school->id) }}" class="btn btn-primary" title="Edit School"><i class="fa-regular fa-pen-to-square"></i></a>
+                                                        <a href="{{ route('add-curriculum', $school->id) }}" class="btn btn-primary" title="Add Curriculum"><i class="fas fa-book"></i></a>
+                                                        <a href="{{ route('view-curriculum', $school->id) }}" class="btn btn-primary" title="View Curriculum"><i class="fa-solid fa-eye"></i></a>
                                                     </div>
                                                 </td>
                                             </tr>
