@@ -24,65 +24,38 @@
                                         <div class="row">
                                             <!-- Group 1 Filter -->
                                             <div class="col-md-4">
-                                                <label for="group1_id">Select First Class</label>
-                                                <select class="form-select js-select2" name="group1_id" id="group1_id" required>
+                                                <label for="group_id">Select Classes</label>
+                                                <select class="form-select js-select2" name="group_id[]" id="group_id" multiple required>
                                                     @role('Admin')
-                                                    <option value="" disabled {{ old('group1_id', $request['group1_id'] ?? '') == '' ? 'selected' : '' }}>Choose a school/class</option>
+                                                    @if (isset($request['group_id']))
+                                                    <option value="" disabled {{ empty(old('group_id', $request['group_id'] ?? [])) ? 'selected' : '' }}></option>
+                                                    @endif
                                                     @foreach ($groups as $group)
                                                     @php
                                                     $sch = App\Models\School::where('id', $group->school_id)->first();
                                                     @endphp
-                                                    <!-- <option value="{{ $group->id }}" data-school="{{ $sch->id }}">{{ $sch->name }} / {{ $group->name }}</option> -->
-                                                    <option value="{{ $group->id }}" data-school="{{ $sch->id }}" {{ old('group1_id', $request['group1_id'] ?? '') == $group->id ? 'selected' : '' }}>
+                                                    <option value="{{ $group->id }}" data-school="{{ $sch->id }}"
+                                                        {{ in_array($group->id, old('group_id', $request['group_id'] ?? [])) ? 'selected' : '' }}>
                                                         {{ $sch->name }} / {{ $group->name }}
                                                     </option>
                                                     @endforeach
                                                     @endrole
                                                     @role('school')
-                                                    <option value="" disabled {{ old('group1_id', $request['group1_id'] ?? '') == '' ? 'selected' : '' }}>Choose a Class</option>
+                                                    <option value="" disabled {{ empty(old('group_id', $request['group_id'] ?? [])) ? 'selected' : '' }}>Choose Class(es)</option>
+                                                    @foreach ($groups as $group)
+                                                    @php
+                                                    $sch = App\Models\School::where('id', $group->school_id)->first();
+                                                    @endphp
+                                                    <option value="{{ $group->id }}" data-school="{{ $sch->id }}"
+                                                        {{ in_array($group->id, old('group_id', $request['group_id'] ?? [])) ? 'selected' : '' }}>
+                                                        {{ $group->name }}
+                                                    </option>
+                                                    @endforeach
+                                                    @endrole
+                                                </select>
 
-                                                    @foreach ($groups as $group)
-                                                    @php
-                                                    $sch = App\Models\School::where('id', $group->school_id)->first();
-                                                    @endphp
-                                                    <!-- <option value="{{ $group->id }}" data-school="{{ $sch->id }}">{{ $sch->name }} / {{ $group->name }}</option> -->
-                                                    <option value="{{ $group->id }}" data-school="{{ $sch->id }}" {{ old('group1_id', $request['group1_id'] ?? '') == $group->id ? 'selected' : '' }}>
-                                                        {{ $group->name }}
-                                                    </option>
-                                                    @endforeach
-                                                    @endrole
-                                                </select>
                                             </div>
-                                            <!-- Group 2 Filter -->
-                                            <div class="col-md-4">
-                                                <label for="group2_id">Select Second Class</label>
-                                                <select class="form-select js-select2" name="group2_id" id="group2_id" required>
-                                                    @role('Admin')
-                                                    <option value="" disabled {{ old('group2_id', $request['group2_id'] ?? '') == '' ? 'selected' : '' }}>Choose a school/class</option>
-                                                    @foreach ($groups as $group)
-                                                    @php
-                                                    $sch = App\Models\School::where('id', $group->school_id)->first();
-                                                    @endphp
-                                                    <!-- <option value="{{ $group->id }}" data-school="{{ $sch->id }}">{{ $sch->name }} / {{ $group->name }}</option> -->
-                                                    <option value="{{ $group->id }}" data-school="{{ $sch->id }}" {{ old('group2_id', $request['group2_id'] ?? '') == $group->id ? 'selected' : '' }}>
-                                                        {{ $sch->name }} / {{ $group->name }}
-                                                    </option>
-                                                    @endforeach
-                                                    @endrole
-                                                    @role('school')
-                                                    <option value="" disabled {{ old('group2_id', $request['group2_id'] ?? '') == '' ? 'selected' : '' }}>Choose a Class</option>
-                                                    @foreach ($groups as $group)
-                                                    @php
-                                                    $sch = App\Models\School::where('id', $group->school_id)->first();
-                                                    @endphp
-                                                    <!-- <option value="{{ $group->id }}" data-school="{{ $sch->id }}">{{ $sch->name }} / {{ $group->name }}</option> -->
-                                                    <option value="{{ $group->id }}" data-school="{{ $sch->id }}" {{ old('group2_id', $request['group2_id'] ?? '') == $group->id ? 'selected' : '' }}>
-                                                        {{ $group->name }}
-                                                    </option>
-                                                    @endforeach
-                                                    @endrole
-                                                </select>
-                                            </div>
+
                                             <!-- Program Filter -->
                                             <div class="col-md-4">
                                                 <label for="program_id">Select Program</label>
@@ -707,19 +680,13 @@ $showReports = 0;
         var selectedProgramId = "{{$request['program_id'] ?? '' }}";
 
         // Trigger getCommonGroupsPrograms on group change
-        $('#group1_id').change(function() {
-            var group1Id = $('#group1_id').val();
-            var group2Id = $('#group2_id').val();
-            getCommonGroupsPrograms(group1Id, group2Id, selectedProgramId);
-        });
-        $('#group2_id').change(function() {
-            var group1Id = $('#group1_id').val();
-            var group2Id = $('#group2_id').val();
-            getCommonGroupsPrograms(group1Id, group2Id, selectedProgramId);
+        $('#group_id').change(function() {
+            var groupIds = $('#group_id').val(); // Get all selected values as an array
+            getCommonGroupsPrograms(groupIds, selectedProgramId);
         });
 
         // Trigger change on page load to fetch programs for the selected group
-        $('#group2_id').trigger('change');
+        $('#group_id').trigger('change');
 
         // Save the selected program_id to localStorage when it changes
         $('select[name="program_id"]').change(function() {
@@ -728,9 +695,12 @@ $showReports = 0;
         });
     });
 
-    function getCommonGroupsPrograms(group1Id, group2Id, selectedProgramId) {
+    function getCommonGroupsPrograms(groupIds, selectedProgramId) {
+        // Convert group1Ids to a string if it's an array (join with commas or other delimiter)
+        var groupIdsParam = Array.isArray(groupIds) ? groupIds.join(',') : groupIds;
+
         $.ajax({
-            url: '/get-common-programs-group/' + group1Id + '/' + group2Id,
+            url: '/get-common-programs-group/' + groupIdsParam,
             type: "GET",
             dataType: "json",
             success: function(data) {
@@ -742,7 +712,6 @@ $showReports = 0;
                         '<option value="" selected disabled>No Available Programs</option>'
                     );
                 } else {
-
                     $('select[name="program_id"]').append(
                         '<option value="" selected>All Programs</option>'
                     );
@@ -752,7 +721,7 @@ $showReports = 0;
                         );
                     });
 
-
+                    // If a program is pre-selected, set it
                     if (selectedProgramId) {
                         $('select[name="program_id"]').val(selectedProgramId).trigger('change');
                     }

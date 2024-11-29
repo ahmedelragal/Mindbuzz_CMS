@@ -541,31 +541,49 @@ class ClassController extends Controller
         });
         return response()->json($programsData);
     }
-    public function getCommonGroupsPrograms($groupId1, $groupId2)
+    public function getCommonGroupsPrograms(Request $request, $groupIds)
     {
-        $group1ProgramIds = Group::with('groupCourses')
-            ->findOrFail($groupId1)
-            ->groupCourses
-            ->pluck('program_id')
-            ->toArray();
+        // Convert the comma-separated group IDs into an array
+        $groupIdsArray = explode(',', $groupIds);
 
-        $group2ProgramIds = Group::with('groupCourses')
-            ->findOrFail($groupId2)
-            ->groupCourses
-            ->pluck('program_id')
-            ->toArray();
+        // Initialize a variable to store the intersection of program IDs
+        $commonProgramIds = null;
 
-        $commonProgramIds = array_intersect($group1ProgramIds, $group2ProgramIds);
+        foreach ($groupIdsArray as $groupId) {
+            $programIds = Group::with('groupCourses')
+                ->findOrFail($groupId)
+                ->groupCourses
+                ->pluck('program_id')
+                ->toArray();
+
+            if (is_null($commonProgramIds)) {
+                // For the first group, initialize the commonProgramIds
+                $commonProgramIds = $programIds;
+            } else {
+                // Find the intersection of program IDs
+                $commonProgramIds = array_intersect($commonProgramIds, $programIds);
+            }
+
+            // If no common programs remain, break early
+            if (empty($commonProgramIds)) {
+                break;
+            }
+        }
+
+        // Fetch the common programs
         $programs = Program::whereIn('id', $commonProgramIds)->get();
 
+        // Format the program data for the response
         $programsData = $programs->map(function ($program) {
             return [
                 'id' => $program->id,
                 'program_details' => $program->course->name . ' - ' . $program->stage->name,
             ];
         });
+
         return response()->json($programsData);
     }
+
 
 
     public function store(Request $request)
