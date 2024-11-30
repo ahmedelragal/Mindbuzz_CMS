@@ -104,7 +104,7 @@
                             <div id="report_container" style="display:none">
                                 <div class="card mt-4">
                                     <div class="card-body">
-                                        @if (isset($programsUsage) || isset($unitsUsage) || isset($lessonsUsage) || isset($gamesUsage) || isset($skillsUsage))
+
                                         <!-- Display Chart if Data is Available -->
                                         <div class="row">
                                             <div class="container mt-5">
@@ -118,161 +118,7 @@
                                     </div>
                                 </div>
 
-                                <div class="card mt-4">
-                                    <div class="card-body">
-                                        @if (isset($programsUsage))
-                                        <h5>Programs Usage</h5>
-                                        <table class="table">
-                                            <thead>
-                                                <tr>
-                                                    <th>Program</th>
-                                                    <th>{{$groupName1}} Usage(%)</th>
-                                                    <th>{{$groupName2}} Usage(%)</th>
-                                                </tr>
-                                            </thead>
-                                            <tbody>
-                                                @foreach ($programsUsage as $program)
-                                                <tr>
-                                                    <td>{{ $program['name'] }}</td>
-                                                    <td>{{ $program['usage_percentage'] }}%</td>
-                                                    <td>{{ $programsUsage2[$program['program_id']]['usage_percentage'] }}%</td>
-                                                </tr>
-                                                @endforeach
-                                            </tbody>
-                                        </table>
-                                        @endif
 
-                                        @if (isset($unitsUsage))
-                                        <h5>Units Usage</h5>
-                                        <table class="table">
-                                            <thead>
-                                                <tr>
-                                                    <th>Unit</th>
-                                                    <th>{{$groupName1}} Usage(%)</th>
-                                                    <th>{{$groupName2}} Usage(%)</th>
-                                                </tr>
-                                            </thead>
-                                            <tbody>
-                                                @foreach ($unitsUsage as $unit)
-                                                <tr>
-                                                    <td>{{ $unit['name'] }}</td>
-                                                    <td>{{ $unit['usage_percentage'] }}%</td>
-                                                    <td>{{ $unitsUsage2[$unit['unit_id']]['usage_percentage'] }}%</td>
-                                                </tr>
-                                                @endforeach
-                                            </tbody>
-                                        </table>
-                                        @endif
-
-
-
-                                        @if (isset($lessonsUsage))
-                                        <h5>Lessons Usage</h5>
-                                        <table class="table">
-                                            <thead>
-                                                <tr>
-                                                    <th>Unit</th>
-                                                    <th>lesson</th>
-                                                    <th>{{$groupName1}} Usage(%)</th>
-                                                    <th>{{$groupName2}} Usage(%)</th>
-                                                </tr>
-                                            </thead>
-                                            <tbody>
-                                                @foreach ($lessonsUsage as $unit)
-                                                <tr>
-                                                    <td>{{$unit['name']}}</td>
-                                                    <td></td>
-                                                    <td></td>
-                                                    <td></td>
-                                                </tr>
-                                                @foreach ($unit['lessons'] as $lesson)
-                                                <tr>
-                                                    <td></td>
-                                                    <td>{{$lesson['name']}}</td>
-                                                    <td> <?php echo $lesson['usage_percentage'] ?>%</td>
-                                                    <td> <?php echo $lessonsUsage2[$unit['unit_id']]['lessons'][$lesson['lesson_id']]['usage_percentage'] ?>%</td>
-                                                </tr>
-                                                @endforeach
-                                                @endforeach
-                                            </tbody>
-                                        </table>
-                                        @endif
-
-                                        @if (isset($gamesUsage))
-                                        <h5>Games Usage</h5>
-                                        <table class="table">
-                                            <thead>
-                                                <tr>
-                                                    <th>Lesson</th>
-                                                    <th>Game</th>
-                                                    <th>{{$groupName1}} Status</th>
-                                                    <th>{{$groupName2}} Status</th>
-                                                </tr>
-                                            </thead>
-                                            <tbody>
-                                                @foreach ($gamesUsage as $unit)
-                                                @foreach ($unit['lessons'] as $lesson)
-
-                                                <tr>
-                                                    <td>{{$lesson['name']}}</td>
-                                                    <td></td>
-                                                    <td></td>
-                                                    <td></td>
-                                                </tr>
-                                                @foreach ($lesson['games'] as $game)
-                                                <tr>
-                                                    <td></td>
-                                                    <td>{{$game['name']}}</td>
-                                                    <td> <?php echo $game['assigned'] == 1 ? 'Assigned' : 'Unassigned'; ?></td>
-                                                    <td> <?php echo $gamesUsage2[$unit['unit_id']]['lessons'][$lesson['lesson_id']]['games'][$game['game_type_id']]['assigned'] == 1 ? 'Assigned' : 'Unassigned'; ?></td>
-                                                </tr>
-                                                @endforeach
-                                                @endforeach
-                                                @endforeach
-                                            </tbody>
-                                        </table>
-                                        @endif
-
-                                        @if (isset($skillsUsage))
-
-                                        <h5>Skill Usage</h5>
-                                        <table class="table">
-                                            <thead>
-                                                <tr>
-                                                    <th>Unit</th>
-                                                    <th>Lesson/Game</th>
-                                                    <th>Skill</th>
-                                                    <th>Usage Count</th>
-                                                </tr>
-                                            </thead>
-                                            <tbody>
-                                                @foreach ($skillsUsage as $unit)
-                                                @foreach ($unit['lessons'] as $lesson)
-                                                @foreach ($lesson['games'] as $game)
-                                                <tr>
-                                                    <td>{{$unit['name']}}</td>
-                                                    <td>{{$lesson['name']}} / {{$game['name']}}</td>
-                                                    <td></td>
-                                                    <td></td>
-                                                </tr>
-
-                                                @foreach ($game['skills'] as $skill)
-                                                <tr>
-                                                    <td></td>
-                                                    <td></td>
-                                                    <td>{{ $skill['name'] != null ? $skill['name'] : 'No skill specified' }}</td>
-                                                    <td>{{ $skill['usage_count'] != null ? $skill['usage_count'] : 0 }}</td>
-                                                </tr>
-                                                @endforeach
-                                                @endforeach
-                                                @endforeach
-                                                @endforeach
-                                            </tbody>
-                                        </table>
-                                        @endif
-                                        @endif
-                                    </div>
-                                </div>
                             </div>
                         </div>
                     </div>
@@ -461,13 +307,30 @@
 <script>
     document.addEventListener('DOMContentLoaded', function() {
         // Data from the controller for the two charts
-        const names1 = @json($chartLabels);
-        const usageCounts1 = @json($chartValues);
-        const names2 = @json($chartLabels2);
-        const usageCounts2 = @json($chartValues2);
-        const classname1 = @json($groupName1);
-        const classname2 = @json($groupName2);
+        const names = @json($chartLabels);
+        const usageCounts = @json($chartValues);
 
+
+        function groupByClass(names, usageCounts) {
+            const classes = [];
+            let currentClass = [];
+            names.forEach((label, index) => {
+                if (label !== "/") {
+                    currentClass.push({
+                        label: label,
+                        value: usageCounts[index]
+                    });
+                } else if (currentClass.length > 0) {
+                    classes.push(currentClass);
+                    currentClass = [];
+                }
+            });
+            if (currentClass.length > 0) {
+                classes.push(currentClass);
+            }
+            return classes;
+        }
+        const classes = groupByClass(names, usageCounts);
         // Function to group lessons by unit using the "-" separator
         function groupByUnit(names, usageCounts) {
             const units = [];
@@ -489,9 +352,15 @@
             return units;
         }
 
-        // Group lessons by units for both datasets
-        const units1 = groupByUnit(names1, usageCounts1);
-        const units2 = groupByUnit(names2, usageCounts2);
+        const unitsPerClass = [];
+        classes.forEach(currentClass => {
+            const labels = currentClass.map(item => item.label);
+            const values = currentClass.map(item => item.value);
+            unitsPerClass.push(groupByUnit(labels, values));
+        });
+
+        console.log(unitsPerClass);
+
 
         // Initialize dynamic pagination variables
         let currentPage = 0;
