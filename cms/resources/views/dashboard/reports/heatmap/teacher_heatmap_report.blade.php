@@ -41,45 +41,38 @@
                                             @endrole
                                             <!-- Teacher Filter -->
                                             <div class="col-md-4">
-                                                <label for="teacher1_id">Select First Teacher</label>
-                                                <select class="form-select js-select2" name="teacher1_id" id="teacher1_id">
-                                                    <option value="" selected disabled>Choose a Teacher</option>
+                                                <label for="teacher_id">Select Teachers</label>
+                                                <select class="form-select js-select2" name="teacher_id[]" id="teacher_id" multiple required>
+                                                    @role('Admin')
+                                                    @if (isset($request['teacher_id']))
+                                                    <option value="" disabled {{ empty(old('teacher_id', $request['teacher_id'] ?? [])) ? 'selected' : '' }}></option>
+                                                    @endif
+                                                    @endrole
+                                                    <!--  -->
                                                     @role('school')
+                                                    @if (isset($request['teacher_id']))
+                                                    <option value="" disabled {{ empty(old('teacher_id', $request['teacher_id'] ?? [])) ? 'selected' : '' }}></option>
+                                                    @endif
                                                     @php
                                                     $schTeachers = App\Models\User::where('school_id', auth()->user()->school_id)
                                                     ->where('role', 1)
                                                     ->get();
                                                     @endphp
                                                     @foreach ($schTeachers as $teacher)
-                                                    <option value="{{ $teacher->id }}" {{ old('teacher1_id', $request['teacher1_id'] ?? '') == $teacher->id ? 'selected' : '' }}>
+                                                    <option value="{{ $teacher->id }}"
+                                                        {{ in_array($teacher->id, old('teacher_id', $request['teacher_id'] ?? [])) ? 'selected' : '' }}>
                                                         {{ $teacher->name }}
                                                     </option>
                                                     @endforeach
                                                     @endrole
+                                                    <!--  -->
                                                 </select>
-                                            </div>
-                                            <!-- Teacher Filter -->
-                                            <div class="col-md-4">
-                                                <label for="teacher2_id">Select Second Teacher</label>
-                                                <select class="form-select js-select2" name="teacher2_id" id="teacher2_id">
-                                                    <option value="" selected disabled>Choose a Teacher</option>
-                                                    @role('school')
-                                                    @php
-                                                    $schTeachers = App\Models\User::where('school_id', auth()->user()->school_id)
-                                                    ->where('role', 1)
-                                                    ->get();
-                                                    @endphp
-                                                    @foreach ($schTeachers as $teacher)
-                                                    <option value="{{ $teacher->id }}" {{ old('teacher2_id', $request['teacher2_id'] ?? '') == $teacher->id ? 'selected' : '' }}>
-                                                        {{ $teacher->name }}
-                                                    </option>
-                                                    @endforeach
-                                                    @endrole
-                                                </select>
+
+
                                             </div>
                                             @role('school')
                                             <!-- Program Filter -->
-                                            <div class="col-md-4">
+                                            <div class=" col-md-4">
                                                 <label for="program_id">Select Program</label>
                                                 <select class="form-select js-select2" name="program_id" id="program_id">
                                                     <option value="" selected disabled>No Available Programs</option>
@@ -143,43 +136,42 @@
 
                             <!-- Report Section -->
                             <div id="report_container" style="display:none">
-
                                 <div class="card mt-4">
                                     <div class="card-body">
-                                        @if (isset($programsUsage) || isset($unitsUsage) || isset($lessonsUsage) || isset($gamesUsage) || isset($skillsUsage))
                                         <!-- Display Chart if Data is Available -->
                                         <div class="row">
                                             <div class="container mt-5">
                                                 <canvas id="usageChart" width="400" height="200"></canvas>
                                             </div>
                                             <div class="chart-buttons" id="chart-buttons" style="display: none; justify-content: flex-end; gap: 10px; padding-top:20px">
-                                                <button class="btn btn-primary" id="prevBtn" onclick="previousPage()">Previous Unit</button>
-                                                <button class="btn btn-primary" id="nextBtn" onclick="nextPage()">Next Unit</button>
+                                                <button class="btn btn-primary" id="prevBtn" onclick="previousPage()">Previous</button>
+                                                <button class="btn btn-primary" id="nextBtn" onclick="nextPage()">Next</button>
                                             </div>
                                         </div>
                                     </div>
                                 </div>
-
-
                                 <div class="card mt-4">
                                     <div class="card-body">
-
                                         @if (isset($programsUsage))
                                         <h5>Programs Usage</h5>
                                         <table class="table">
                                             <thead>
                                                 <tr>
                                                     <th>Program</th>
-                                                    <th>{{$teacherName1}} Usage(%)</th>
-                                                    <th>{{$teacherName2}} Usage(%)</th>
+                                                    @if (isset($teacherNames))
+                                                    @foreach ($teacherNames as $teacherName )
+                                                    <th>{{$teacherName}} Usage(%)</th>
+                                                    @endforeach
+                                                    @endif
                                                 </tr>
                                             </thead>
                                             <tbody>
                                                 @foreach ($programsUsage as $program)
                                                 <tr>
                                                     <td>{{ $program['name'] }}</td>
-                                                    <td>{{ $program['usage_percentage'] }}%</td>
-                                                    <td>{{ $programsUsage2[$program['program_id']]['usage_percentage'] }}%</td>
+                                                    @foreach ($teacherIds as $teacherId )
+                                                    <td> {{$programUsages[$teacherId][$program['program_id']]['usage_percentage']}}%</td>
+                                                    @endforeach
                                                 </tr>
                                                 @endforeach
                                             </tbody>
@@ -192,23 +184,25 @@
                                             <thead>
                                                 <tr>
                                                     <th>Unit</th>
-                                                    <th>{{$teacherName1}} Usage(%)</th>
-                                                    <th>{{$teacherName2}} Usage(%)</th>
+                                                    @if (isset($teacherNames))
+                                                    @foreach ($teacherNames as $teacherName )
+                                                    <th>{{$teacherName}} Usage(%)</th>
+                                                    @endforeach
+                                                    @endif
                                                 </tr>
                                             </thead>
                                             <tbody>
                                                 @foreach ($unitsUsage as $unit)
                                                 <tr>
                                                     <td>{{ $unit['name'] }}</td>
-                                                    <td>{{ $unit['usage_percentage'] }}%</td>
-                                                    <td>{{ $unitsUsage2[$unit['unit_id']]['usage_percentage'] }}%</td>
+                                                    @foreach ($teacherIds as $teacherId )
+                                                    <td> {{$programUsages[$teacherId][$request['program_id']]['units'][$unit['unit_id']]['usage_percentage']}}%</td>
+                                                    @endforeach
                                                 </tr>
                                                 @endforeach
                                             </tbody>
                                         </table>
                                         @endif
-
-
 
                                         @if (isset($lessonsUsage))
                                         <h5>Lessons Usage</h5>
@@ -217,104 +211,107 @@
                                                 <tr>
                                                     <th>Unit</th>
                                                     <th>lesson</th>
-                                                    <th>{{$teacherName1}} Usage(%)</th>
-                                                    <th>{{$teacherName2}} Usage(%)</th>
+                                                    @if (isset($teacherNames))
+                                                    @foreach ($teacherNames as $teacherName )
+                                                    <th>{{$teacherName}} Usage(%)</th>
+                                                    @endforeach
+                                                    @endif
                                                 </tr>
                                             </thead>
                                             <tbody>
                                                 @foreach ($lessonsUsage as $unit)
+                                                <?php $inc = 0; ?>
+                                                @foreach ($unit['lessons'] as $lesson)
+                                                @if ($inc == 0)
                                                 <tr>
                                                     <td>{{$unit['name']}}</td>
-                                                    <td></td>
-                                                    <td></td>
-                                                    <td></td>
+                                                    <td>{{$lesson['name']}}</td>
+                                                    @foreach ($teacherIds as $teacherId )
+                                                    <td> {{$programUsages[$teacherId][$request['program_id']]['units'][$unit['unit_id']]['lessons'][$lesson['lesson_id']]['usage_percentage']}}%</td>
+                                                    @endforeach
                                                 </tr>
-                                                @foreach ($unit['lessons'] as $lesson)
+                                                <?php $inc = 1; ?>
+                                                @else
                                                 <tr>
                                                     <td></td>
                                                     <td>{{$lesson['name']}}</td>
-                                                    <td> <?php echo $lesson['usage_percentage'] ?>%</td>
-                                                    <td> <?php echo $lessonsUsage2[$unit['unit_id']]['lessons'][$lesson['lesson_id']]['usage_percentage'] ?>%</td>
+                                                    @foreach ($teacherIds as $teacherId )
+                                                    <td> {{$programUsages[$teacherId][$request['program_id']]['units'][$unit['unit_id']]['lessons'][$lesson['lesson_id']]['usage_percentage']}}%</td>
+                                                    @endforeach
                                                 </tr>
+                                                @endif
                                                 @endforeach
                                                 @endforeach
                                             </tbody>
                                         </table>
                                         @endif
-
                                         @if (isset($gamesUsage))
                                         <h5>Games Usage</h5>
-                                        <table class="table">
-                                            <thead>
-                                                <tr>
-                                                    <th>Lesson</th>
-                                                    <th>Game</th>
-                                                    <th>{{$teacherName1}} Status</th>
-                                                    <th>{{$teacherName2}} Status</th>
-                                                </tr>
-                                            </thead>
-                                            <tbody>
-                                                @foreach ($gamesUsage as $unit)
-                                                @foreach ($unit['lessons'] as $lesson)
-
-                                                <tr>
-                                                    <td>{{$lesson['name']}}</td>
-                                                    <td></td>
-                                                    <td></td>
-                                                    <td></td>
-                                                </tr>
-                                                @foreach ($lesson['games'] as $game)
-                                                <tr>
-                                                    <td></td>
-                                                    <td>{{$game['name']}}</td>
-                                                    <td> <?php echo $game['assigned'] == 1 ? 'Assigned' : 'Unassigned'; ?></td>
-                                                    <td> <?php echo $gamesUsage2[$unit['unit_id']]['lessons'][$lesson['lesson_id']]['games'][$game['game_type_id']]['assigned'] == 1 ? 'Assigned' : 'Unassigned'; ?></td>
-                                                </tr>
-                                                @endforeach
-                                                @endforeach
-                                                @endforeach
-                                            </tbody>
-                                        </table>
-                                        @endif
-
-                                        @if (isset($skillsUsage))
-
-                                        <h5>Skill Usage</h5>
-                                        <table class="table">
+                                        <table class="table mt-2">
                                             <thead>
                                                 <tr>
                                                     <th>Unit</th>
-                                                    <th>Lesson/Game</th>
-                                                    <th>Skill</th>
-                                                    <th>Usage Count</th>
+                                                    <th>Lesson</th>
+                                                    <th>Game</th>
+                                                    @if (isset($teacherNames))
+                                                    @foreach ($teacherNames as $teacherName )
+                                                    <th>{{$teacherName}} Usage(%)</th>
+                                                    @endforeach
+                                                    @endif
                                                 </tr>
                                             </thead>
                                             <tbody>
-                                                @foreach ($skillsUsage as $unit)
-                                                @foreach ($unit['lessons'] as $lesson)
-                                                @foreach ($lesson['games'] as $game)
-                                                <tr>
-                                                    <td>{{$unit['name']}}</td>
-                                                    <td>{{$lesson['name']}} / {{$game['name']}}</td>
-                                                    <td></td>
-                                                    <td></td>
-                                                </tr>
 
-                                                @foreach ($game['skills'] as $skill)
+                                                @foreach ($gamesUsage as $unit)
+                                                <?php $unitPrinted = false; ?>
+                                                @foreach ($unit['lessons'] as $lesson)
+                                                <?php $lessonPrinted = false; ?>
+                                                @foreach ($lesson['games'] as $game)
+                                                <?php $gamePrinted = false; ?>
                                                 <tr>
+                                                    <!-- Print unit name only once per unit -->
+                                                    @if (!$unitPrinted)
+                                                    <td>{{ $unit['name'] }}</td>
+                                                    <?php $unitPrinted = true; ?>
+                                                    @else
                                                     <td></td>
+                                                    @endif
+
+                                                    <!-- Print lesson name only once per lesson -->
+                                                    @if (!$lessonPrinted)
+                                                    <td>{{ $lesson['name'] }}</td>
+                                                    <?php $lessonPrinted = true; ?>
+                                                    @else
                                                     <td></td>
-                                                    <td>{{ $skill['name'] != null ? $skill['name'] : 'No skill specified' }}</td>
-                                                    <td>{{ $skill['usage_count'] != null ? $skill['usage_count'] : 0 }}</td>
+                                                    @endif
+
+                                                    <!-- Print game name only once per game -->
+                                                    @if (!$gamePrinted)
+                                                    <td>{{ $game['name'] }}</td>
+                                                    <?php $gamePrinted = true; ?>
+                                                    @else
+                                                    <td></td>
+                                                    @endif
+
+                                                    <!-- Game details (always printed) -->
+                                                    @foreach ($teacherIds as $teacherId )
+                                                    @if($programUsages[$teacherId][$request['program_id']]['units'][$unit['unit_id']]['lessons'][$lesson['lesson_id']]['games'][$game['game_id']]['assigned'] == 1)
+                                                    <td>Assigned</td>
+                                                    @else
+                                                    <td>Unassigned</td>
+                                                    @endif
+                                                    @endforeach
                                                 </tr>
                                                 @endforeach
                                                 @endforeach
                                                 @endforeach
-                                                @endforeach
+
+
                                             </tbody>
                                         </table>
+
                                         @endif
-                                        @endif
+
                                     </div>
                                 </div>
                             </div>
@@ -334,17 +331,36 @@
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 @section('page_js')
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-@if (isset($gamesLabels) || isset($gamesValues) || isset($gamesLabels2) || isset($gamesValues2))
+@if (isset($gamesLabels) || isset($gamesValues))
 <script>
     document.addEventListener('DOMContentLoaded', function() {
-        // Data from controller for the two charts
-        const gamesLabels = @json($gamesLabels);
-        const gamesValues = @json($gamesValues);
-        const gamesLabels2 = @json($gamesLabels2);
-        const gamesValues2 = @json($gamesValues2);
-        const teacherName1 = @json($teacherName1);
-        const teacherName2 = @json($teacherName2);
+        // Data from the controller for the two charts
+        const names = @json($gamesLabels);
+        const usageCounts = @json($gamesValues);
+        const teacherNames = @json($teacherNames);
 
+
+
+        function groupByClass(names, usageCounts) {
+            const classes = [];
+            let currentClass = [];
+            names.forEach((label, index) => {
+                if (label !== "/") {
+                    currentClass.push({
+                        label: label,
+                        value: usageCounts[index]
+                    });
+                } else if (currentClass.length > 0) {
+                    classes.push(currentClass);
+                    currentClass = [];
+                }
+            });
+            if (currentClass.length > 0) {
+                classes.push(currentClass);
+            }
+            return classes;
+        }
+        const classes = groupByClass(names, usageCounts);
         // Function to group lessons by unit using the "-" separator
         function groupByUnit(names, usageCounts) {
             const units = [];
@@ -366,51 +382,50 @@
             return units;
         }
 
-        // Group units for both charts
-        const units1 = groupByUnit(gamesLabels, gamesValues);
-        const units2 = groupByUnit(gamesLabels2, gamesValues2);
-
+        const unitsPerClass = [];
+        classes.forEach(currentClass => {
+            const labels = currentClass.map(item => item.label);
+            const values = currentClass.map(item => item.value);
+            unitsPerClass.push(groupByUnit(labels, values));
+        });
         // Initialize dynamic pagination variables
         let currentPage = 0;
-
-        // Initialize both charts
+        let index = 0;
+        const datasets = [];
+        const colors = ['#E9C874', '#f77556', '#1cd0a0', '#f7d156', '#ff6230', ];
+        colorIndex = 0;
+        unitsPerClass.forEach(unit => {
+            datasets.push({
+                label: teacherNames[index],
+                data: unit[currentPage].map(item => item.value),
+                backgroundColor: colors[colorIndex],
+                borderColor: colors[colorIndex],
+                borderWidth: 1,
+                maxBarThickness: 80
+            });
+            index++;
+            colorIndex = (colorIndex + 1) % 5;
+        });
+        // Initialize the chart context
         const ctx = document.getElementById('usageChart').getContext('2d');
         const btnContainer = document.getElementById('chart-buttons').style.display = 'flex';
 
         toggleButtons();
 
-
         // Initialize the chart with the first page data
         let usageChart = initializeChart(
             ctx,
-            units1[currentPage].map(item => item.label),
-            units1[currentPage].map(item => item.value),
-            units2[currentPage].map(item => item.value)
+            unitsPerClass[0][currentPage].map(item => item.label),
+            datasets
         );
 
         // Function to initialize the chart with grouped bars
-        function initializeChart(ctx, labels, data1, data2) {
+        function initializeChart(ctx, labels, datasets) {
             return new Chart(ctx, {
                 type: 'bar',
                 data: {
                     labels: labels,
-                    datasets: [{
-                            label: teacherName1,
-                            data: data1,
-                            backgroundColor: '#E9C874',
-                            borderColor: '#E9C874',
-                            borderWidth: 1,
-                            maxBarThickness: 80
-                        },
-                        {
-                            label: teacherName2,
-                            data: data2,
-                            backgroundColor: '#74B9E9',
-                            borderColor: '#74B9E9',
-                            borderWidth: 1,
-                            maxBarThickness: 80
-                        }
-                    ]
+                    datasets: datasets
                 },
                 options: {
                     responsive: true,
@@ -419,14 +434,17 @@
                         x: {
                             grid: {
                                 display: false
-                            }
+                            },
+                            stacked: false, // Ensure bars are grouped, not stacked
+                            barPercentage: 1.0, // Remove gap between bars within the same group
+                            categoryPercentage: 1.0 // Remove gap between groups of bars
                         },
                         y: {
-                            ticks: {
-                                stepSize: 1,
-                            },
                             beginAtZero: true,
                             max: 1,
+                            ticks: {
+                                stepSize: 1
+                            }
                         }
                     },
                     plugins: {
@@ -435,18 +453,18 @@
                             position: 'top'
                         },
                         tooltip: {
-                            mode: 'index',
-                            intersect: false,
+                            mode: 'index', // Ensure tooltips display grouped values
+                            intersect: false, // Show tooltip for all bars in a group
                             callbacks: {
                                 label: function(tooltipItem) {
-                                    let datasetLabel = tooltipItem.dataset.label;
-                                    let value = tooltipItem.raw;
-                                    if (value == '1') {
-                                        value = "Assigned";
+                                    let datasetLabel = tooltipItem.dataset.label; // Dataset name
+                                    let value = tooltipItem.raw; // Bar value
+                                    if (value == 1) {
+                                        value = 'Assigned';
                                     } else {
-                                        value = "Unassigned";
+                                        value = 'Unassigned';
                                     }
-                                    return `${datasetLabel}: ${value}`;
+                                    return `${datasetLabel}: ${value}`; // Return label with dataset name and value
                                 }
                             }
                         }
@@ -463,12 +481,12 @@
 
         // Function to update the chart with new page data
         function updateChart() {
-            const currentUnit1 = units1[currentPage];
-            const currentUnit2 = units2[currentPage];
-
-            usageChart.data.labels = currentUnit1.map(item => item.label);
-            usageChart.data.datasets[0].data = currentUnit1.map(item => item.value);
-            usageChart.data.datasets[1].data = currentUnit2.map(item => item.value);
+            usageChart.data.labels = unitsPerClass[0][currentPage].map(item => item.label);
+            let index = 0;
+            unitsPerClass.forEach(unit => {
+                usageChart.data.datasets[index].data = unit[currentPage].map(item => item.value);
+                index++;
+            })
 
             usageChart.update(); // Refresh the chart with new data
             toggleButtons();
@@ -484,7 +502,7 @@
 
         // Optimized function to go to the next page
         window.nextPage = function() {
-            if (currentPage < units1.length - 1) {
+            if (currentPage < unitsPerClass[0].length - 1) {
                 currentPage++;
                 updateChart();
             }
@@ -496,7 +514,7 @@
             const nextButton = document.getElementById('nextBtn');
 
             prevButton.style.display = currentPage === 0 ? 'none' : 'block';
-            nextButton.style.display = currentPage === units1.length - 1 ? 'none' : 'block';
+            nextButton.style.display = currentPage === unitsPerClass[0].length - 1 ? 'none' : 'block';
         }
     });
 </script>
@@ -506,14 +524,30 @@
 <script>
     document.addEventListener('DOMContentLoaded', function() {
         // Data from the controller for the two charts
-        const names1 = @json($chartLabels);
-        const usageCounts1 = @json($chartValues);
-        const names2 = @json($chartLabels2);
-        const usageCounts2 = @json($chartValues2);
-        const teacherName1 = @json($teacherName1);
-        const teacherName2 = @json($teacherName2);
+        const names = @json($chartLabels);
+        const usageCounts = @json($chartValues);
+        const teacherNames = @json($teacherNames);
 
-
+        function groupByClass(names, usageCounts) {
+            const classes = [];
+            let currentClass = [];
+            names.forEach((label, index) => {
+                if (label !== "/") {
+                    currentClass.push({
+                        label: label,
+                        value: usageCounts[index]
+                    });
+                } else if (currentClass.length > 0) {
+                    classes.push(currentClass);
+                    currentClass = [];
+                }
+            });
+            if (currentClass.length > 0) {
+                classes.push(currentClass);
+            }
+            return classes;
+        }
+        const classes = groupByClass(names, usageCounts);
         // Function to group lessons by unit using the "-" separator
         function groupByUnit(names, usageCounts) {
             const units = [];
@@ -535,13 +569,30 @@
             return units;
         }
 
-        // Group lessons by units for both datasets
-        const units1 = groupByUnit(names1, usageCounts1);
-        const units2 = groupByUnit(names2, usageCounts2);
-
+        const unitsPerClass = [];
+        classes.forEach(currentClass => {
+            const labels = currentClass.map(item => item.label);
+            const values = currentClass.map(item => item.value);
+            unitsPerClass.push(groupByUnit(labels, values));
+        });
         // Initialize dynamic pagination variables
         let currentPage = 0;
-
+        let index = 0;
+        const datasets = [];
+        const colors = ['#E9C874', '#f77556', '#1cd0a0', '#f7d156', '#ff6230', ];
+        colorIndex = 0;
+        unitsPerClass.forEach(unit => {
+            datasets.push({
+                label: teacherNames[index],
+                data: unit[currentPage].map(item => item.value),
+                backgroundColor: colors[colorIndex],
+                borderColor: colors[colorIndex],
+                borderWidth: 1,
+                maxBarThickness: 80
+            });
+            index++;
+            colorIndex = (colorIndex + 1) % 5;
+        });
         // Initialize the chart context
         const ctx = document.getElementById('usageChart').getContext('2d');
         const btnContainer = document.getElementById('chart-buttons').style.display = 'flex';
@@ -551,34 +602,17 @@
         // Initialize the chart with the first page data
         let usageChart = initializeChart(
             ctx,
-            units1[currentPage].map(item => item.label),
-            units1[currentPage].map(item => item.value),
-            units2[currentPage].map(item => item.value)
+            unitsPerClass[0][currentPage].map(item => item.label),
+            datasets
         );
 
         // Function to initialize the chart with grouped bars
-        function initializeChart(ctx, labels, data1, data2) {
+        function initializeChart(ctx, labels, datasets) {
             return new Chart(ctx, {
                 type: 'bar',
                 data: {
                     labels: labels,
-                    datasets: [{
-                            label: teacherName1,
-                            data: data1,
-                            backgroundColor: '#E9C874',
-                            borderColor: '#E9C874',
-                            borderWidth: 1,
-                            maxBarThickness: 80
-                        },
-                        {
-                            label: teacherName2,
-                            data: data2,
-                            backgroundColor: '#74B9E9',
-                            borderColor: '#74B9E9',
-                            borderWidth: 1,
-                            maxBarThickness: 80
-                        }
-                    ]
+                    datasets: datasets
                 },
                 options: {
                     responsive: true,
@@ -588,16 +622,16 @@
                             grid: {
                                 display: false
                             },
-                            stacked: false,
-                            barPercentage: 1.0,
-                            categoryPercentage: 1.0
+                            stacked: false, // Ensure bars are grouped, not stacked
+                            barPercentage: 1.0, // Remove gap between bars within the same group
+                            categoryPercentage: 1.0 // Remove gap between groups of bars
                         },
                         y: {
                             beginAtZero: true,
                             max: 100,
                             ticks: {
                                 callback: function(value) {
-                                    return value + '%';
+                                    return value + '%'; // Append '%' to tick values
                                 },
                                 stepSize: 10
                             }
@@ -609,13 +643,13 @@
                             position: 'top'
                         },
                         tooltip: {
-                            mode: 'index',
-                            intersect: false,
+                            mode: 'index', // Ensure tooltips display grouped values
+                            intersect: false, // Show tooltip for all bars in a group
                             callbacks: {
                                 label: function(tooltipItem) {
-                                    let datasetLabel = tooltipItem.dataset.label;
+                                    let datasetLabel = tooltipItem.dataset.label; // Dataset name
                                     let value = tooltipItem.raw; // Bar value
-                                    return `${datasetLabel}: ${value}%`;
+                                    return `${datasetLabel}: ${value}%`; // Return label with dataset name and value
                                 }
                             }
                         }
@@ -632,12 +666,12 @@
 
         // Function to update the chart with new page data
         function updateChart() {
-            const currentUnit1 = units1[currentPage];
-            const currentUnit2 = units2[currentPage];
-
-            usageChart.data.labels = currentUnit1.map(item => item.label);
-            usageChart.data.datasets[0].data = currentUnit1.map(item => item.value);
-            usageChart.data.datasets[1].data = currentUnit2.map(item => item.value);
+            usageChart.data.labels = unitsPerClass[0][currentPage].map(item => item.label);
+            let index = 0;
+            unitsPerClass.forEach(unit => {
+                usageChart.data.datasets[index].data = unit[currentPage].map(item => item.value);
+                index++;
+            })
 
             usageChart.update(); // Refresh the chart with new data
             toggleButtons();
@@ -653,7 +687,7 @@
 
         // Optimized function to go to the next page
         window.nextPage = function() {
-            if (currentPage < units1.length - 1) {
+            if (currentPage < unitsPerClass[0].length - 1) {
                 currentPage++;
                 updateChart();
             }
@@ -665,7 +699,7 @@
             const nextButton = document.getElementById('nextBtn');
 
             prevButton.style.display = currentPage === 0 ? 'none' : 'block';
-            nextButton.style.display = currentPage === units1.length - 1 ? 'none' : 'block';
+            nextButton.style.display = currentPage === unitsPerClass[0].length - 1 ? 'none' : 'block';
         }
     });
 </script>
@@ -723,31 +757,27 @@ $showReports = 0;
         if (showReports) {
             document.getElementById('report_container').style.display = 'block';
         }
-        // Get previously selected program_id from if exists
-        var selectedProgramId = "{{$request['program_id'] ?? '' }}";
-        var selectedTeacherId = "{{ $request['teacher1_id']?? '' }}";
-        var selectedTeacherId2 = "{{ $request['teacher2_id']?? '' }}";
+        var selectedProgramId = "{{ $request['program_id'] ?? '' }}"; // This can stay as is if it's a single value
+
+        var selectedTeacherId = @json($request['teacher_id'] ?? []);
+
+
 
         $('#school_id').change(function() {
             var schoolId = $('#school_id').val();
-            getSchoolTeachers(schoolId, selectedTeacherId, selectedTeacherId2)
+            getSchoolTeachers(schoolId, selectedTeacherId)
         });
 
         // Trigger getCommonTeachersPrograms on group change
-        $('#teacher1_id').change(function() {
-            var teacher1Id = $('#teacher1_id').val();
-            var teacher2Id = $('#teacher2_id').val();
-            getCommonTeachersPrograms(teacher1Id, teacher2Id, selectedProgramId);
+        $('#teacher_id').change(function() {
+            var teacherIds = $('#teacher_id').val();
+            getCommonTeachersPrograms(teacherIds, selectedProgramId);
         });
-        $('#teacher2_id').change(function() {
-            var teacher1Id = $('#teacher1_id').val();
-            var teacher2Id = $('#teacher2_id').val();
-            getCommonTeachersPrograms(teacher1Id, teacher2Id, selectedProgramId);
-        });
+
 
         // Trigger change on page load to fetch programs for the selected group
         $('#school_id').trigger('change');
-        $('#teacher2_id').trigger('change');
+        $('#teacher_id').trigger('change');
 
         // Save the selected program_id to localStorage when it changes
         $('select[name="program_id"]').change(function() {
@@ -756,9 +786,10 @@ $showReports = 0;
         });
     });
 
-    function getCommonTeachersPrograms(teacher1Id, teacher2Id, selectedProgramId) {
+    function getCommonTeachersPrograms(teacherIds, selectedProgramId) {
+        var teacherIdsParam = Array.isArray(teacherIds) ? teacherIds.join(',') : teacherIds;
         $.ajax({
-            url: '/get-common-programs-teacher/' + teacher1Id + '/' + teacher2Id,
+            url: '/get-common-programs-teacher/' + teacherIdsParam,
             type: "GET",
             dataType: "json",
             success: function(data) {
@@ -792,31 +823,25 @@ $showReports = 0;
         });
     }
 
-    function getSchoolTeachers(schoolId, selectedTeacherId, selectedTeacherId2) {
+    function getSchoolTeachers(schoolId, selectedTeacherId) {
         $.ajax({
             url: '/get-teachers-school/' + schoolId,
             type: "GET",
             dataType: "json",
             success: function(data) {
-                $('select[name="teacher1_id"]').empty();
-                $('select[name="teacher2_id"]').empty();
-                $('select[name="teacher1_id"]').append('<option value="" selected disabled>Choose a Teacher</option>');
-                $('select[name="teacher2_id"]').append('<option value="" selected disabled>Choose a Teacher</option>');
+                $('select[name="teacher_id[]"]').empty();
+
 
                 $.each(data, function(key, value) {
-                    $('select[name="teacher1_id"]').append('<option value="' +
-                        value.id + '">' + value.name + '</option>');
-                    $('select[name="teacher2_id"]').append('<option value="' +
+                    $('select[name="teacher_id[]"]').append('<option value="' +
                         value.id + '">' + value.name + '</option>');
                 });
 
                 // Re-select the teacher_id if it exists
                 if (selectedTeacherId) {
-                    $('select[name="teacher1_id"]').val(selectedTeacherId).trigger('change');
+                    $('select[name="teacher_id[]"]').val(selectedTeacherId).trigger('change');
                 }
-                if (selectedTeacherId2) {
-                    $('select[name="teacher2_id"]').val(selectedTeacherId2).trigger('change');
-                }
+
             },
             error: function(xhr, status, error) {
                 console.error('AJAX Error fetching teachers:', error);

@@ -57,9 +57,9 @@ Route::get('/get-programs-group/{group_id}', [ClassController::class, 'getProgra
 Route::get('/get-students-school/{school_id}', [SchoolController::class, 'getStudentsSchool']);
 Route::get('/get-teachers-school/{school_id}', [SchoolController::class, 'getTeachersSchool']);
 Route::get('/get-common-programs-group/{groupIds}', [ClassController::class, 'getCommonGroupsPrograms']);
-Route::get('/get-common-programs-teacher/{teacher1_id}/{teacher2_id}', [InstructorController::class, 'getCommonTeacherPrograms']);
+Route::get('/get-common-programs-teacher/{teacher_id}', [InstructorController::class, 'getCommonTeacherPrograms']);
 Route::get('/get-teacher-programs/{teacher_id}', [InstructorController::class, 'getTeacherPrograms']);
-Route::get('/get-common-programs-student/{student1_id}/{student2_id}', [StudentController::class, 'getCommonStudentPrograms']);
+Route::get('/get-common-programs-student/{student_id}', [StudentController::class, 'getCommonStudentPrograms']);
 Route::get('/get-student-programs/{student_id}', [StudentController::class, 'getStudentPrograms']);
 
 Route::get('get-groups/{school_id}', [InstructorController::class, 'getGroups'])->name('getGroups');
