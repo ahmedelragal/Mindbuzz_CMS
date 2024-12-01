@@ -6601,6 +6601,11 @@ class ReportController extends Controller
             $chartValues = [];
             $chartLabels2 = [];
             $chartValues2 = [];
+            $classNames = [];
+            $classIds = array_keys($programUsages);
+            foreach ($classIds as $classId) {
+                $classNames[] = Group::find($classId)->name;
+            }
             if ($request->filled('filter') && $request->filled('program_id')) {
                 switch ($request->filter) {
                     case 'Unit':
@@ -6617,85 +6622,66 @@ class ReportController extends Controller
 
 
                         $data['unitsUsage'] =  $programsUsage[$request->program_id]['units'];
+                        $data['programUsages'] =  $programUsages;
                         $data['chartLabels'] =  $chartLabels;
                         $data['chartValues'] =  $chartValues;
+                        $data['classNames'] =  $classNames;
+                        $data['classIds'] =  $classIds;
                         break;
                     case 'Lesson':
-                        $lessonsData =  [];
                         $assignedCount = 0;
-                        foreach ($programsUsage as $program) {
-                            foreach ($program['units'] as $unit) {
-                                $chartLabels[] = '-';
-                                $chartValues[] = '-';
-                                foreach ($unit['lessons'] as $lesson) {
-                                    $chartLabels[] = $lesson['name'];
-                                    $chartValues[] = $lesson['usage_percentage'];
-                                    if ($lesson['assigned'] == 1) {
-                                        $assignedCount++;
-                                    }
-                                }
-                            }
-                        }
-                        $assignedCount = 0;
-                        foreach ($programsUsage2 as $program) {
-                            foreach ($program['units'] as $unit) {
-                                $chartLabels2[] = '-';
-                                $chartValues2[] = '-';
-                                foreach ($unit['lessons'] as $lesson) {
-                                    $chartLabels2[] = $lesson['name'];
-                                    $chartValues2[] = $lesson['usage_percentage'];
-                                    if ($lesson['assigned'] == 1) {
-                                        $assignedCount++;
+                        foreach ($programUsages as $programsUsage) {
+                            $chartLabels[] = '/';
+                            $chartValues[] = '/';
+                            foreach ($programsUsage as $program) {
+                                foreach ($program['units'] as $unit) {
+                                    $chartLabels[] = '-';
+                                    $chartValues[] = '-';
+                                    foreach ($unit['lessons'] as $lesson) {
+                                        $chartLabels[] = $lesson['name'];
+                                        $chartValues[] = $lesson['usage_percentage'];
+                                        if ($lesson['assigned'] == 1) {
+                                            $assignedCount++;
+                                        }
                                     }
                                 }
                             }
                         }
 
                         $data['lessonsUsage'] =  $programsUsage[$request->program_id]['units'];
-                        $data['lessonsUsage2'] =  $programsUsage2[$request->program_id]['units'];
+                        $data['programUsages'] =  $programUsages;
                         $data['chartLabels'] =  $chartLabels;
                         $data['chartValues'] =  $chartValues;
-                        $data['chartLabels2'] =  $chartLabels2;
-                        $data['chartValues2'] =  $chartValues2;
-                        $data['groupName1'] = Group::find($request->group1_id)->name;
-                        $data['groupName2'] = Group::find($request->group2_id)->name;
+                        $data['classNames'] =  $classNames;
+                        $data['classIds'] =  $classIds;
+
                         break;
                     case 'Game':
-                        $gameData = [];
-                        foreach ($programsUsage as $program) {
-                            foreach ($program['units'] as $unit) {
-                                foreach ($unit['lessons'] as $lesson) {
-                                    $chartLabels[] = '-';
-                                    $chartValues[] = '-';
-                                    foreach ($lesson['games'] as $game) {
-                                        $gameData[] = $game;
-                                        $chartLabels[] = $game['name'];
-                                        $chartValues[] = $game['assigned'];
+                        $assignedCount = 0;
+                        foreach ($programUsages as $programsUsage) {
+                            $chartLabels[] = '/';
+                            $chartValues[] = '/';
+                            foreach ($programsUsage as $program) {
+                                foreach ($program['units'] as $unit) {
+                                    foreach ($unit['lessons'] as $lesson) {
+                                        $chartLabels[] = '-';
+                                        $chartValues[] = '-';
+                                        foreach ($lesson['games'] as $game) {
+                                            $chartLabels[] = $game['name'];
+                                            $chartValues[] = $game['assigned'];
+                                        }
                                     }
                                 }
                             }
                         }
-                        foreach ($programsUsage2 as $program) {
-                            foreach ($program['units'] as $unit) {
-                                foreach ($unit['lessons'] as $lesson) {
-                                    $chartLabels2[] = '-';
-                                    $chartValues2[] = '-';
-                                    foreach ($lesson['games'] as $game) {
-                                        $gameData[] = $game;
-                                        $chartLabels2[] = $game['name'];
-                                        $chartValues2[] = $game['assigned'];
-                                    }
-                                }
-                            }
-                        }
+
                         $data['gamesUsage'] =  $programsUsage[$request->program_id]['units'];
-                        $data['gamesUsage2'] =  $programsUsage2[$request->program_id]['units'];
-                        $data['gamesLabels'] =  $chartLabels;
-                        $data['gamesValues'] =  $chartValues;
-                        $data['gamesLabels2'] =  $chartLabels2;
-                        $data['gamesValues2'] =  $chartValues2;
-                        $data['groupName1'] = Group::find($request->group1_id)->name;
-                        $data['groupName2'] = Group::find($request->group2_id)->name;
+                        $data['programUsages'] =  $programUsages;
+                        // dd($programUsages);
+                        $data['chartLabels'] =  $chartLabels;
+                        $data['chartValues'] =  $chartValues;
+                        $data['classNames'] =  $classNames;
+                        $data['classIds'] =  $classIds;
                         break;
                     default:
                         break;
@@ -6704,22 +6690,21 @@ class ReportController extends Controller
                 $data['error'] = 'Please Select a Program to Use filters';
                 return view('dashboard.reports.heatmap.class_heatmap_report', $data);
             } elseif (!$request->filled('program_id')) {
-                foreach ($programsUsage as $program) {
-                    $chartLabels[] = $program['name'];
-                    $chartValues[] = $program['usage_percentage'];
+                foreach ($programUsages as $programsUsage) {
+                    $chartLabels[] = '/';
+                    $chartValues[] = '/';
+                    foreach ($programsUsage as $program) {
+                        $chartLabels[] = $program['name'];
+                        $chartValues[] = $program['usage_percentage'];
+                    }
                 }
-                foreach ($programsUsage2 as $program) {
-                    $chartLabels2[] = $program['name'];
-                    $chartValues2[] = $program['usage_percentage'];
-                }
-                $data['programsUsage'] =  $programsUsage;
-                $data['programsUsage2'] =  $programsUsage2;
+
+                $data['programUsages'] =  $programUsages;
                 $data['chartLabels'] =  $chartLabels;
                 $data['chartValues'] =  $chartValues;
-                $data['chartLabels2'] =  $chartLabels2;
-                $data['chartValues2'] =  $chartValues2;
-                $data['groupName1'] = Group::find($request->group1_id)->name;
-                $data['groupName2'] = Group::find($request->group2_id)->name;
+                $data['classNames'] =  $classNames;
+                $data['classIds'] =  $classIds;
+                $data['programsUsage'] =  $programsUsage;
             } else {
                 $data['error'] = 'Please Select a Filter for this Program';
                 return view('dashboard.reports.heatmap.class_heatmap_report', $data);

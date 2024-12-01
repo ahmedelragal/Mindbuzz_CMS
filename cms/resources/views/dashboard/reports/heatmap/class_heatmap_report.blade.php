@@ -104,7 +104,6 @@
                             <div id="report_container" style="display:none">
                                 <div class="card mt-4">
                                     <div class="card-body">
-
                                         <!-- Display Chart if Data is Available -->
                                         <div class="row">
                                             <div class="container mt-5">
@@ -117,8 +116,104 @@
                                         </div>
                                     </div>
                                 </div>
+                                <div class="card mt-4">
+                                    <div class="card-body">
+                                        @if (isset($programsUsage))
+                                        <h5>Programs Usage</h5>
+                                        <table class="table">
+                                            <thead>
+                                                <tr>
+                                                    <th>Program</th>
+                                                    @if (isset($classNames))
+                                                    @foreach ($classNames as $className )
+                                                    <th>{{$className}} Usage(%)</th>
+                                                    @endforeach
+                                                    @endif
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                @foreach ($programsUsage as $program)
+                                                <tr>
+                                                    <td>{{ $program['name'] }}</td>
+                                                    @foreach ($classIds as $classId )
+                                                    <td> {{$programUsages[$classId][$program['program_id']]['usage_percentage']}}%</td>
+                                                    @endforeach
+                                                </tr>
+                                                @endforeach
+                                            </tbody>
+                                        </table>
+                                        @endif
 
+                                        @if (isset($unitsUsage))
+                                        <h5>Units Usage</h5>
+                                        <table class="table">
+                                            <thead>
+                                                <tr>
+                                                    <th>Unit</th>
+                                                    @if (isset($classNames))
+                                                    @foreach ($classNames as $className )
+                                                    <th>{{$className}} Usage(%)</th>
+                                                    @endforeach
+                                                    @endif
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                @foreach ($unitsUsage as $unit)
+                                                <tr>
+                                                    <td>{{ $unit['name'] }}</td>
+                                                    @foreach ($classIds as $classId )
+                                                    <td> {{$programUsages[$classId][$request['program_id']]['units'][$unit['unit_id']]['usage_percentage']}}%</td>
+                                                    @endforeach
+                                                </tr>
+                                                @endforeach
+                                            </tbody>
+                                        </table>
+                                        @endif
 
+                                        @if (isset($lessonsUsage))
+                                        <h5>Lessons Usage</h5>
+                                        <table class="table">
+                                            <thead>
+                                                <tr>
+                                                    <th>Unit</th>
+                                                    <th>lesson</th>
+                                                    @if (isset($classNames))
+                                                    @foreach ($classNames as $className )
+                                                    <th>{{$className}} Usage(%)</th>
+                                                    @endforeach
+                                                    @endif
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                @foreach ($lessonsUsage as $unit)
+                                                <?php $inc = 0; ?>
+                                                @foreach ($unit['lessons'] as $lesson)
+                                                @if ($inc == 0)
+                                                <tr>
+                                                    <td>{{$unit['name']}}</td>
+                                                    <td>{{$lesson['name']}}</td>
+                                                    @foreach ($classIds as $classId )
+                                                    <td> {{$programUsages[$classId][$request['program_id']]['units'][$unit['unit_id']]['lessons'][$lesson['lesson_id']]['usage_percentage']}}%</td>
+                                                    @endforeach
+                                                </tr>
+                                                <?php $inc = 1; ?>
+                                                @else
+                                                <tr>
+                                                    <td></td>
+                                                    <td>{{$lesson['name']}}</td>
+                                                    @foreach ($classIds as $classId )
+                                                    <td> {{$programUsages[$classId][$request['program_id']]['units'][$unit['unit_id']]['lessons'][$lesson['lesson_id']]['usage_percentage']}}%</td>
+                                                    @endforeach
+                                                </tr>
+                                                @endif
+                                                @endforeach
+                                                @endforeach
+                                            </tbody>
+                                        </table>
+                                        @endif
+
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -264,7 +359,7 @@
 
         // Function to update the chart with new page data
         function updateChart() {
-            const currentUnit1 = units1[currentPage];
+            const currentUnit = units1[currentPage];
             const currentUnit2 = units2[currentPage];
 
             usageChart.data.labels = currentUnit1.map(item => item.label);
@@ -309,6 +404,7 @@
         // Data from the controller for the two charts
         const names = @json($chartLabels);
         const usageCounts = @json($chartValues);
+        const classNames = @json($classNames);
 
 
         function groupByClass(names, usageCounts) {
@@ -358,13 +454,24 @@
             const values = currentClass.map(item => item.value);
             unitsPerClass.push(groupByUnit(labels, values));
         });
-
-        console.log(unitsPerClass);
-
-
         // Initialize dynamic pagination variables
         let currentPage = 0;
-
+        let index = 0;
+        const datasets = [];
+        const colors = ['#E9C874', '#f77556', '#1cd0a0', 'f7d156', '#ff6230', ];
+        colorIndex = 0;
+        unitsPerClass.forEach(unit => {
+            datasets.push({
+                label: classNames[index],
+                data: unit[currentPage].map(item => item.value),
+                backgroundColor: colors[colorIndex],
+                borderColor: colors[colorIndex],
+                borderWidth: 1,
+                maxBarThickness: 80
+            });
+            index++;
+            colorIndex = (colorIndex + 1) % 5;
+        });
         // Initialize the chart context
         const ctx = document.getElementById('usageChart').getContext('2d');
         const btnContainer = document.getElementById('chart-buttons').style.display = 'flex';
@@ -374,34 +481,17 @@
         // Initialize the chart with the first page data
         let usageChart = initializeChart(
             ctx,
-            units1[currentPage].map(item => item.label),
-            units1[currentPage].map(item => item.value),
-            units2[currentPage].map(item => item.value)
+            unitsPerClass[0][currentPage].map(item => item.label),
+            datasets
         );
 
         // Function to initialize the chart with grouped bars
-        function initializeChart(ctx, labels, data1, data2) {
+        function initializeChart(ctx, labels, datasets) {
             return new Chart(ctx, {
                 type: 'bar',
                 data: {
                     labels: labels,
-                    datasets: [{
-                            label: classname1,
-                            data: data1,
-                            backgroundColor: '#E9C874',
-                            borderColor: '#E9C874',
-                            borderWidth: 1,
-                            maxBarThickness: 80
-                        },
-                        {
-                            label: classname2,
-                            data: data2,
-                            backgroundColor: '#74B9E9',
-                            borderColor: '#74B9E9',
-                            borderWidth: 1,
-                            maxBarThickness: 80
-                        }
-                    ]
+                    datasets: datasets
                 },
                 options: {
                     responsive: true,
@@ -455,12 +545,12 @@
 
         // Function to update the chart with new page data
         function updateChart() {
-            const currentUnit1 = units1[currentPage];
-            const currentUnit2 = units2[currentPage];
-
-            usageChart.data.labels = currentUnit1.map(item => item.label);
-            usageChart.data.datasets[0].data = currentUnit1.map(item => item.value);
-            usageChart.data.datasets[1].data = currentUnit2.map(item => item.value);
+            usageChart.data.labels = unitsPerClass[0][currentPage].map(item => item.label);
+            let index = 0;
+            unitsPerClass.forEach(unit => {
+                usageChart.data.datasets[index].data = unit[currentPage].map(item => item.value);
+                index++;
+            })
 
             usageChart.update(); // Refresh the chart with new data
             toggleButtons();
@@ -476,7 +566,7 @@
 
         // Optimized function to go to the next page
         window.nextPage = function() {
-            if (currentPage < units1.length - 1) {
+            if (currentPage < unitsPerClass[0].length - 1) {
                 currentPage++;
                 updateChart();
             }
@@ -488,7 +578,7 @@
             const nextButton = document.getElementById('nextBtn');
 
             prevButton.style.display = currentPage === 0 ? 'none' : 'block';
-            nextButton.style.display = currentPage === units1.length - 1 ? 'none' : 'block';
+            nextButton.style.display = currentPage === unitsPerClass[0].length - 1 ? 'none' : 'block';
         }
     });
 </script>
@@ -602,5 +692,4 @@ $showReports = 0;
         });
     }
 </script>
-
 @endsection
