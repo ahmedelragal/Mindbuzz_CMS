@@ -4044,8 +4044,14 @@ class ReportController extends Controller
             }
 
             // Initialize query builder for student progress
-            $query = StudentProgress::whereIn('student_id', $students)
-                ->where('program_id', $request->program_id);
+            // $query = StudentProgress::whereIn('student_id', $students)
+            //     ->where('program_id', $request->program_id);
+            $query = StudentDegree::whereIn('student_id', $students)
+                ->join('games', 'student_degrees.game_id', '=', 'games.id')
+                ->join('lessons', 'games.lesson_id', '=', 'lessons.id')
+                ->join('units', 'lessons.unit_id', '=', 'units.id')
+                ->where('units.program_id', $request->program_id);
+
 
             if ($query->get()->isEmpty()) {
                 // return redirect()->back()->with('error', 'No Student Progress Found.');
@@ -4071,7 +4077,6 @@ class ReportController extends Controller
                 return $query->where('created_at', '<=', $toDate);
             });
             $student_progress = $query->get();
-
             if ($student_progress->isEmpty()) {
                 $data['error'] = 'No Student Progress Found.';
                 return view('dashboard.reports.class.class_content_engagement_report', $data);
@@ -4181,35 +4186,41 @@ class ReportController extends Controller
                 $unitsUsage[$unit->id]['lessons'] = $lessonsUsage;
                 $unitsUsage[$unit->id]['total_games'] = $totalUnitGames;
             }
+            $arr = array();
             foreach ($student_progress as $progress) {
-                $test = Test::with(['game.gameTypes.skills.skill'])->where('lesson_id', $progress->lesson_id)->find($progress->test_id);
-                // Check if the test and its relationships are properly loaded
-                // dd($test, $unitsUsage);
-                if (!$test || !$test->game || !$test->game->gameTypes) {
-                    continue; // Skip to the next progress record if any of these are null
-                }
-                if (!in_array($progress->student_id, $unitsUsage[$progress->unit_id]['lessons'][$test->lesson_id]['games'][$test->game_id]['student_ids'])) {
-                    $unitsUsage[$progress->unit_id]['lessons'][$test->lesson_id]['games'][$test->game_id]['student_ids'][] = $progress->student_id;
+                $checker = '';
+                // dd($progress);
+                $checker = $progress->game_type_id . ':' . $progress->lesson_id . ':' . $progress->student_id;
+                // dd($arr, $checker);
+                $game = Game::find($progress->game_id);
 
-                    if ($unitsUsage[$progress->unit_id]['lessons'][$test->lesson_id]['games'][$test->game_id]['assigned'] == 0) {
-                        $unitsUsage[$progress->unit_id]['lessons'][$test->lesson_id]['games'][$test->game_id]['assigned'] = 1;
-                        $unitsUsage[$progress->unit_id]['lessons'][$test->lesson_id]['assigned_count']++;
+                $unitId = $game->lesson->unit->id;
+                if (!(in_array($checker, $arr))) {
+                    // dd($arr);
+                    if (!in_array($progress->student_id, $unitsUsage[$unitId]['lessons'][$game->lesson_id]['games'][$game->id]['student_ids'])) {
+                        $unitsUsage[$unitId]['lessons'][$game->lesson_id]['games'][$game->id]['student_ids'][] = $progress->student_id;
+                        if ($unitsUsage[$unitId]['lessons'][$game->lesson_id]['games'][$game->id]['assigned'] == 0) {
+                            $unitsUsage[$unitId]['lessons'][$game->lesson_id]['games'][$game->id]['assigned'] = 1;
+                            $unitsUsage[$unitId]['lessons'][$game->lesson_id]['assigned_count']++;
+                        }
                     }
                 }
-                if (!in_array($progress->student_id, $unitsUsage[$progress->unit_id]['lessons'][$test->lesson_id]['student_ids'])) {
-                    $unitsUsage[$progress->unit_id]['lessons'][$test->lesson_id]['student_ids'][] = $progress->student_id;
 
-                    if ($unitsUsage[$progress->unit_id]['lessons'][$test->lesson_id]['assigned'] == 0) {
-                        $unitsUsage[$progress->unit_id]['lessons'][$test->lesson_id]['assigned'] = 1;
-                        $unitsUsage[$progress->unit_id]['assigned_count']++;
+                if (!in_array($progress->student_id, $unitsUsage[$unitId]['lessons'][$game->lesson_id]['student_ids'])) {
+                    $unitsUsage[$unitId]['lessons'][$game->lesson_id]['student_ids'][] = $progress->student_id;
+                    if ($unitsUsage[$unitId]['lessons'][$game->lesson_id]['assigned'] == 0) {
+                        $unitsUsage[$unitId]['lessons'][$game->lesson_id]['assigned'] = 1;
+                        $unitsUsage[$unitId]['assigned_count']++;
                     }
                 }
-                if (!in_array($progress->student_id, $unitsUsage[$progress->unit_id]['student_ids'])) {
-                    $unitsUsage[$progress->unit_id]['student_ids'][] = $progress->student_id;
-                    if ($unitsUsage[$progress->unit_id]['assigned'] == 0) {
-                        $unitsUsage[$progress->unit_id]['assigned'] = 1;
+                if (!in_array($progress->student_id, $unitsUsage[$unitId]['student_ids'])) {
+                    $unitsUsage[$unitId]['student_ids'][] = $progress->student_id;
+                    if ($unitsUsage[$unitId]['assigned'] == 0) {
+                        $unitsUsage[$unitId]['assigned'] = 1;
                     }
                 }
+
+                array_push($arr, $progress->game_type_id . ':' . $progress->lesson_id . ':' . $progress->student_id);
             }
 
             foreach ($unitsUsage as &$unit) {
@@ -4360,8 +4371,11 @@ class ReportController extends Controller
             }
 
             // Initialize query builder for student progress
-            $query = StudentProgress::whereIn('student_id', $students)
-                ->where('program_id', $request->program_id);
+            $query = StudentDegree::whereIn('student_id', $students)
+                ->join('games', 'student_degrees.game_id', '=', 'games.id')
+                ->join('lessons', 'games.lesson_id', '=', 'lessons.id')
+                ->join('units', 'lessons.unit_id', '=', 'units.id')
+                ->where('units.program_id', $request->program_id);
 
             // Add the 'from_date' filter if it exists
             $query->when($request->filled('from_date'), function ($query) use ($request) {
@@ -4445,7 +4459,6 @@ class ReportController extends Controller
                             ->where('game_type_id', $game['game_type_id'])
                             ->where('name', $game['name'])
                             ->value('id');
-                        // dd($game, $gameId);
                         if (!isset($gamesUsage[$gameId])) {
                             $gamesUsage[$gameId] = [
                                 'game_id' => $gameId,
@@ -4486,35 +4499,41 @@ class ReportController extends Controller
                 $unitsUsage[$unit->id]['lessons'] = $lessonsUsage;
                 $unitsUsage[$unit->id]['total_games'] = $totalUnitGames;
             }
+            $arr = array();
             foreach ($student_progress as $progress) {
-                $test = Test::with(['game.gameTypes.skills.skill'])->where('lesson_id', $progress->lesson_id)->find($progress->test_id);
-                // Check if the test and its relationships are properly loaded
-                // dd($test, $unitsUsage);
-                if (!$test || !$test->game || !$test->game->gameTypes) {
-                    continue; // Skip to the next progress record if any of these are null
-                }
-                if (!in_array($progress->student_id, $unitsUsage[$progress->unit_id]['lessons'][$test->lesson_id]['games'][$test->game_id]['student_ids'])) {
-                    $unitsUsage[$progress->unit_id]['lessons'][$test->lesson_id]['games'][$test->game_id]['student_ids'][] = $progress->student_id;
+                $checker = '';
+                // dd($progress);
+                $checker = $progress->game_type_id . ':' . $progress->lesson_id . ':' . $progress->student_id;
+                // dd($arr, $checker);
+                $game = Game::find($progress->game_id);
 
-                    if ($unitsUsage[$progress->unit_id]['lessons'][$test->lesson_id]['games'][$test->game_id]['assigned'] == 0) {
-                        $unitsUsage[$progress->unit_id]['lessons'][$test->lesson_id]['games'][$test->game_id]['assigned'] = 1;
-                        $unitsUsage[$progress->unit_id]['lessons'][$test->lesson_id]['assigned_count']++;
+                $unitId = $game->lesson->unit->id;
+                if (!(in_array($checker, $arr))) {
+                    // dd($arr);
+                    if (!in_array($progress->student_id, $unitsUsage[$unitId]['lessons'][$game->lesson_id]['games'][$game->id]['student_ids'])) {
+                        $unitsUsage[$unitId]['lessons'][$game->lesson_id]['games'][$game->id]['student_ids'][] = $progress->student_id;
+                        if ($unitsUsage[$unitId]['lessons'][$game->lesson_id]['games'][$game->id]['assigned'] == 0) {
+                            $unitsUsage[$unitId]['lessons'][$game->lesson_id]['games'][$game->id]['assigned'] = 1;
+                            $unitsUsage[$unitId]['lessons'][$game->lesson_id]['assigned_count']++;
+                        }
                     }
                 }
-                if (!in_array($progress->student_id, $unitsUsage[$progress->unit_id]['lessons'][$test->lesson_id]['student_ids'])) {
-                    $unitsUsage[$progress->unit_id]['lessons'][$test->lesson_id]['student_ids'][] = $progress->student_id;
 
-                    if ($unitsUsage[$progress->unit_id]['lessons'][$test->lesson_id]['assigned'] == 0) {
-                        $unitsUsage[$progress->unit_id]['lessons'][$test->lesson_id]['assigned'] = 1;
-                        $unitsUsage[$progress->unit_id]['assigned_count']++;
+                if (!in_array($progress->student_id, $unitsUsage[$unitId]['lessons'][$game->lesson_id]['student_ids'])) {
+                    $unitsUsage[$unitId]['lessons'][$game->lesson_id]['student_ids'][] = $progress->student_id;
+                    if ($unitsUsage[$unitId]['lessons'][$game->lesson_id]['assigned'] == 0) {
+                        $unitsUsage[$unitId]['lessons'][$game->lesson_id]['assigned'] = 1;
+                        $unitsUsage[$unitId]['assigned_count']++;
                     }
                 }
-                if (!in_array($progress->student_id, $unitsUsage[$progress->unit_id]['student_ids'])) {
-                    $unitsUsage[$progress->unit_id]['student_ids'][] = $progress->student_id;
-                    if ($unitsUsage[$progress->unit_id]['assigned'] == 0) {
-                        $unitsUsage[$progress->unit_id]['assigned'] = 1;
+                if (!in_array($progress->student_id, $unitsUsage[$unitId]['student_ids'])) {
+                    $unitsUsage[$unitId]['student_ids'][] = $progress->student_id;
+                    if ($unitsUsage[$unitId]['assigned'] == 0) {
+                        $unitsUsage[$unitId]['assigned'] = 1;
                     }
                 }
+
+                array_push($arr, $progress->game_type_id . ':' . $progress->lesson_id . ':' . $progress->student_id);
             }
 
             foreach ($unitsUsage as &$unit) {
@@ -4562,11 +4581,15 @@ class ReportController extends Controller
                                 }
                             }
                         }
-
+                        if (empty($chartNames)) {
+                            $data['error'] = 'No Skills Found';
+                            return view('dashboard.reports.school.school_content_engagement_report', $data);
+                        }
                         $data['chartLabels'] = $chartLabels;
                         $data['chartValues'] = $chartValues;
                         $data['chartNames'] = $chartNames;
                         $data['skillsEngagement'] = $unitsUsage;
+
                         break;
                     case 'Unit':
                         $index = 0;
@@ -4634,7 +4657,6 @@ class ReportController extends Controller
                 }
             }
         }
-
         return view('dashboard.reports.school.school_content_engagement_report', $data);
     }
 
@@ -4677,8 +4699,11 @@ class ReportController extends Controller
             }
 
             // Initialize query builder for student progress
-            $query = StudentProgress::whereIn('student_id', $students)
-                ->where('program_id', $request->program_id);
+            $query = StudentDegree::whereIn('student_id', $students)
+                ->join('games', 'student_degrees.game_id', '=', 'games.id')
+                ->join('lessons', 'games.lesson_id', '=', 'lessons.id')
+                ->join('units', 'lessons.unit_id', '=', 'units.id')
+                ->where('units.program_id', $request->program_id);
 
             // Add the 'from_date' filter if it exists
             $query->when($request->filled('from_date'), function ($query) use ($request) {
@@ -4803,35 +4828,41 @@ class ReportController extends Controller
                 $unitsUsage[$unit->id]['lessons'] = $lessonsUsage;
                 $unitsUsage[$unit->id]['total_games'] = $totalUnitGames;
             }
+            $arr = array();
             foreach ($student_progress as $progress) {
-                $test = Test::with(['game.gameTypes.skills.skill'])->where('lesson_id', $progress->lesson_id)->find($progress->test_id);
-                // Check if the test and its relationships are properly loaded
-                // dd($test, $unitsUsage);
-                if (!$test || !$test->game || !$test->game->gameTypes) {
-                    continue; // Skip to the next progress record if any of these are null
-                }
-                if (!in_array($progress->student_id, $unitsUsage[$progress->unit_id]['lessons'][$test->lesson_id]['games'][$test->game_id]['student_ids'])) {
-                    $unitsUsage[$progress->unit_id]['lessons'][$test->lesson_id]['games'][$test->game_id]['student_ids'][] = $progress->student_id;
+                $checker = '';
+                // dd($progress);
+                $checker = $progress->game_type_id . ':' . $progress->lesson_id . ':' . $progress->student_id;
+                // dd($arr, $checker);
+                $game = Game::find($progress->game_id);
 
-                    if ($unitsUsage[$progress->unit_id]['lessons'][$test->lesson_id]['games'][$test->game_id]['assigned'] == 0) {
-                        $unitsUsage[$progress->unit_id]['lessons'][$test->lesson_id]['games'][$test->game_id]['assigned'] = 1;
-                        $unitsUsage[$progress->unit_id]['lessons'][$test->lesson_id]['assigned_count']++;
+                $unitId = $game->lesson->unit->id;
+                if (!(in_array($checker, $arr))) {
+                    // dd($arr);
+                    if (!in_array($progress->student_id, $unitsUsage[$unitId]['lessons'][$game->lesson_id]['games'][$game->id]['student_ids'])) {
+                        $unitsUsage[$unitId]['lessons'][$game->lesson_id]['games'][$game->id]['student_ids'][] = $progress->student_id;
+                        if ($unitsUsage[$unitId]['lessons'][$game->lesson_id]['games'][$game->id]['assigned'] == 0) {
+                            $unitsUsage[$unitId]['lessons'][$game->lesson_id]['games'][$game->id]['assigned'] = 1;
+                            $unitsUsage[$unitId]['lessons'][$game->lesson_id]['assigned_count']++;
+                        }
                     }
                 }
-                if (!in_array($progress->student_id, $unitsUsage[$progress->unit_id]['lessons'][$test->lesson_id]['student_ids'])) {
-                    $unitsUsage[$progress->unit_id]['lessons'][$test->lesson_id]['student_ids'][] = $progress->student_id;
 
-                    if ($unitsUsage[$progress->unit_id]['lessons'][$test->lesson_id]['assigned'] == 0) {
-                        $unitsUsage[$progress->unit_id]['lessons'][$test->lesson_id]['assigned'] = 1;
-                        $unitsUsage[$progress->unit_id]['assigned_count']++;
+                if (!in_array($progress->student_id, $unitsUsage[$unitId]['lessons'][$game->lesson_id]['student_ids'])) {
+                    $unitsUsage[$unitId]['lessons'][$game->lesson_id]['student_ids'][] = $progress->student_id;
+                    if ($unitsUsage[$unitId]['lessons'][$game->lesson_id]['assigned'] == 0) {
+                        $unitsUsage[$unitId]['lessons'][$game->lesson_id]['assigned'] = 1;
+                        $unitsUsage[$unitId]['assigned_count']++;
                     }
                 }
-                if (!in_array($progress->student_id, $unitsUsage[$progress->unit_id]['student_ids'])) {
-                    $unitsUsage[$progress->unit_id]['student_ids'][] = $progress->student_id;
-                    if ($unitsUsage[$progress->unit_id]['assigned'] == 0) {
-                        $unitsUsage[$progress->unit_id]['assigned'] = 1;
+                if (!in_array($progress->student_id, $unitsUsage[$unitId]['student_ids'])) {
+                    $unitsUsage[$unitId]['student_ids'][] = $progress->student_id;
+                    if ($unitsUsage[$unitId]['assigned'] == 0) {
+                        $unitsUsage[$unitId]['assigned'] = 1;
                     }
                 }
+
+                array_push($arr, $progress->game_type_id . ':' . $progress->lesson_id . ':' . $progress->student_id);
             }
 
             foreach ($unitsUsage as &$unit) {
@@ -4973,8 +5004,13 @@ class ReportController extends Controller
         ];
         if ($request->has('student_id')) {
             // Initialize query builder for student progress
-            $query = StudentProgress::where('student_id', $request->student_id)
-                ->where('program_id', $request->program_id);
+            $query = StudentDegree::where('student_id', $request->student_id)
+                ->join('games', 'student_degrees.game_id', '=', 'games.id')
+                ->join('lessons', 'games.lesson_id', '=', 'lessons.id')
+                ->join('units', 'lessons.unit_id', '=', 'units.id')
+                ->where('units.program_id', $request->program_id);
+            // dd($query);
+
 
             if ($query->get()->isEmpty()) {
                 // return redirect()->back()->with('error', 'No Student Progress Found.');
@@ -5118,19 +5154,22 @@ class ReportController extends Controller
             }
             // dd($unitsUsage);
             // dd($unitsUsage);
+            $arr = array();
             foreach ($student_progress as $progress) {
-                $test = Test::with(['game.gameTypes.skills.skill'])->where('lesson_id', $progress->lesson_id)->find($progress->test_id);
-                // Check if the test and its relationships are properly loaded
-                // dd($test, $unitsUsage);
-                if (!$test || !$test->game || !$test->game->gameTypes) {
-                    continue; // Skip to the next progress record if any of these are null
+                $game = Game::find($progress->game_id);
+                $checker = '';
+                // dd($progress);
+                $checker = $progress->game_type_id . ':' . $progress->lesson_id . ':' . $progress->student_id;
+                $game = Game::find($progress->game_id);
+                $unitId = $game->lesson->unit->id;
+                if (!(in_array($checker, $arr))) {
+                    if ($unitsUsage[$unitId]['lessons'][$game->lesson_id]['games'][$game->id]['assigned'] == 0) {
+                        $unitsUsage[$unitId]['lessons'][$game->lesson_id]['games'][$game->id]['assigned'] = 1;
+                        $unitsUsage[$unitId]['lessons'][$game->lesson_id]['engagement_count']++;
+                        $unitsUsage[$unitId]['engagement_count']++;
+                    }
                 }
-
-                if ($unitsUsage[$progress->unit_id]['lessons'][$test->lesson_id]['games'][$test->game_id]['assigned'] == 0) {
-                    $unitsUsage[$progress->unit_id]['lessons'][$test->lesson_id]['games'][$test->game_id]['assigned'] = 1;
-                    $unitsUsage[$progress->unit_id]['lessons'][$test->lesson_id]['engagement_count']++;
-                    $unitsUsage[$progress->unit_id]['engagement_count']++;
-                }
+                array_push($arr, $progress->game_type_id . ':' . $progress->lesson_id . ':' . $progress->student_id);
             }
 
             foreach ($unitsUsage as &$unit) {
@@ -5377,11 +5416,23 @@ class ReportController extends Controller
 
                     foreach ($unit->lessons as $lesson) {
                         // $gamesCount = Game::where('lesson_id', $lesson->id)->get()->count();
-                        $gamesCount = Game::select('name', 'game_type_id')
+                        $games = Game::select('name', 'game_type_id', 'lesson_id')
                             ->where('lesson_id', $lesson->id)
-                            ->groupBy('name', 'game_type_id')
-                            ->get()
-                            ->count();
+                            ->groupBy('name', 'game_type_id', 'lesson_id')
+                            ->get();
+                        $gamesCount = $games->count();
+                        $gameIds = [];
+                        foreach ($games as $game) {
+                            // Retrieve the first game's ID based on the unique combination
+                            $gameId = Game::where('lesson_id', $game['lesson_id'])
+                                ->where('game_type_id', $game['game_type_id'])
+                                ->where('name', $game['name'])
+                                ->value('id');
+
+                            if ($gameId) {
+                                $gameIds[] = $gameId;
+                            }
+                        }
                         $totalProgramGames += $gamesCount;
                         $totalUnitGames += $gamesCount;
                         if (!isset($lessonsUsage[$lesson->id])) {
@@ -5398,24 +5449,27 @@ class ReportController extends Controller
                         }
 
                         $gamesUsage = [];
-                        $skillsUsage = [];
 
-                        foreach ($lesson->game as $game) {
-                            if (!isset($gamesUsage[$game->game_type_id])) {
-                                $gameType = GameType::find($game->game_type_id);
-                                $gamesUsage[$game->game_type_id] = [
-                                    'game_type_id' => $game->game_type_id,
-                                    'name' => $gameType->name,
+                        foreach ($games as $game) {
+                            $skillsUsage = [];
+                            $gameId = Game::where('lesson_id', $game['lesson_id'])
+                                ->where('game_type_id', $game['game_type_id'])
+                                ->where('name', $game['name'])
+                                ->value('id');
+                            if (!isset($gamesUsage[$gameId])) {
+                                $gamesUsage[$gameId] = [
+                                    'game_id' => $game->id,
+                                    'name' => $game->name,
                                     'skills' => [],
                                     'assigned' => 0,
                                     'usage_percentage' => 0,
                                 ];
 
                                 // Assign skills to the game type using skill IDs as keys
-                                if ($gameType->skills) {
-                                    foreach ($gameType->skills->where('lesson_id', $lesson->id)->unique('skill') as $gameSkill) {
-                                        $skill = $gameSkill->skill;
-
+                                $gameSkills = Skills::whereIn('id', GameSkills::where('lesson_id', $game->lesson_id)->where('game_type_id', $game->game_type_id)->pluck('skill_id'))->get();
+                                // dd($gameSkills);
+                                if (!$gameSkills->isEmpty()) {
+                                    foreach ($gameSkills as $skill) {
                                         if (!isset($skillsUsage[$skill->id])) {
                                             $skillsUsage[$skill->id] = [
                                                 'skill_id' => $skill->id,
@@ -5426,7 +5480,7 @@ class ReportController extends Controller
                                         }
                                     }
                                     // Assign the collected skills to the game's 'skills'
-                                    $gamesUsage[$game->game_type_id]['skills'] = $skillsUsage;
+                                    $gamesUsage[$gameId]['skills'] = $skillsUsage;
                                 }
                             }
                         }
@@ -5449,7 +5503,7 @@ class ReportController extends Controller
                 $lesson = Lesson::find($assignment->lesson_id);
                 $unit_id = $lesson->unit_id;
                 $programsUsage[$assignment->program_id]['units'][$unit_id]['lessons'][$assignment->lesson_id]['assigned'] = 1;
-                $programsUsage[$assignment->program_id]['units'][$unit_id]['lessons'][$assignment->lesson_id]['games'][$testGame->game_type_id]['assigned'] = 1;
+                $programsUsage[$assignment->program_id]['units'][$unit_id]['lessons'][$assignment->lesson_id]['games'][$assignment->game_id]['assigned'] = 1;
 
                 if (!in_array($testGame->id,    $programsUsage[$assignment->program_id]['units'][$unit_id]['lessons'][$assignment->lesson_id]['assigned_games'])) {
                     $programsUsage[$assignment->program_id]['units'][$unit_id]['lessons'][$assignment->lesson_id]['assigned_games'][] = $testGame->id;
@@ -5836,12 +5890,24 @@ class ReportController extends Controller
                     $lessonsUsage = []; // Initialize lessonsUsage for each unit
 
                     foreach ($unit->lessons as $lesson) {
-                        // $gamesCount = Game::where('lesson_id', $lesson->id)->get()->count();
-                        $gamesCount = Game::select('name', 'game_type_id')
+                        $games = Game::select('name', 'game_type_id', 'lesson_id')
                             ->where('lesson_id', $lesson->id)
-                            ->groupBy('name', 'game_type_id')
-                            ->get()
-                            ->count();
+                            ->groupBy('name', 'game_type_id', 'lesson_id')
+                            ->get();
+                        // dd($games);
+                        $gamesCount = $games->count();
+                        $gameIds = [];
+                        foreach ($games as $game) {
+                            // Retrieve the first game's ID based on the unique combination
+                            $gameId = Game::where('lesson_id', $game['lesson_id'])
+                                ->where('game_type_id', $game['game_type_id'])
+                                ->where('name', $game['name'])
+                                ->value('id');
+
+                            if ($gameId) {
+                                $gameIds[] = $gameId;
+                            }
+                        }
                         $totalProgramGames += $gamesCount;
                         $totalUnitGames += $gamesCount;
                         if (!isset($lessonsUsage[$lesson->id])) {
@@ -5858,24 +5924,28 @@ class ReportController extends Controller
                         }
 
                         $gamesUsage = [];
-                        $skillsUsage = [];
 
-                        foreach ($lesson->game as $game) {
-                            if (!isset($gamesUsage[$game->game_type_id])) {
-                                $gameType = GameType::find($game->game_type_id);
-                                $gamesUsage[$game->game_type_id] = [
-                                    'game_type_id' => $game->game_type_id,
-                                    'name' => $gameType->name,
+                        foreach ($games as $game) {
+                            $skillsUsage = [];
+                            $gameId = Game::where('lesson_id', $game['lesson_id'])
+                                ->where('game_type_id', $game['game_type_id'])
+                                ->where('name', $game['name'])
+                                ->value('id');
+
+                            if (!isset($gamesUsage[$gameId])) {
+                                $gamesUsage[$gameId] = [
+                                    'game_id' => $gameId,
+                                    'name' => $game->name,
                                     'skills' => [],
                                     'assigned' => 0,
                                     'gap_percentage' => 100,
                                 ];
 
                                 // Assign skills to the game type using skill IDs as keys
-                                if ($gameType->skills) {
-                                    foreach ($gameType->skills->where('lesson_id', $lesson->id)->unique('skill') as $gameSkill) {
-                                        $skill = $gameSkill->skill;
-
+                                $gameSkills = Skills::whereIn('id', GameSkills::where('lesson_id', $game->lesson_id)->where('game_type_id', $game->game_type_id)->pluck('skill_id'))->get();
+                                // dd($gameSkills);
+                                if (!$gameSkills->isEmpty()) {
+                                    foreach ($gameSkills as $skill) {
                                         if (!isset($skillsUsage[$skill->id])) {
                                             $skillsUsage[$skill->id] = [
                                                 'skill_id' => $skill->id,
@@ -5886,7 +5956,7 @@ class ReportController extends Controller
                                         }
                                     }
                                     // Assign the collected skills to the game's 'skills'
-                                    $gamesUsage[$game->game_type_id]['skills'] = $skillsUsage;
+                                    $gamesUsage[$gameId]['skills'] = $skillsUsage;
                                 }
                             }
                         }
@@ -5909,7 +5979,7 @@ class ReportController extends Controller
                     $lesson = Lesson::find($assignment->lesson_id);
                     $unit_id = $lesson->unit_id;
                     $programsUsage[$assignment->program_id]['units'][$unit_id]['lessons'][$assignment->lesson_id]['assigned'] = 1;
-                    $programsUsage[$assignment->program_id]['units'][$unit_id]['lessons'][$assignment->lesson_id]['games'][$testGame->game_type_id]['assigned'] = 1;
+                    $programsUsage[$assignment->program_id]['units'][$unit_id]['lessons'][$assignment->lesson_id]['games'][$testGame->id]['assigned'] = 1;
 
                     if (!in_array($testGame->id,    $programsUsage[$assignment->program_id]['units'][$unit_id]['lessons'][$assignment->lesson_id]['assigned_games'])) {
                         $programsUsage[$assignment->program_id]['units'][$unit_id]['lessons'][$assignment->lesson_id]['assigned_games'][] = $testGame->id;
@@ -6116,12 +6186,24 @@ class ReportController extends Controller
                     $lessonsUsage = []; // Initialize lessonsUsage for each unit
 
                     foreach ($unit->lessons as $lesson) {
-                        // $gamesCount = Game::where('lesson_id', $lesson->id)->get()->count();
-                        $gamesCount = Game::select('name', 'game_type_id')
+                        $games = Game::select('name', 'game_type_id', 'lesson_id')
                             ->where('lesson_id', $lesson->id)
-                            ->groupBy('name', 'game_type_id')
-                            ->get()
-                            ->count();
+                            ->groupBy('name', 'game_type_id', 'lesson_id')
+                            ->get();
+                        // dd($games);
+                        $gamesCount = $games->count();
+                        $gameIds = [];
+                        foreach ($games as $game) {
+                            // Retrieve the first game's ID based on the unique combination
+                            $gameId = Game::where('lesson_id', $game['lesson_id'])
+                                ->where('game_type_id', $game['game_type_id'])
+                                ->where('name', $game['name'])
+                                ->value('id');
+
+                            if ($gameId) {
+                                $gameIds[] = $gameId;
+                            }
+                        }
                         $totalProgramGames += $gamesCount;
                         $totalUnitGames += $gamesCount;
                         if (!isset($lessonsUsage[$lesson->id])) {
@@ -6140,22 +6222,27 @@ class ReportController extends Controller
                         $gamesUsage = [];
                         $skillsUsage = [];
 
-                        foreach ($lesson->game as $game) {
-                            if (!isset($gamesUsage[$game->game_type_id])) {
-                                $gameType = GameType::find($game->game_type_id);
-                                $gamesUsage[$game->game_type_id] = [
-                                    'game_type_id' => $game->game_type_id,
-                                    'name' => $gameType->name,
+                        foreach ($games as $game) {
+                            $skillsUsage = [];
+                            $gameId = Game::where('lesson_id', $game['lesson_id'])
+                                ->where('game_type_id', $game['game_type_id'])
+                                ->where('name', $game['name'])
+                                ->value('id');
+                            // dd($game, $gameId);
+                            if (!isset($gamesUsage[$gameId])) {
+                                $gamesUsage[$gameId] = [
+                                    'game_id' => $gameId,
+                                    'name' => $game->name,
                                     'skills' => [],
                                     'assigned' => 0,
                                     'gap_percentage' => 100,
                                 ];
 
                                 // Assign skills to the game type using skill IDs as keys
-                                if ($gameType->skills) {
-                                    foreach ($gameType->skills->where('lesson_id', $lesson->id)->unique('skill') as $gameSkill) {
-                                        $skill = $gameSkill->skill;
-
+                                $gameSkills = Skills::whereIn('id', GameSkills::where('lesson_id', $game->lesson_id)->where('game_type_id', $game->game_type_id)->pluck('skill_id'))->get();
+                                // dd($gameSkills);
+                                if (!$gameSkills->isEmpty()) {
+                                    foreach ($gameSkills as $skill) {
                                         if (!isset($skillsUsage[$skill->id])) {
                                             $skillsUsage[$skill->id] = [
                                                 'skill_id' => $skill->id,
@@ -6166,7 +6253,7 @@ class ReportController extends Controller
                                         }
                                     }
                                     // Assign the collected skills to the game's 'skills'
-                                    $gamesUsage[$game->game_type_id]['skills'] = $skillsUsage;
+                                    $gamesUsage[$gameId]['skills'] = $skillsUsage;
                                 }
                             }
                         }
@@ -6189,7 +6276,7 @@ class ReportController extends Controller
                     $lesson = Lesson::find($assignment->lesson_id);
                     $unit_id = $lesson->unit_id;
                     $programsUsage[$assignment->program_id]['units'][$unit_id]['lessons'][$assignment->lesson_id]['assigned'] = 1;
-                    $programsUsage[$assignment->program_id]['units'][$unit_id]['lessons'][$assignment->lesson_id]['games'][$testGame->game_type_id]['assigned'] = 1;
+                    $programsUsage[$assignment->program_id]['units'][$unit_id]['lessons'][$assignment->lesson_id]['games'][$testGame->id]['assigned'] = 1;
 
                     if (!in_array($testGame->id,    $programsUsage[$assignment->program_id]['units'][$unit_id]['lessons'][$assignment->lesson_id]['assigned_games'])) {
                         $programsUsage[$assignment->program_id]['units'][$unit_id]['lessons'][$assignment->lesson_id]['assigned_games'][] = $testGame->id;
@@ -6416,9 +6503,7 @@ class ReportController extends Controller
                 // Handle the case where no common assignments are found for this group
                 if ($studentAssignments->isEmpty()) {
                     $groupName = Group::find($groupId)->name;
-                    $commonAssignmentsByGroup[$groupId] = [
-                        'error' => 'No Common Assignments Found for All Students in Class ' . $groupName . '.',
-                    ];
+                    $commonAssignmentsByGroup[$groupId] = ['none'];
                 } else {
                     $commonAssignmentsByGroup[$groupId] = $studentAssignments;
                 }
@@ -6552,6 +6637,10 @@ class ReportController extends Controller
             foreach ($request->group_id as $groupId) {
                 $programUsages[$groupId] = $programsUsage;
                 foreach ($commonAssignmentsByGroup[$groupId] as $assignment) {
+                    if ($assignment == 'none') {
+                        continue;
+                    }
+                    // dd($assignment);
                     $testGame = Game::find($assignment->game_id);
                     $lesson = Lesson::find($assignment->lesson_id);
                     $unit_id = $lesson->unit_id;
@@ -7086,8 +7175,8 @@ class ReportController extends Controller
                 $selectedPrograms = Program::whereIn('id', $commonProgramIds)->get();
             }
             if ($selectedPrograms->isEmpty()) {
-                $data['error'] = "No Common Programs Found for Teachers ";
-                return view('dashboard.reports.heatmap.teacher_heatmap_report', $data);
+                $data['error'] = "No Common Programs Found for Students ";
+                return view('dashboard.reports.heatmap.student_heatmap_report', $data);
             }
 
             $assignmentsByStudent = [];

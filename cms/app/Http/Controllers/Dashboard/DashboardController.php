@@ -99,7 +99,14 @@ class DashboardController extends Controller
             }
 
             $totalPrograms = Program::all()->count();
-            $totalClasses = Group::all()->count();
+
+            $classes = Group::with('school')->get()->groupBy('school_id');
+            $filteredClasses = collect();
+            foreach ($classes as $schoolClasses) {
+                $uniqueClasses = $schoolClasses->unique('name'); // Ensure unique class names
+                $filteredClasses = $filteredClasses->merge($uniqueClasses);
+            }
+            $totalClasses = $filteredClasses->count();
         }
         return view(
             'dashboard.index',

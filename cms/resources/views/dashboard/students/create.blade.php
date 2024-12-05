@@ -15,7 +15,7 @@
                                 </div>
                                 <div class="card-body">
                                     <form method="POST" class="mt-3" action="{{ route('students.store') }}"
-                                        enctype="multipart/form-data">
+                                        enctype="multipart/form-data" autoComplete='off'>
                                         @csrf
                                         <div class="row mb-3">
                                             <div class="col-md-6">
@@ -110,7 +110,7 @@
                                                 <div class="form-group">
                                                     <label class="form-label" for="password">Password</label>
                                                     <input type="password" class="form-control"
-                                                        id="password" placeholder="Enter Password" name="password">
+                                                        id="password" placeholder="Enter Password" name="password" autocomplete="new-password">
                                                     @error('password')
                                                     <div class="text-danger">{{ $message }}</div>
                                                     @enderror

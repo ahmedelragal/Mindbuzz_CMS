@@ -75,8 +75,8 @@ session(['schools_previous_url' => url()->full()]);
                                                 <td class style="text-align: left;padding: 15px;">{{ $school->name }}</td>
                                                 <td class="align-middle" style="text-align: left;padding-left:15px;">{{ $school->email }}</td>
                                                 <!--<td>{{ $school->phone }}</td>-->
-                                                <td class="align-middle">{{ \App\Models\User::where('school_id', $school->id)->where('role', 1)->count() }}</td>
                                                 <td class="align-middle">{{ \App\Models\User::where('school_id', $school->id)->where('role', 2)->count() }}</td>
+                                                <td class="align-middle">{{ \App\Models\User::where('school_id', $school->id)->where('role', 1)->count() }}</td>
                                                 <td class="align-middle" style="padding-right:8px;">
                                                     <div class="d-flex align-items-center justify-content-center" style="gap:10px">
                                                         <a href="{{ route('schools.edit', $school->id) }}" class="btn btn-primary" title="Edit School"><i class="fa-regular fa-pen-to-square"></i></a>

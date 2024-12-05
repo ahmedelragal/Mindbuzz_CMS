@@ -239,6 +239,7 @@
                                         <table class="table">
                                             <thead>
                                                 <tr>
+                                                    <th>Unit</th>
                                                     <th>Lesson</th>
                                                     <th>Game</th>
                                                     <th>Status</th>
@@ -246,17 +247,37 @@
                                             </thead>
                                             <tbody>
                                                 @foreach ($gamesUsage as $unit)
+                                                <?php $unitPrinted = false; ?>
                                                 @foreach ($unit['lessons'] as $lesson)
-
-                                                <tr>
-                                                    <td>{{$lesson['name']}}</td>
-                                                    <td></td>
-                                                    <td></td>
-                                                </tr>
+                                                <?php $lessonPrinted = false; ?>
                                                 @foreach ($lesson['games'] as $game)
+                                                <?php $gamePrinted = false; ?>
                                                 <tr>
+                                                    <!-- Print unit name only once per unit -->
+                                                    @if (!$unitPrinted)
+                                                    <td>{{ $unit['name'] }}</td>
+                                                    <?php $unitPrinted = true; ?>
+                                                    @else
                                                     <td></td>
-                                                    <td>{{$game['name']}}</td>
+                                                    @endif
+
+                                                    <!-- Print lesson name only once per lesson -->
+                                                    @if (!$lessonPrinted)
+                                                    <td>{{ $lesson['name'] }}</td>
+                                                    <?php $lessonPrinted = true; ?>
+                                                    @else
+                                                    <td></td>
+                                                    @endif
+
+                                                    <!-- Print game name only once per game -->
+                                                    @if (!$gamePrinted)
+                                                    <td>{{ $game['name'] }}</td>
+                                                    <?php $gamePrinted = true; ?>
+                                                    @else
+                                                    <td></td>
+                                                    @endif
+
+                                                    <!-- Game details (always printed) -->
                                                     <td> <?php echo $game['assigned'] == 1 ? 'Assigned' : 'Unassigned'; ?></td>
                                                 </tr>
                                                 @endforeach
@@ -346,6 +367,9 @@
                             }
                         },
                         y: {
+                            ticks: {
+                                stepSize: 1
+                            },
                             beginAtZero: true,
                             max: 1, // Set the max value to 100 for percentage
                         }

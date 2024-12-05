@@ -257,7 +257,7 @@ class InstructorController extends Controller
         $request->validate([
             'name' => 'required|string|max:255',
             'email' => 'required|string|email|max:255|unique:users',
-            'phone' => 'nullable|numeric',
+            'phone' => 'nullable|string|max:15',
             'password' => 'required|string|confirmed|min:6',
             'school_id' => 'required|exists:schools,id',
             'gender_id' => 'required|string|in:boy,girl',

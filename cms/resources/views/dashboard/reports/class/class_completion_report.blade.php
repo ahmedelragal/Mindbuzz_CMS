@@ -186,7 +186,9 @@
                                                     <td>{{ $test->tests->name }}</td>
                                                     <td>{{ $test->start_date }}</td>
                                                     <td>{{ $test->due_date }}</td>
-                                                    <td>{{ $test->status == 1 ? 'Completed' : (\Carbon\Carbon::parse($test->due_date)->isPast() ? 'Overdue' : 'Pending') }}</td>
+                                                    <td>
+                                                        {{$test->status == 1 ? 'Completed' : (\Carbon\Carbon::parse($test->due_date)->endOfDay()->isPast() ? 'Overdue' : 'Pending') }}
+                                                    </td>
                                                 </tr>
                                                 @endforeach
                                             </tbody>

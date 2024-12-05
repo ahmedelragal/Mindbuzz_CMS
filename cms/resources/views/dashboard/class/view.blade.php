@@ -91,6 +91,8 @@
                                     <button class="btn btn-primary float-right" data-bs-toggle="modal" data-bs-target="#addTeacherModal">Add Teachers</button>
                                 </div>
                                 <div class="card-body">
+
+                                    @if(!empty($prg))
                                     <table class="table">
                                         <thead>
                                             <tr>
@@ -144,6 +146,9 @@
                                             @endforeach
                                         </tbody>
                                     </table>
+                                    @else
+                                    <p>No Teachers Found For This Class</p>
+                                    @endif
                                 </div>
                             </div>
 
@@ -159,6 +164,7 @@
                                     </div>
                                 </div>
                                 <div class="card-body">
+                                    @if (!$class->groupStudents->isEmpty())
                                     <table class="table">
                                         <thead>
                                             <tr>
@@ -181,6 +187,9 @@
                                             @endforeach
                                         </tbody>
                                     </table>
+                                    @else
+                                    <p>No Students Found For This Class</p>
+                                    @endif
                                 </div>
                             </div>
 
@@ -242,7 +251,7 @@
 
                                                 <!-- Select Multiple Students -->
                                                 <div class="mb-3">
-                                                    <label for="studentName" class="form-label">Select Students</label>
+                                                    <label for="studentName" class="form-label">Select Students (Not in Other Classes)</label>
                                                     <select name="student_ids[]" class="form-select" multiple required>
                                                         @foreach($availableStudents as $student)
                                                         <option value="{{ $student->id }}">{{ $student->name }}</option>
@@ -278,18 +287,6 @@
                                                         @endforeach
                                                     </select>
                                                 </div>
-
-                                                <!-- Select Multiple Co-Teachers (Optional) -->
-                                                <div class="mb-3">
-                                                    <label for="coTeacherName" class="form-label">Select Co-Teachers</label>
-                                                    <select name="co_teacher_ids[]" class="form-select" multiple>
-                                                        <option value="">None</option>
-                                                        @foreach($availableTeachers as $teacher)
-                                                        <option value="{{ $teacher->id }}">{{ $teacher->name }}</option>
-                                                        @endforeach
-                                                    </select>
-                                                </div>
-
                                                 <!-- Select Multiple Group Courses (Programs) -->
                                                 <div class="mb-3">
                                                     <label for="program_id" class="form-label">Select Courses</label>

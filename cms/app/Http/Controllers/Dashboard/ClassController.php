@@ -113,9 +113,11 @@ class ClassController extends Controller
         // Fetch students who are not already in the group
         $availableStudents = User::where('role', 2)
             ->where('school_id', $class->school_id)
-            // Exclude students who are already in the group
-            ->whereNotIn('id', $class->groupStudents->pluck('student_id'))
+            ->leftJoin('group_students', 'users.id', '=', 'group_students.student_id')
+            ->whereNull('group_students.student_id')
+            ->select('users.*')
             ->get();
+
 
 
         // Fetch available teachers similarly

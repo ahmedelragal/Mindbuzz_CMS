@@ -8,14 +8,14 @@ use Illuminate\Database\Eloquent\Model;
 class StudentProgress extends Model
 {
     use HasFactory;
-    protected $guarded =[];
-    
+    protected $guarded = [];
+
     public function tests()
     {
-        return $this->belongsTo(Test::class,'test_id');
+        return $this->belongsTo(Test::class, 'test_id');
     }
     public function user()
     {
-        return $this->belongsTo(User::class,'student_id');
+        return $this->belongsTo(User::class, 'student_id');
     }
 }
