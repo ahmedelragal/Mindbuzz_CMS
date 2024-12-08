@@ -143,13 +143,22 @@ class StudentController extends Controller
 
         $request->validate([
             'name' => 'required|string|max:255',
-            'email' => 'required|string|email|max:255|unique:users',
+            'email' => [
+                'required',
+                'string',
+                'email',
+                'max:255',
+                'unique:users',
+                'regex:/^[\w.%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$/',
+                'regex:/\.com$/',
+            ],
             'phone' => 'required|string|max:15',
             'password' => 'required|string|confirmed|min:6',
             'school_id' => 'required|exists:schools,id',
             'gender_id' => 'required|string|in:boy,girl',
             'parent_image' => 'nullable|image|mimes:jpg,jpeg,png|max:2048'
         ]);
+
 
         $user = User::create([
             'name' => $request->name,

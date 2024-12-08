@@ -401,11 +401,28 @@ class ClassController extends Controller
             'program_ids' => 'required|array',
             'program_ids.*' => 'exists:programs,id',
         ]);
+        $notAddedPrograms = '';
+        foreach ($request->teacher_ids as $index => $teacher_id) {
+            foreach ($request->program_ids as $program_id) {
+                $program = Program::find($program_id);
+                $check = GroupTeachers::where('group_id', $request->group_id)
+                    ->where('teacher_id', $teacher_id)
+                    ->where('program_id', $program_id)->first();
+
+                if ($check) {
+                    $teacherName = User::find($teacher_id)->name;
+                    $notAddedPrograms .= $teacherName . ' : ' . $program->course->name . ' - ' . $program->stage->name . '<br>';
+                }
+            }
+        }
+        // dd($notAddedPrograms);
+        if ($notAddedPrograms != '') {
+            return redirect()->back()->with('error', 'The same teacher is already assigned to the programs in the group <br> ' . $notAddedPrograms);
+        }
 
         foreach ($request->teacher_ids as $index => $teacher_id) {
             foreach ($request->program_ids as $program_id) {
                 $program = Program::find($program_id);
-
                 GroupTeachers::create([
                     'group_id' => $request->group_id,
                     'teacher_id' => $teacher_id,
@@ -430,8 +447,7 @@ class ClassController extends Controller
                 }
             }
         }
-
-        return redirect()->back()->with('success', 'Teachers and Co-Teachers added to the group.');
+        return redirect()->back()->with('success', 'Teacher(s) added to the group.');
     }
 
     public function removeTeacher($id)

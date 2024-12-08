@@ -4068,13 +4068,13 @@ class ReportController extends Controller
             // Add the 'from_date' filter if it exists
             $query->when($request->filled('from_date'), function ($query) use ($request) {
                 $fromDate = Carbon::parse($request->from_date)->startOfDay();
-                return $query->where('created_at', '>=', $fromDate);
+                return $query->where('student_degrees.created_at', '>=', $fromDate);
             });
 
             // Add the 'to_date' filter if it exists
             $query->when($request->filled('to_date'), function ($query) use ($request) {
                 $toDate = Carbon::parse($request->to_date)->endOfDay();
-                return $query->where('created_at', '<=', $toDate);
+                return $query->where('student_degrees.created_at', '<=', $toDate);
             });
             $student_progress = $query->get();
             if ($student_progress->isEmpty()) {
@@ -4380,13 +4380,13 @@ class ReportController extends Controller
             // Add the 'from_date' filter if it exists
             $query->when($request->filled('from_date'), function ($query) use ($request) {
                 $fromDate = Carbon::parse($request->from_date)->startOfDay();
-                return $query->where('created_at', '>=', $fromDate);
+                return $query->where('student_degrees.created_at', '>=', $fromDate);
             });
 
             // Add the 'to_date' filter if it exists
             $query->when($request->filled('to_date'), function ($query) use ($request) {
                 $toDate = Carbon::parse($request->to_date)->endOfDay();
-                return $query->where('created_at', '<=', $toDate);
+                return $query->where('student_degrees.created_at', '<=', $toDate);
             });
 
             // Check if query is empty
@@ -4708,13 +4708,13 @@ class ReportController extends Controller
             // Add the 'from_date' filter if it exists
             $query->when($request->filled('from_date'), function ($query) use ($request) {
                 $fromDate = Carbon::parse($request->from_date)->startOfDay();
-                return $query->where('created_at', '>=', $fromDate);
+                return $query->where('student_degrees.created_at', '>=', $fromDate);
             });
 
             // Add the 'to_date' filter if it exists
             $query->when($request->filled('to_date'), function ($query) use ($request) {
                 $toDate = Carbon::parse($request->to_date)->endOfDay();
-                return $query->where('created_at', '<=', $toDate);
+                return $query->where('student_degrees.created_at', '<=', $toDate);
             });
 
             // Check if query is empty
@@ -5026,24 +5026,13 @@ class ReportController extends Controller
             // Add the 'from_date' filter if it exists
             $query->when($request->filled('from_date'), function ($query) use ($request) {
                 $fromDate = Carbon::parse($request->from_date)->startOfDay();
-                return $query->where('created_at', '>=', $fromDate);
+                return $query->where('student_degrees.created_at', '>=', $fromDate);
             });
 
             // Add the 'to_date' filter if it exists
             $query->when($request->filled('to_date'), function ($query) use ($request) {
                 $toDate = Carbon::parse($request->to_date)->endOfDay();
-                return $query->where('created_at', '<=', $toDate);
-            });
-            // Add the 'from_date' filter if it exists
-            $query->when($request->filled('from_date'), function ($query) use ($request) {
-                $fromDate = Carbon::parse($request->from_date)->startOfDay();
-                return $query->where('created_at', '>=', $fromDate);
-            });
-
-            // Add the 'to_date' filter if it exists
-            $query->when($request->filled('to_date'), function ($query) use ($request) {
-                $toDate = Carbon::parse($request->to_date)->endOfDay();
-                return $query->where('created_at', '<=', $toDate);
+                return $query->where('student_degrees.created_at', '<=', $toDate);
             });
             if ($query->get()->isEmpty()) {
                 $data['error'] = 'No Results Found for this Date.';

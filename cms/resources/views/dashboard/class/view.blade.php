@@ -125,7 +125,6 @@
                                                                     <table class="table">
                                                                         <thead>
                                                                             <tr>
-                                                                                <th>Co-Teacher Name</th>
                                                                                 <th>Program</th>
                                                                                 <th>Stage</th>
                                                                                 <th>Action</th>
@@ -270,7 +269,7 @@
                                 <div class="modal-dialog">
                                     <div class="modal-content">
                                         <div class="modal-header">
-                                            <h5 class="modal-title" id="addTeacherModalLabel">Add Teachers and Co-Teachers</h5>
+                                            <h5 class="modal-title" id="addTeacherModalLabel">Add Teachers</h5>
                                             <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                                         </div>
                                         <div class="modal-body">
@@ -341,7 +340,6 @@
                     `.replace(':id', course.id); // Replace placeholder with actual ID
 
                     row.innerHTML = `
-                        <td>${course.coTeacher || 'None'}</td>
                         <td>${course.course}</td>
                         <td>${course.stage}</td>
                         <td>${formHtml}</td>
@@ -380,16 +378,15 @@
     });
 </script>
 @endif
-
 @if(session('error'))
 <script>
     Swal.fire({
         title: 'Error!',
-        text: '{{ session('
-        error ') }}',
+        html: @json(session('error')),
         icon: 'error',
         confirmButtonText: 'Ok'
     });
 </script>
 @endif
+
 @endsection
