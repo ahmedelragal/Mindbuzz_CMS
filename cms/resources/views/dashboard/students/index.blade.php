@@ -207,8 +207,13 @@ session(['students_previous_url' => url()->full()]);
                         </div>
                     </div>
                 </div>
+                @role('school')
+                @include('dashboard.layouts.footer')
+                @endrole
             </div>
+            @role('Admin')
             @include('dashboard.layouts.footer')
+            @endrole
         </div>
     </div>
 </div>
