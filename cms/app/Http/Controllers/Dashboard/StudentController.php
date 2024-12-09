@@ -20,6 +20,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Spatie\Permission\Models\Role;
 use Maatwebsite\Excel\Facades\Excel;
+use Maatwebsite\Excel\Validators\ValidationException;
 
 class StudentController extends Controller
 {
@@ -152,7 +153,7 @@ class StudentController extends Controller
                 'regex:/^[\w.%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$/',
                 'regex:/\.com$/',
             ],
-            'phone' => 'required|string|max:15',
+            'phone' => 'required|string|regex:/^[0-9]+$/|max:15',
             'password' => 'required|string|confirmed|min:6',
             'school_id' => 'required|exists:schools,id',
             'gender_id' => 'required|string|in:boy,girl',
@@ -164,7 +165,7 @@ class StudentController extends Controller
             'name' => $request->name,
             'email' => $request->email,
             'password' => Hash::make($request->password),
-            'phone' => $request->phone,
+            'phone' => (int)$request->phone,
             'school_id' => $request->school_id,
             'gender' => $request->gender_id,
             'role' => '2',
@@ -214,10 +215,25 @@ class StudentController extends Controller
 
         $schoolId = $request->input('school_id');
 
-        // Load and process the Excel file
-        Excel::import(new StudentsImport($schoolId), $request->file('file'));
+        try {
+            Excel::import(new StudentsImport($schoolId), $request->file('file'));
+            return redirect()->back()->with('success', 'Students imported successfully.');
+        } catch (ValidationException $e) {
+            // Retrieve validation failures
+            $failures = $e->failures();
 
-        return redirect()->back()->with('success', 'Students imported successfully.');
+            $errorMessages = [];
+            foreach ($failures as $failure) {
+
+                // dd($failure->row() + 1);
+                $errorMessages[] =  implode(', ', $failure->errors());
+            }
+            // dd($errorMessages);
+            return redirect()->back()->with('error', implode('<br>', $errorMessages));
+        } catch (\Exception $e) {
+            // Handle general errors
+            return redirect()->back()->with('error', 'An error occurred during the import process.');
+        }
     }
 
     public function show(string $id) {}

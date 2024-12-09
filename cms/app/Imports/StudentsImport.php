@@ -15,7 +15,7 @@ use Maatwebsite\Excel\Concerns\Importable;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
 
-class StudentsImport implements ToModel, WithHeadingRow, WithValidation, SkipsOnError, SkipsOnFailure
+class StudentsImport implements ToModel, WithHeadingRow, WithValidation
 {
     use Importable, SkipsFailures;
     protected $schoolId;
@@ -72,7 +72,16 @@ class StudentsImport implements ToModel, WithHeadingRow, WithValidation, SkipsOn
         return [
             '*.name' => 'required|string',
             '*.gender' => 'required|string|in:boy,girl',
-            '*.phone' => 'required|string',
+            '*.phone' => 'required|regex:/^\+?[0-9\- ]+$/',
+        ];
+    }
+    public function customValidationMessages()
+    {
+        return [
+            '*.name.required' => 'The name field is required.',
+            '*.gender.required' => 'The gender field is required.',
+            '*.gender.in' => 'The gender must be either "boy" or "girl".',
+            '*.phone.required' => 'The phone number is required.',
         ];
     }
 

@@ -5189,7 +5189,7 @@ class ReportController extends Controller
                 }
             }
             unset($unit, $lesson, $game, $skill);
-
+            // dd($unitsUsage);
 
             // dd($student_progress->count(), $unitsUsage);
             $chartLabels = [];
@@ -7173,6 +7173,7 @@ class ReportController extends Controller
             foreach ($studentIds as $studentId) {
                 $studentTests = StudentTest::where('student_id', $studentId)
                     ->whereIn('program_id', $selectedPrograms->pluck('id'))
+                    ->where('status', 1)
                     ->when($request->filled(key: 'from_date'), function ($query) use ($request) {
                         return $query->whereDate('created_at', '>=', $request->from_date);
                     })

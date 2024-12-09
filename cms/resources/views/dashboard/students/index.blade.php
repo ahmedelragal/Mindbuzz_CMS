@@ -233,6 +233,17 @@ session(['students_previous_url' => url()->full()]);
     });
 </script>
 @endif
+@if(session('error'))
+<script>
+    Swal.fire({
+        title: 'Error!',
+        text: `{!! implode("\n", (array) session('error')) !!}`, // Converts errors to a single string
+        icon: 'error',
+        confirmButtonText: 'Ok'
+    });
+</script>
+@endif
+
 <script>
     function confirmDelete(studentId) {
         Swal.fire({

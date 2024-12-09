@@ -27,7 +27,7 @@
                                             <div class="col-md-4">
                                                 <label for="school_id">Select School</label>
                                                 <select class="form-select js-select2" name="school_id" id="school_id" required>
-                                                    <option value="" disabled {{ old('school_id', $request['school_id'] ?? '') == '' ? 'selected' : '' }}>Choose a school/class</option>
+                                                    <option value="" disabled {{ old('school_id', $request['school_id'] ?? '') == '' ? 'selected' : '' }}>Choose a School</option>
                                                     @foreach ($schools as $school)
                                                     <option value="{{ $school->id }}" data-school="{{ $school->id }}" {{ old('school_id', $request['school_id'] ?? '') == $school->id ? 'selected' : '' }}>
                                                         {{ $school->name }}
@@ -136,7 +136,10 @@
                                                     <td>{{ $program['gap_percentage'] }}%</td>
 
                                                     @php
-                                                    if ($program['gap_percentage'] >= 70) {
+                                                    if($program['gap_percentage'] == 0){
+                                                    $status = 'Zero Gap';
+                                                    }
+                                                    elseif ($program['gap_percentage'] >= 70) {
                                                     $status = 'Clear Gap';
                                                     } elseif ($program['gap_percentage'] <= 30) {
                                                         $status='Potential Gap' ;
@@ -168,7 +171,10 @@
                                                     <td>{{ $unit['name'] }}</td>
                                                     <td>{{ $unit['gap_percentage'] }}%</td>
                                                     @php
-                                                    if ($unit['gap_percentage'] >= 70) {
+                                                    if($unit['gap_percentage'] == 0){
+                                                    $status = 'Zero Gap';
+                                                    }
+                                                    elseif ($unit['gap_percentage'] >= 70) {
                                                     $status = 'Clear Gap';
                                                     } elseif ($unit['gap_percentage'] <= 30) {
                                                         $status='Potential Gap' ;
@@ -201,7 +207,10 @@
                                                 <?php $inc = 0; ?>
                                                 @foreach ($unit['lessons'] as $lesson)
                                                 @php
-                                                if ($lesson['gap_percentage'] >= 70) {
+                                                if($lesson['gap_percentage'] == 0){
+                                                $status = 'Zero Gap';
+                                                }
+                                                elseif ($lesson['gap_percentage'] >= 70) {
                                                 $status = 'Clear Gap';
                                                 } elseif ($lesson['gap_percentage'] <= 30) {
                                                     $status='Potential Gap' ;

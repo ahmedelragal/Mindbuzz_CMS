@@ -137,7 +137,10 @@
                                                     <td>{{ $program['gap_percentage'] }}%</td>
 
                                                     @php
-                                                    if ($program['gap_percentage'] >= 70) {
+                                                    if($program['gap_percentage'] == 0){
+                                                    $status = 'Zero Gap';
+                                                    }
+                                                    elseif ($program['gap_percentage'] >= 70) {
                                                     $status = 'Clear Gap';
                                                     } elseif ($program['gap_percentage'] <= 30) {
                                                         $status='Potential Gap' ;
@@ -169,7 +172,10 @@
                                                     <td>{{ $unit['name'] }}</td>
                                                     <td>{{ $unit['gap_percentage'] }}%</td>
                                                     @php
-                                                    if ($unit['gap_percentage'] >= 70) {
+                                                    if($unit['gap_percentage'] == 0){
+                                                    $status = 'Zero Gap';
+                                                    }
+                                                    elseif ($unit['gap_percentage'] >= 70) {
                                                     $status = 'Clear Gap';
                                                     } elseif ($unit['gap_percentage'] <= 30) {
                                                         $status='Potential Gap' ;
@@ -202,7 +208,10 @@
                                                 <?php $inc = 0; ?>
                                                 @foreach ($unit['lessons'] as $lesson)
                                                 @php
-                                                if ($lesson['gap_percentage'] >= 70) {
+                                                if($lesson['gap_percentage'] == 0){
+                                                $status = 'Zero Gap';
+                                                }
+                                                elseif ($lesson['gap_percentage'] >= 70) {
                                                 $status = 'Clear Gap';
                                                 } elseif ($lesson['gap_percentage'] <= 30) {
                                                     $status='Potential Gap' ;
