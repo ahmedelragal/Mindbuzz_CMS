@@ -92,8 +92,8 @@ session(['users_previous_url' => url()->full()]);
                                             <tr>
                                                 <th class="col-1" style="padding-left:8px"><input type="checkbox" id="select-all"></th>
                                                 <th class="col-3" style="text-align: left;padding-left:15px;">Name</th>
-                                                <th class="col-4" style="text-align: left;padding-left:15px;">Email</th>
-                                                <th class="col-2">Role</th>
+                                                <th class="col-3" style="text-align: left;padding-left:15px;">Email</th>
+                                                <th class="col-3">Role</th>
                                                 <th class="col-2" style="padding-right:8px;">Actions</th>
                                             </tr>
                                         </thead>
@@ -107,21 +107,25 @@ session(['users_previous_url' => url()->full()]);
                                                     @if ($user->roles->isEmpty())
                                                     <span>-</span>
                                                     @else
-                                                    {{ implode(', ', $user->roles->pluck('name')->map(function ($role) {
-                                                        if ($role === 'Admin') {
-                                                            return 'Super Admin';
-                                                        }elseif ($role === 'school') {
-                                                            return 'School Admin';
-                                                        }else{
-                                                        return '-';
-                                                        }
-                                                        })->toArray()) }}
+                                                    @foreach ($user->roles->pluck('name')->map(function ($role) {
+                                                    if ($role === 'Cordinator') {
+                                                    return null; // Skip "Cordinator" role
+                                                    } elseif ($role === 'Admin') {
+                                                    return 'Super Admin';
+                                                    } elseif ($role === 'school') {
+                                                    return 'School Admin';
+                                                    } else {
+                                                    return $role;
+                                                    }
+                                                    })->filter() as $role)
+                                                    {{ $role }}<br>
+                                                    @endforeach
                                                     @endif
-
                                                 </td>
                                                 <td class="align-middle" style="padding-right:8px;">
                                                     <div class="d-flex align-items-center justify-content-center" style="gap:10px;">
-                                                        @if (!$user->hasRole('Admin'))
+                                                        <a href="{{ route('users.edit', $user->id) }}" class="btn btn-warning btn-sm">Edit Users</a>
+                                                        <!-- @if (!$user->hasRole('Admin'))
                                                         <a href="{{ route('users.makeAdmin', $user->id) }}" class="btn btn-primary" style="justify-content: center; width:55px;" title="Add Super Admin Role"><i class="fa-solid fa-user-pen"></i></a>
                                                         @else
                                                         <a href="{{ route('users.removeAdmin', $user->id) }}" class="btn btn-danger" style="justify-content: center;width:55px;" title="Remove Super Admin Role">
@@ -136,7 +140,7 @@ session(['users_previous_url' => url()->full()]);
                                                         <a href=" {{ route('users.removeSchoolAdmin', $user->id) }}" class="btn btn-danger"
                                                             title="Remove School Admin Role" style="justify-content: center; width:55px;"><i class="fa-solid fa-trash"></i>
                                                         </a>
-                                                        @endif
+                                                        @endif -->
                                                     </div>
                                                 </td>
                                             </tr>

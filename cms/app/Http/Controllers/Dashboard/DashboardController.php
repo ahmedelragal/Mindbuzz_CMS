@@ -16,6 +16,10 @@ class DashboardController extends Controller
 
     public function index()
     {
+        if (Auth::user()->hasRole('Cordinator')) {
+            return redirect()->route('reports.completionReport');
+        }
+
         if (Auth::user()->hasRole('school')) {
             $schoolId = Auth::user()->school_id;
             $studentsInSchool = User::where('school_id', $schoolId)
@@ -108,11 +112,34 @@ class DashboardController extends Controller
             }
             $totalClasses = $filteredClasses->count();
         }
+
+        $coridnatorPrograms  = [];
+        if (Auth::user()->hasRole('Cordinator')) {
+            $cordinatorStudentsCount = 0;
+
+            if (Auth::user()->hasRole('PracticalLife-Cordinator')) {
+                $coridnatorPrograms[] = 'Practical Life';
+            }
+            if (Auth::user()->hasRole('Math-Cordinator')) {
+                $coridnatorPrograms[] = 'Math';
+            }
+            if (Auth::user()->hasRole('Phonics-Cordinator')) {
+                $coridnatorPrograms[] = 'Phonics';
+            }
+            if (Auth::user()->hasRole('Arabic-Cordinator')) {
+                $coridnatorPrograms[] = 'Arabic';
+            }
+            if (Auth::user()->hasRole('Culture-Cordinator')) {
+                $coridnatorPrograms[] = 'Culture';
+            }
+        }
+
         return view(
             'dashboard.index',
             compact(
                 'studentsInSchool',
                 'teachersInSchool',
+                'coridnatorPrograms',
                 'totalUsers',
                 'totalSchools',
                 'nationalSchools',

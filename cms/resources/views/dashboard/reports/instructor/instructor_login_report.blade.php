@@ -30,9 +30,10 @@
                                                     @endforeach
                                                 </select>
                                                 @endrole
-                                                @role('school')
-                                                <input type="hidden" name="school_id" value="{{ auth()->user()->school_id }}">
-                                                @endrole
+                                                @if(auth()->user()->hasRole('school') || auth()->user()->hasRole('Cordinator'))
+                                                <input type="hidden" name="school_id" id="school_id" value="{{ auth()->user()->school_id }}">
+                                                @endif
+
                                             </div>
                                         </div>
 
@@ -43,7 +44,7 @@
                                                     @role('Admin')
                                                     <option value="" selected disabled>Choose a Teacher</option>
                                                     @endrole
-                                                    @role('school')
+                                                    @if(auth()->user()->hasRole('school') || auth()->user()->hasRole('Cordinator'))
                                                     @php
                                                     $schTeachers = App\Models\User::where('school_id', auth()->user()->school_id)
                                                     ->where('role', 1)
@@ -54,7 +55,7 @@
                                                         {{ $teacher->name }}
                                                     </option>
                                                     @endforeach
-                                                    @endrole
+                                                    @endif
                                                 </select>
                                             </div>
                                         </div>

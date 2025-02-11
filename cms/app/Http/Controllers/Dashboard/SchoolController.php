@@ -21,6 +21,13 @@ class SchoolController extends Controller
      */
     public function index()
     {
+        $user = auth()->user();
+        if ($user->hasRole('Cordinator')) {
+            abort(403, 'Unauthorized access.');
+        }
+        if ($user->hasRole('school')) {
+            abort(403, 'Unauthorized access.');
+        }
         // $schools = DB::table('users')->where('is_active', 1)
         //     ->join('schools', 'users.school_id', '=', 'schools.id')
         //     ->select('schools.id', 'schools.name', 'users.email', 'users.phone', 'schools.type', 'users.id as user_id')
@@ -28,6 +35,7 @@ class SchoolController extends Controller
         //     ->simplePaginate(10);
         $schools = User::where('is_active', 1)
             ->role('school') // Apply role filter using Spatie’s role management
+            ->where('users.role', 3)
             ->join('schools', 'users.school_id', '=', 'schools.id')
             ->select('schools.id', 'schools.name', 'users.email', 'users.phone', 'schools.type', 'users.id as user_id')
             ->paginate(10);

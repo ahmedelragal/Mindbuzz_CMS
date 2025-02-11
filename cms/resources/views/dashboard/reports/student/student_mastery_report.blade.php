@@ -15,8 +15,14 @@
                     <div class="nk-content-inner">
                         <div class="nk-content-body">
                             <div class="card">
-                                <div class="card-header">
+                                <div class="card-header" style="display:flex; justify-content: space-between; align-items:center;">
                                     <h5 class="title">Student Mastery Report</h5>
+                                    <div class="d-flex" style="gap: 5px;">
+                                        @if (isset($chartLabels) || isset($chartValues) || isset($gamesLabels) || isset($gamesValues))
+                                        <button id="generate-pdf" class="btn btn-primary">Download PDF</button>
+                                        <button id="generate-excel" class="btn btn-primary" onclick="downloadExcel()">Download Excel</button>
+                                        @endif
+                                    </div>
                                 </div>
                                 <!-- Form Section -->
                                 <div class="card-body">
@@ -36,9 +42,9 @@
                                                 </select>
                                             </div>
                                             @endrole
-                                            @role('school')
+                                            @if(auth()->user()->hasRole('school') || auth()->user()->hasRole('Cordinator'))
                                             <input type="hidden" name="school_id" id="school_id" value="{{ auth()->user()->school_id }}">
-                                            @endrole
+                                            @endif
 
 
                                             <div class="col-md-4">
@@ -121,7 +127,7 @@
                                     </div>
                                 </div>
 
-                                <div class="card mt-4">
+                                <div class="card mt-4 report-data">
                                     <div class="card-body">
                                         @if (isset($unitsMastery) || isset($lessonsMastery) || isset($gamesMastery) || isset($skillsMastery))
 
@@ -352,6 +358,183 @@
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 @section('page_js')
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/dom-to-image/2.6.0/dom-to-image.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.13/jspdf.plugin.autotable.min.js"></script>
+@if (isset($sessionKey))
+<script>
+    function downloadExcel() {
+        var sessionKey = "{{ $sessionKey }}";
+        window.location.href = "{{ route('reports.exportStudentMasteryReport', $sessionKey) }}";
+    }
+</script>
+@endif
+
+<script>
+    document.addEventListener("DOMContentLoaded", function() {
+        let pdfButton = document.getElementById("generate-pdf");
+        let excelButton = document.getElementById("generate-excel");
+
+        // Disable the button initially
+        pdfButton.disabled = true;
+        excelButton.disabled = true;
+
+        // Enable after 3 seconds
+        setTimeout(() => {
+            pdfButton.disabled = false;
+            excelButton.disabled = false;
+        }, 1000);
+    });
+
+    document.getElementById('generate-pdf').addEventListener('click', function() {
+        const {
+            jsPDF
+        } = window.jspdf;
+
+        // Get the selected values from the dropdowns
+        // let schoolName = document.getElementById('school_id')?.options[document.getElementById('school_id')?.selectedIndex]?.text || "N/A";
+        var schoolData = @json(App\Models\School::pluck('name', 'id'));
+        let schoolElement = document.getElementById("school_id");
+
+        let schoolName = schoolElement?.tagName === "SELECT" ?
+            schoolElement.options[schoolElement.selectedIndex]?.text || "N/A" :
+            schoolData[schoolElement?.value] || "N/A";
+        let studentName = document.getElementById('student_id')?.options[document.getElementById('student_id')?.selectedIndex]?.text || "N/A";
+        let programName = document.getElementById('program_id')?.options[document.getElementById('program_id')?.selectedIndex]?.text || "N/A";
+
+        fetch('/assets/fonts/Amiri-Regular.ttf')
+            .then(response => response.arrayBuffer())
+            .then(fontBuffer => {
+                const fontBlob = new Blob([fontBuffer]);
+                const reader = new FileReader();
+
+                reader.onloadend = function() {
+                    const fontBase64 = reader.result.split(',')[1]; // Extract Base64
+
+                    let pdf = new jsPDF('p', 'mm', 'a4');
+
+                    // Register and set the font
+                    pdf.addFileToVFS('Amiri-Regular.ttf', fontBase64);
+                    pdf.addFont('Amiri-Regular.ttf', 'Amiri', 'normal');
+                    pdf.setFont("Amiri", "normal");
+
+                    const pageWidth = pdf.internal.pageSize.width;
+                    const pageHeight = pdf.internal.pageSize.height;
+
+                    // --- Add Page Header ---
+                    pdf.setFillColor(209, 126, 0); // Dark Orange Background
+                    pdf.rect(0, 0, pageWidth, 20, 'F'); // Header Rectangle
+                    pdf.setTextColor(255, 255, 255); // White Title
+                    pdf.setFontSize(18);
+                    pdf.text("Student Mastery Report", pageWidth / 2, 12, {
+                        align: "center"
+                    });
+
+                    let startY = 30; // Content starts after the header
+
+                    // --- Add School, Teacher, and Program details ---
+                    pdf.setFontSize(12);
+                    pdf.setTextColor(0, 0, 0); // Black text
+                    pdf.text(`School Name: ${schoolName}`, 15, startY);
+                    startY += 7;
+                    pdf.text(`Student Name: ${studentName}`, 15, startY);
+                    startY += 7;
+                    pdf.text(`Program Name: ${programName}`, 15, startY);
+                    startY += 10; // More space after placeholders
+
+                    // Extract report data
+                    let reportDataDiv = document.querySelector('.report-data');
+                    // let headings = reportDataDiv.querySelectorAll('h5');
+
+                    // headings.forEach((h5, index) => {
+                    //     let text = h5.innerText.trim();
+                    //     if (text) {
+                    //         pdf.setFontSize(14);
+                    //         pdf.setTextColor(209, 126, 0);
+                    //         pdf.text(text, 15, startY);
+                    //         startY += 8;
+                    //     }
+                    // });
+
+                    // Extract tables
+                    let tables = reportDataDiv.querySelectorAll('table');
+                    if (tables.length > 0) {
+                        tables.forEach((table) => {
+                            let headers = [];
+                            let rows = [];
+
+                            // Extract headers
+                            table.querySelectorAll('thead th').forEach(header => {
+                                headers.push(header.innerText.trim());
+                            });
+
+                            // Extract rows
+                            table.querySelectorAll('tbody tr').forEach(row => {
+                                let rowData = [];
+                                row.querySelectorAll('td').forEach(cell => {
+                                    rowData.push(cell.innerText.trim());
+                                });
+                                rows.push(rowData);
+                            });
+
+                            // Add table to PDF with alternating row colors
+                            pdf.autoTable({
+                                startY: startY,
+                                head: [headers],
+                                body: rows,
+                                headStyles: {
+                                    fillColor: [209, 126, 0],
+                                    textColor: 255,
+                                    fontSize: 11,
+                                    fontStyle: 'bold'
+                                },
+                                styles: {
+                                    fontSize: 10,
+                                    font: "Amiri",
+                                    cellPadding: 3
+                                },
+                                alternateRowStyles: {
+                                    fillColor: [245, 245, 245]
+                                }, // Light grey background
+                                margin: {
+                                    left: 15,
+                                    right: 15
+                                }
+                            });
+
+                            startY = pdf.lastAutoTable.finalY + 15;
+                        });
+                    } else {
+                        pdf.setFontSize(12);
+                        pdf.setTextColor(0, 0, 0);
+                        pdf.text("No data available.", pageWidth / 2, startY, {
+                            align: "center"
+                        });
+                    }
+
+                    // --- Add Footer (Page Number) ---
+                    let pageCount = pdf.internal.getNumberOfPages();
+                    for (let i = 1; i <= pageCount; i++) {
+                        pdf.setPage(i);
+                        pdf.setFillColor(255, 255, 255);
+                        pdf.rect(0, pageHeight - 15, pageWidth, 15, 'F'); // Footer Rectangle
+                        pdf.setTextColor(44, 44, 44);
+                        pdf.setFontSize(10);
+                        pdf.text(`Page ${i} of ${pageCount}`, pageWidth / 2, pageHeight - 5, {
+                            align: "center"
+                        });
+                    }
+
+                    // Save the PDF
+                    pdf.save("Student_Mastery_Report.pdf");
+                };
+
+                reader.readAsDataURL(fontBlob); // Convert to Base64
+            })
+            .catch(error => console.error("Error loading font:", error));
+    });
+</script>
+
 
 @if (isset($chartLabels) || isset($chartValues))
 <script>

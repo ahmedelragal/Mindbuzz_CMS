@@ -18,6 +18,9 @@
                                         @role('school')
                                         <h3 class="nk-block-title page-title">School Admin Dashboard</h3>
                                         @endrole
+                                        @role('Cordinator')
+                                        <h3 class="nk-block-title page-title">Cordinator Dashboard</h3>
+                                        @endrole
                                         <!-- <div class="nk-block-des text-soft">
                                             <p>Welcome to Your Dashboard.</p>
                                         </div> -->
@@ -75,6 +78,7 @@
                                         </div>
                                     </div>
                                     @endrole
+                                    @role('Admin')
                                     @if (!is_null($totalSchools))
                                     <div class="col-md-6">
                                         <div class="card">
@@ -91,7 +95,9 @@
                                         </div>
                                     </div>
                                     @endif
+                                    @endrole
                                 </div>
+                                @if(!Auth::user()->hasRole('Cordinator'))
                                 <div class="row mt-4">
                                     <div class="col-md-4">
                                         <div class="card mb-3">
@@ -125,6 +131,23 @@
                                         </div>
                                     </div>
                                 </div>
+                                @endif
+                                @if (Auth::user()->hasRole('Cordinator'))
+                                <div class="row mt-4">
+                                    <div class="col-md-5">
+                                        <div class="card mb-3">
+                                            <div class="card-header text-white" style="font-size: 18px;font-weight: 700;">Programs</div>
+                                            <div class="card-body" style="background-color: white;">
+                                                <h6 class="card-text" style="font-size:16.8px; color:#526484;">
+                                                    @foreach ($coridnatorPrograms as $program)
+                                                    <p style="font-size:20px; font-weight:500">{{ $program }}</p>
+                                                    @endforeach
+                                                </h6>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                @endif
                             </div>
                         </div>
                     </div>

@@ -15,8 +15,14 @@
                     <div class="nk-content-inner">
                         <div class="nk-content-body">
                             <div class="card">
-                                <div class="card-header">
+                                <div class="card-header" style="display:flex; justify-content: space-between; align-items:center;">
                                     <h5 class="title">Student Completion Report</h5>
+                                    @if (isset($counts))
+                                    <div class="d-flex" style="gap: 5px;">
+                                        <button id="generate-pdf" class="btn btn-primary">Download PDF</button>
+                                        <button id="generate-excel" class="btn btn-primary" onclick="downloadExcel()">Download Excel</button>
+                                    </div>
+                                    @endif
                                 </div>
                                 <!-- Form Section -->
                                 <div class="card-body">
@@ -36,9 +42,9 @@
                                                 </select>
                                             </div>
                                             @endrole
-                                            @role('school')
+                                            @if(auth()->user()->hasRole('school') || auth()->user()->hasRole('Cordinator'))
                                             <input type="hidden" name="school_id" id="school_id" value="{{ auth()->user()->school_id }}">
-                                            @endrole
+                                            @endif
 
 
                                             <div class="col-md-4">
@@ -153,8 +159,8 @@
                                             <thead>
                                                 <tr>
                                                     <th>Student Name</th>
-                                                    <th>Group Name</th>
-                                                    <th>Test Name</th>
+                                                    <th>Class Name</th>
+                                                    <th>Assignment Name</th>
                                                     <th>Start Date</th>
                                                     <th>Due Date</th>
                                                     <th>Status</th>
@@ -207,6 +213,172 @@
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 @section('page_js')
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/dom-to-image/2.6.0/dom-to-image.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.13/jspdf.plugin.autotable.min.js"></script>
+
+@if (isset($sessionKey))
+<script>
+    function downloadExcel() {
+        var sessionKey = "{{ $sessionKey }}";
+        window.location.href = "{{ route('reports.exportStudentCompletionReport', $sessionKey) }}";
+    }
+</script>
+@endif
+<script>
+    document.addEventListener("DOMContentLoaded", function() {
+        let pdfButton = document.getElementById("generate-pdf");
+        let excelButton = document.getElementById("generate-excel");
+
+        // Disable the button initially
+        pdfButton.disabled = true;
+        excelButton.disabled = true;
+
+        // Enable after 3 seconds
+        setTimeout(() => {
+            pdfButton.disabled = false;
+            excelButton.disabled = false;
+        }, 1000);
+    });
+    document.getElementById('generate-pdf').addEventListener('click', function() {
+        const {
+            jsPDF
+        } = window.jspdf;
+        let chartCanvas = document.getElementById('completionpieChart');
+
+        // Get the selected values from the dropdowns
+        // let schoolName = document.getElementById('school_id')?.options[document.getElementById('school_id')?.selectedIndex]?.text || "N/A";
+        var schoolData = @json(App\Models\School::pluck('name', 'id'));
+        let schoolElement = document.getElementById("school_id");
+
+        let schoolName = schoolElement?.tagName === "SELECT" ?
+            schoolElement.options[schoolElement.selectedIndex]?.text || "N/A" :
+            schoolData[schoolElement?.value] || "N/A";
+        let studentName = document.getElementById('student_id')?.options[document.getElementById('student_id')?.selectedIndex]?.text || "N/A";
+        let programName = document.getElementById('program_id')?.options[document.getElementById('program_id')?.selectedIndex]?.text || "N/A";
+        let status = document.getElementById('status')?.options[document.getElementById('status')?.selectedIndex]?.text || "N/A";
+
+        fetch('/assets/fonts/Amiri-Regular.ttf')
+            .then(response => response.arrayBuffer())
+            .then(fontBuffer => {
+                const fontBlob = new Blob([fontBuffer]);
+                const reader = new FileReader();
+
+                reader.onloadend = function() {
+                    const fontBase64 = reader.result.split(',')[1]; // Extract Base64
+
+                    let pdf = new jsPDF('p', 'mm', 'a4');
+
+                    // Register the font
+                    pdf.addFileToVFS('Amiri-Regular.ttf', fontBase64);
+                    pdf.addFont('Amiri-Regular.ttf', 'Amiri', 'bold');
+
+                    const pageWidth = pdf.internal.pageSize.width;
+                    const pageHeight = pdf.internal.pageSize.height;
+
+                    // --- Add Page Header ---
+                    pdf.setFillColor(209, 126, 0); // Dark Orange Background
+                    pdf.rect(0, 0, pageWidth, 20, 'F'); // Header Rectangle
+                    pdf.setTextColor(255, 255, 255); // White Title
+                    pdf.setFontSize(18);
+                    pdf.text("Student Completion Report", pageWidth / 2, 12, {
+                        align: "center"
+                    });
+
+                    let startY = 30; // Content starts after the header
+
+                    // --- Add School, Student, Program, and Status details ---
+                    pdf.setFontSize(12);
+                    pdf.setTextColor(0, 0, 0); // Black text
+                    pdf.text(`School Name: ${schoolName}`, 15, startY);
+                    startY += 7;
+                    pdf.text(`Student Name: ${studentName}`, 15, startY);
+                    startY += 7;
+                    pdf.text(`Program Name: ${programName}`, 15, startY);
+                    startY += 7;
+                    pdf.text(`Status: ${status}`, 15, startY);
+                    startY += 10; // More space after placeholders
+
+                    // Convert the Chart Canvas to an Image and Add it to the PDF
+                    domtoimage.toPng(chartCanvas, {
+                            quality: 1,
+                            scale: 2
+                        })
+                        .then(function(chartImage) {
+                            // Table Data
+                            let tableData = [];
+                            let headers = ["Student Name", "Class Name", "Assignment Name", "Start Date", "Due Date", "Status"];
+
+                            document.querySelectorAll("tbody tr").forEach(row => {
+                                let rowData = [];
+                                row.querySelectorAll("td").forEach((cell, index) => {
+                                    let text = cell.innerText;
+                                    if (index === 2) { // Apply Arabic font for "Test Name"
+                                        pdf.setFont("Amiri");
+                                        pdf.setFontSize(12);
+                                    } else {
+                                        pdf.setFont("Amiri");
+                                        pdf.setFontSize(10);
+                                    }
+                                    rowData.push(text);
+                                });
+                                tableData.push(rowData);
+                            });
+
+                            // Add Table to PDF
+                            pdf.autoTable({
+                                startY: startY,
+                                head: [headers],
+                                body: tableData,
+                                headStyles: {
+                                    fillColor: [209, 126, 0],
+                                    textColor: 255,
+                                    fontSize: 11,
+                                    fontStyle: 'bold'
+                                },
+                                styles: {
+                                    fontSize: 10,
+                                    font: "Amiri",
+                                    cellPadding: 3
+                                },
+                                alternateRowStyles: {
+                                    fillColor: [245, 245, 245]
+                                }, // Light grey background
+                                margin: {
+                                    left: 15,
+                                    right: 15
+                                }
+                            });
+
+                            // --- Add Footer (Page Number) ---
+                            let pageCount = pdf.internal.getNumberOfPages();
+                            for (let i = 1; i <= pageCount; i++) {
+                                pdf.setPage(i);
+                                pdf.setFillColor(255, 255, 255);
+                                pdf.rect(0, pageHeight - 15, pageWidth, 15, 'F'); // Footer Rectangle
+                                pdf.setTextColor(44, 44, 44);
+                                pdf.setFontSize(10);
+                                pdf.text(`Page ${i} of ${pageCount}`, pageWidth / 2, pageHeight - 5, {
+                                    align: "center"
+                                });
+                            }
+
+                            // Save the PDF
+                            pdf.save("Student_Completion_Report.pdf");
+                        })
+                        .catch(function(error) {
+                            console.error("Error generating PDF: ", error);
+                        });
+                };
+
+                // Trigger FileReader to read as Data URL (Base64)
+                reader.readAsDataURL(fontBlob);
+            })
+            .catch(error => {
+                console.error("Error loading font:", error);
+            });
+    });
+</script>
 @if(isset($counts))
 <script>
     document.addEventListener('DOMContentLoaded', function() {
@@ -228,7 +400,7 @@
                     data: values,
                     backgroundColor: ['#1cd0a0', '#ff0000cf', '#f4bd0eb3'],
                     borderColor: ['#1cd0a0', '#ff0000cf', '#f4bd0eb3'],
-                    borderWidth: 1,
+                    borderWidth: 0,
                     barThickness: 100
                 }]
             },

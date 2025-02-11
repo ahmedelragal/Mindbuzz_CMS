@@ -273,6 +273,9 @@ class ReportController extends Controller
                 'pending' => ceil($pendingPercentage),
             ];
             $data['tests'] = $tests;
+            $sessionKey = 'export_data_' . md5(url()->full() . auth()->id());
+            session([$sessionKey => $tests]);
+            $data['sessionKey'] = $sessionKey;
 
             // $tests = $query->get();
             // $totalTests = $tests->count();
@@ -729,6 +732,7 @@ class ReportController extends Controller
             $chartLabels = [];
             $chartValues = [];
             $chartNames = [];
+            $exportData = [];
             if ($request->has('filter')) {
                 switch ($request->filter) {
                     case 'Skill':
@@ -745,14 +749,29 @@ class ReportController extends Controller
                                             // $gameData[] = $game;
                                             $chartLabels[] = $skill['name'];
                                             $chartValues[] = $skill['mastery_percentage'];
+                                            $exportData[] = [
+                                                'Unit' => $unit['name'],
+                                                'Lesson' => $lesson['name'],
+                                                'Game' => $game['name'],
+                                                'Skill' => $skill['name'],
+                                                'Introduced' => $skill['introduced'] ?? '0',
+                                                'Practiced' => $skill['practiced'] ?? '0',
+                                                'Mastered' => $skill['mastered'] ?? '0',
+                                                'Mastery Percentage' => $skill['mastery_percentage'] . '%',
+                                            ];
                                         }
                                     }
                                 }
                             }
-
+                            $sessionKey = 'export_mastery_data_' . md5(url()->full());
+                            session([
+                                $sessionKey => $exportData,
+                                $sessionKey . '_headers' => ['Unit', 'Lesson', 'Game', 'Skill', 'Introduced', 'Practiced', 'Mastered', 'Mastery Percentage']
+                            ]);
                             $data['chartLabels'] =  $chartLabels;
                             $data['chartValues'] =  $chartValues;
                             $data['chartNames'] =  $chartNames;
+                            $data['sessionKey'] =  $sessionKey;
                             // dd($data);
                         } else {
                             $data['error'] = "No Skills Found";
@@ -767,11 +786,24 @@ class ReportController extends Controller
                             $chartNames[] = $unit['name'];
                             $chartLabels[] = $unit['name'];
                             $chartValues[] = $unit['mastery_percentage'];
+                            $exportData[] = [
+                                'Unit' => $unit['name'],
+                                'Introduced' => $unit['introduced'] ?? '0',
+                                'Practiced' => $unit['practiced'] ?? '0',
+                                'Mastered' => $unit['mastered'] ?? '0',
+                                'Mastery Percentage' => $unit['mastery_percentage'] . '%',
+                            ];
                         }
+                        $sessionKey = 'export_mastery_data_' . md5(url()->full());
+                        session([
+                            $sessionKey => $exportData,
+                            $sessionKey . '_headers' => ['Unit', 'Introduced', 'Practiced', 'Mastered', 'Mastery Percentage']
+                        ]);
                         // $data['unitsMastery'] = array_values($unitsMastery);
                         $data['chartLabels'] =  $chartLabels;
                         $data['chartValues'] =  $chartValues;
                         $data['chartNames'] =  $chartNames;
+                        $data['sessionKey'] =  $sessionKey;
                         // dd($data);
                         break;
                     case 'Lesson':
@@ -785,11 +817,25 @@ class ReportController extends Controller
                                 $chartNames[] = $unit['name'];
                                 $chartLabels[] = $lesson['name'];
                                 $chartValues[] = $lesson['mastery_percentage'];
+                                $exportData[] = [
+                                    'Unit' => $unit['name'],
+                                    'Lesson' => $lesson['name'],
+                                    'Introduced' => $lesson['introduced'] ?? '0',
+                                    'Practiced' => $lesson['practiced'] ?? '0',
+                                    'Mastered' => $lesson['mastered'] ?? '0',
+                                    'Mastery Percentage' => $lesson['mastery_percentage'] . '%',
+                                ];
                             }
                         }
+                        $sessionKey = 'export_mastery_data_' . md5(url()->full());
+                        session([
+                            $sessionKey => $exportData,
+                            $sessionKey . '_headers' => ['Unit', 'Lesson', 'Introduced', 'Practiced', 'Mastered', 'Mastery Percentage']
+                        ]);
                         $data['chartLabels'] =  $chartLabels;
                         $data['chartValues'] =  $chartValues;
                         $data['chartNames'] =  $chartNames;
+                        $data['sessionKey'] =  $sessionKey;
                         break;
                     case 'Game':
                         $unitsMastery = unserialize(serialize(array_values($unitsMastery)));
@@ -804,12 +850,29 @@ class ReportController extends Controller
                                     $chartNames[] = $unit['name'] . ' - ' . $lesson['name'];
                                     $chartLabels[] = $game['name'];
                                     $chartValues[] = $game['mastery_percentage'];
+                                    $exportData[] = [
+                                        'Unit' => $unit['name'],
+                                        'Lesson' => $lesson['name'],
+                                        'Game' => $game['name'],
+                                        'Introduced' => $game['introduced'] ?? '0',
+                                        'Practiced' => $game['practiced'] ?? '0',
+                                        'Mastered' => $game['mastered'] ?? '0',
+                                        'Mastery Percentage' => $game['mastery_percentage'] . '%',
+                                    ];
                                 }
                             }
                         }
+                        $sessionKey = 'export_mastery_data_' . md5(url()->full());
+                        session([
+                            $sessionKey => $exportData,
+                            $sessionKey . '_headers' => ['Unit', 'Lesson', 'Game', 'Introduced', 'Practiced', 'Mastered', 'Mastery Percentage']
+                        ]);
+
+                        // dd($exportData);
                         $data['chartLabels'] =  $chartLabels;
                         $data['chartValues'] =  $chartValues;
                         $data['chartNames'] =  $chartNames;
+                        $data['sessionKey'] =  $sessionKey;
                         // dd($data);
                         break;
                     default:
@@ -931,6 +994,26 @@ class ReportController extends Controller
             $data['chartValues'] = $chartValues;
             $data['chartNames'] = $chartNames;
             $data['testsData'] = $testsData;
+
+            $exportData = [];
+            foreach ($testsData as $test) {
+                $exportData[] = [
+                    'Program' => $test['test_program'],
+                    'Unit' => $test['test_unit'],
+                    'Lesson' => $test['test_lesson'],
+                    'Game' => $test['test_game'],
+                    'Test Name' => $test['test_name'],
+                    'Completion Date' => $test['completion_date'],
+                    'Number of Trials' => $test['num_trials'],
+                    'Score' => $test['score'],
+                ];
+            }
+            $sessionKey = 'export_mastery_data_' . md5(url()->full());
+            $data['sessionKey'] =  $sessionKey;
+            session([
+                $sessionKey => $exportData,
+                $sessionKey . '_headers' => ['Program', 'Unit', 'Lesson', 'Game', 'Test Name', 'Completion Date', 'Number of Trials', 'Score']
+            ]);
         }
         // dd($data);
         return view('dashboard.reports.student.student_num_of_trials_report', $data);
@@ -1900,8 +1983,8 @@ class ReportController extends Controller
     public function classCompletionReportWeb(Request $request)
     {
         // $groups = Group::all();
-        if (Auth::user()->hasRole('school')) {
-            $groups = Group::when(Auth::user()->hasRole('school'), function ($query) {
+        if (Auth::user()->hasRole('school') || Auth::user()->hasRole('Cordinator')) {
+            $groups = Group::when(Auth::user()->hasAnyRole(['school', 'Cordinator']), function ($query) {
                 return $query->where('school_id', Auth::user()->school_id);
             })->get();
         } else {
@@ -2073,6 +2156,9 @@ class ReportController extends Controller
                 'pending' => ceil($pendingPercentage),
             ];
             $data['tests'] = $tests;
+            $sessionKey = 'export_data_' . md5(url()->full() . auth()->id());
+            session([$sessionKey => $tests]);
+            $data['sessionKey'] = $sessionKey;
         }
 
         return view('dashboard.reports.class.class_completion_report', $data);
@@ -2081,8 +2167,8 @@ class ReportController extends Controller
     {
         // Retrieve necessary data for filters
         // $groups = Group::all();
-        if (Auth::user()->hasRole('school')) {
-            $groups = Group::when(Auth::user()->hasRole('school'), function ($query) {
+        if (Auth::user()->hasRole('school') || Auth::user()->hasRole('Cordinator')) {
+            $groups = Group::when(Auth::user()->hasAnyRole(['school', 'Cordinator']), function ($query) {
                 return $query->where('school_id', Auth::user()->school_id);
             })->get();
         } else {
@@ -2505,6 +2591,7 @@ class ReportController extends Controller
             $chartLabels = [];
             $chartValues = [];
             $chartNames = [];
+            $exportData = [];
             if ($request->has('filter')) {
                 switch ($request->filter) {
                     case 'Skill':
@@ -2521,10 +2608,26 @@ class ReportController extends Controller
                                             // $gameData[] = $game;
                                             $chartLabels[] = $skill['name'];
                                             $chartValues[] = $skill['mastery_percentage'];
+                                            $exportData[] = [
+                                                'Unit' => $unit['name'],
+                                                'Lesson' => $lesson['name'],
+                                                'Game' => $game['name'],
+                                                'Skill' => $skill['name'],
+                                                'Introduced' => $skill['introduced'] ?? '0',
+                                                'Practiced' => $skill['practiced'] ?? '0',
+                                                'Mastered' => $skill['mastered'] ?? '0',
+                                                'Mastery Percentage' => $skill['mastery_percentage'] . '%',
+                                            ];
                                         }
                                     }
                                 }
                             }
+                            $sessionKey = 'export_mastery_data_' . md5(url()->full());
+                            $data['sessionKey'] =  $sessionKey;
+                            session([
+                                $sessionKey => $exportData,
+                                $sessionKey . '_headers'  => ['Unit', 'Lesson', 'Game', 'Skill', 'Introduced', 'Practiced', 'Mastered', 'Mastery Percentage']
+                            ]);
 
                             $data['chartLabels'] =  $chartLabels;
                             $data['chartValues'] =  $chartValues;
@@ -2543,7 +2646,20 @@ class ReportController extends Controller
                             $chartNames[] = $unit['name'];
                             $chartLabels[] = $unit['name'];
                             $chartValues[] = $unit['mastery_percentage'];
+                            $exportData[] = [
+                                'Unit' => $unit['name'],
+                                'Introduced' => $unit['introduced'] ?? '0',
+                                'Practiced' => $unit['practiced'] ?? '0',
+                                'Mastered' => $unit['mastered'] ?? '0',
+                                'Mastery Percentage' => $unit['mastery_percentage'] . '%',
+                            ];
                         }
+                        $sessionKey = 'export_mastery_data_' . md5(url()->full());
+                        $data['sessionKey'] =  $sessionKey;
+                        session([
+                            $sessionKey => $exportData,
+                            $sessionKey . '_headers'  => ['Unit', 'Introduced', 'Practiced', 'Mastered', 'Mastery Percentage']
+                        ]);
                         // $data['unitsMastery'] = array_values($unitsMastery);
                         $data['chartLabels'] =  $chartLabels;
                         $data['chartValues'] =  $chartValues;
@@ -2561,8 +2677,22 @@ class ReportController extends Controller
                                 $chartNames[] = $unit['name'];
                                 $chartLabels[] = $lesson['name'];
                                 $chartValues[] = $lesson['mastery_percentage'];
+                                $exportData[] = [
+                                    'Unit' => $unit['name'],
+                                    'Lesson' => $lesson['name'],
+                                    'Introduced' => $lesson['introduced'] ?? '0',
+                                    'Practiced' => $lesson['practiced'] ?? '0',
+                                    'Mastered' => $lesson['mastered'] ?? '0',
+                                    'Mastery Percentage' => $lesson['mastery_percentage'] . '%',
+                                ];
                             }
                         }
+                        $sessionKey = 'export_mastery_data_' . md5(url()->full());
+                        $data['sessionKey'] =  $sessionKey;
+                        session([
+                            $sessionKey => $exportData,
+                            $sessionKey . '_headers' => ['Unit', 'Lesson', 'Introduced', 'Practiced', 'Mastered', 'Mastery Percentage']
+                        ]);
                         $data['chartLabels'] =  $chartLabels;
                         $data['chartValues'] =  $chartValues;
                         $data['chartNames'] =  $chartNames;
@@ -2580,9 +2710,26 @@ class ReportController extends Controller
                                     $chartNames[] = $unit['name'] . ' - ' . $lesson['name'];
                                     $chartLabels[] = $game['name'];
                                     $chartValues[] = $game['mastery_percentage'];
+                                    $exportData[] = [
+                                        'Unit' => $unit['name'],
+                                        'Lesson' => $lesson['name'],
+                                        'Game' => $game['name'],
+                                        'Introduced' => $game['introduced'] ?? '0',
+                                        'Practiced' => $game['practiced'] ?? '0',
+                                        'Mastered' => $game['mastered'] ?? '0',
+                                        'Mastery Percentage' => $game['mastery_percentage'] . '%',
+                                    ];
                                 }
                             }
                         }
+                        $sessionKey = 'export_mastery_data_' . md5(url()->full());
+                        $data['sessionKey'] =  $sessionKey;
+                        session([
+                            $sessionKey => $exportData,
+                            $sessionKey . '_headers' => ['Unit', 'Lesson', 'Game', 'Introduced', 'Practiced', 'Mastered', 'Mastery Percentage']
+                        ]);
+
+                        // dd($exportData);
                         $data['chartLabels'] =  $chartLabels;
                         $data['chartValues'] =  $chartValues;
                         $data['chartNames'] =  $chartNames;
@@ -2609,8 +2756,8 @@ class ReportController extends Controller
     public function classNumOfTrialsReportWeb(Request $request)
     {
         // Retrieve groups and programs for the filters
-        if (Auth::user()->hasRole('school')) {
-            $groups = Group::when(Auth::user()->hasRole('school'), function ($query) {
+        if (Auth::user()->hasRole('school') || Auth::user()->hasRole('Cordinator')) {
+            $groups = Group::when(Auth::user()->hasAnyRole(['school', 'Cordinator']), function ($query) {
                 return $query->where('school_id', Auth::user()->school_id);
             })->get();
         } else {
@@ -2877,7 +3024,31 @@ class ReportController extends Controller
             $data['oneStarDisplayedPercentage'] = $data['reports_percentages']['first_trial'];
             $data['twoStarDisplayedPercentage'] = $data['reports_percentages']['second_trial'];
             $data['threeStarDisplayedPercentage'] = $data['reports_percentages']['third_trial'];
+
+            $exportData = [];
+            foreach ($progress as $prog) {
+                $program = Program::find($prog->program_id);
+                $gameName = Game::find(Test::find($prog->test_id)->game_id)->name;
+                $exportData[] = [
+                    'Student Name' => User::find($prog->student_id)->name,
+                    'Program' => $program->course->name . ' - ' . $program->stage->name,
+                    'Unit' => Unit::find($prog->unit_id)->name,
+                    'Lesson' => Lesson::find($prog->lesson_id)->name,
+                    'Game' => $gameName,
+                    'Test Name' => Test::find($prog->test_id)->name,
+                    'Number of Trials' => $prog->mistake_count + 1,
+                    'Score' => $prog->score,
+                    'Started At' => $prog->created_at->format('Y-m-d')
+                ];
+            }
+            $sessionKey = 'export_mastery_data_' . md5(url()->full());
+            $data['sessionKey'] =  $sessionKey;
+            session([
+                $sessionKey => $exportData,
+                $sessionKey . '_headers' => ['Student Name', 'Program', 'Unit', 'Lesson', 'Game', 'Test Name', 'Number of Trials', 'Score', 'Started At']
+            ]);
         }
+
 
         return view('dashboard.reports.class.class_num_of_trials_report', $data);
     }
@@ -2977,8 +3148,8 @@ class ReportController extends Controller
 
     public function classLoginReport(Request $request)
     {
-        if (Auth::user()->hasRole('school')) {
-            $groups = Group::when(Auth::user()->hasRole('school'), function ($query) {
+        if (Auth::user()->hasRole('school') || Auth::user()->hasRole('Cordinator')) {
+            $groups = Group::when(Auth::user()->hasAnyRole(['school', 'Cordinator']), function ($query) {
                 return $query->where('school_id', Auth::user()->school_id);
             })->get();
         } else {
@@ -2988,22 +3159,32 @@ class ReportController extends Controller
         $groupId = $request->group_id;
 
         if ($request->filled('group_id')) {
+            $sessionKey = 'export_mastery_data_' . md5(url()->full());
             $students = User::whereIn('id', GroupStudent::where('group_id', $groupId)->pluck('student_id'))->get();
             if (empty($students)) {
                 return redirect()->back()->with('error', 'No Students Found.')->withInput();
             } else {
                 $numLogin = [];
                 $studentName = [];
+                $exportData = [];
                 foreach ($students as $student) {
                     array_push($studentName, $student->name);
                     array_push($numLogin, $student->number_logins);
+                    $exportData[] = [
+                        'Student Name' => $student->name,
+                        'Number of Logins' => $student->number_logins ?? '0',
+                    ];
                 }
+                session([
+                    'student_' . $sessionKey => $exportData,
+                    $sessionKey . '_studentheaders' => ['Student Name', 'Number of Logins']
+                ]);
                 $seenIds = [];
                 $teacherName = [];
                 $teacherLogin = [];
 
                 $teachers = GroupTeachers::where('group_id', $groupId)->get();
-
+                $exportData = [];
                 if ($teachers) {
                     foreach ($teachers as $teacher) {
                         if (!in_array($teacher->teacher_id, $seenIds)) {
@@ -3011,6 +3192,10 @@ class ReportController extends Controller
 
                             array_push($teacherName, $user->name);
                             array_push($teacherLogin, $user->number_logins);
+                            $exportData[] = [
+                                'Teacher Name' => $user->name,
+                                'Number of Logins' => $user->number_logins ?? '0',
+                            ];
                             $seenIds[] = $teacher->teacher_id;
                         }
                         if (!in_array($teacher->co_teacher_id, $seenIds)) {
@@ -3018,14 +3203,23 @@ class ReportController extends Controller
                             if ($user) {
                                 array_push($teacherName, $user->name);
                                 array_push($teacherLogin, $user->number_logins);
+                                $exportData[] = [
+                                    'Teacher Name' => $user->name,
+                                    'Number of Logins' => $user->number_logins ?? '0',
+                                ];
                                 $seenIds[] = $teacher->co_teacher_id;
                             }
                         }
                     }
+                    session([
+                        'teacher_' . $sessionKey => $exportData,
+                        $sessionKey . '_teacherheaders' => ['Teacher Name', 'Number of Logins']
+                    ]);
                 }
                 return view(
                     'dashboard.reports.class.class_login_report',
                     [
+                        'sessionKey' => $sessionKey,
                         'groups' => $groups,
                         'studentName' => $studentName,
                         'numLogin' => $numLogin,
@@ -3046,7 +3240,7 @@ class ReportController extends Controller
     }
     public function schoolLoginReport(Request $request)
     {
-        if (Auth::user()->hasRole('school')) {
+        if (Auth::user()->hasRole('school') || Auth::user()->hasRole('Cordinator')) {
             $students = User::where('role', '2')->where("school_id", Auth::user()->school_id)->get();
             $teachers = User::where('role', '1')->where("school_id", Auth::user()->school_id)->get();
             // dd($students, $teachers);
@@ -3088,20 +3282,39 @@ class ReportController extends Controller
             $teacherLogin = [];
             $numLogin = [];
             $studentName = [];
-
+            $exportData = [];
+            $sessionKey = 'export_mastery_data_' . md5(url()->full());
             foreach ($teachers as $teacher) {
                 array_push($teacherName, $teacher->name);
                 array_push($teacherLogin, $teacher->number_logins);
+                $exportData[] = [
+                    'Teacher Name' => $teacher->name,
+                    'Number of Logins' => $teacher->number_logins ?? '0',
+                ];
             }
+            session([
+                'teacher_' . $sessionKey => $exportData,
+                $sessionKey . '_teacherheaders' => ['Teacher Name', 'Number of Logins']
+            ]);
 
+            $exportData = [];
             foreach ($students as $student) {
                 array_push($studentName, $student->name);
                 array_push($numLogin, $student->number_logins);
+                $exportData[] = [
+                    'Student Name' => $student->name,
+                    'Number of Logins' => $student->number_logins ?? '0',
+                ];
             }
+            session([
+                'student_' . $sessionKey => $exportData,
+                $sessionKey . '_studentheaders' => ['Student Name', 'Number of Logins']
+            ]);
 
             return view(
                 'dashboard.reports.school.school_login_report',
                 [
+                    'sessionKey' =>  $sessionKey,
                     'schools' => $schools,
                     'studentName' => $studentName,
                     'numLogin' => $numLogin,
@@ -3116,7 +3329,6 @@ class ReportController extends Controller
             [
                 'schools' => $schools,
                 'request' => $request->all(),
-
             ]
         );
     }
@@ -3292,6 +3504,9 @@ class ReportController extends Controller
                 'pending' => ceil($pendingPercentage),
             ];
             $data['tests'] = $tests;
+            $sessionKey = 'export_data_' . md5(url()->full() . auth()->id());
+            session([$sessionKey => $tests]);
+            $data['sessionKey'] = $sessionKey;
         }
 
         return view(
@@ -3302,15 +3517,40 @@ class ReportController extends Controller
 
     public function schoolCompletionReport(Request $request)
     {
-        if (Auth::user()->hasRole('school')) {
-            $schoolId = Auth::user()->school_id;
-            $programs = Program::with(['course', 'stage'])
-                ->whereHas('schoolProgram', function ($query) use ($schoolId) {
-                    $query->where('school_id', $schoolId);
-                })->get();
+        // if (Auth::user()->hasRole('school')) {
+        //     $schoolId = Auth::user()->school_id;
+        //     $programs = Program::with(['course', 'stage'])
+        //         ->whereHas('schoolProgram', function ($query) use ($schoolId) {
+        //             $query->where('school_id', $schoolId);
+        //         })->get();
+        // } else if (Auth::user()->hasRole('Cordinator')) {
+
+        // } else {
+        //     $programs = Program::all();
+        // }
+
+        $roleCourseMapping = [
+            'PracticalLife-Cordinator' => 4,
+            'Math-Cordinator' => 3,
+            'Culture-Cordinator' => 2,
+            'Arabic-Cordinator' => 5,
+            'Phonics-Cordinator' => 1,
+        ];
+        $user = auth()->user();
+        if ($user->hasRole('school') || $user->hasRole('Admin')) {
+            $courseIds = [1, 2, 3, 4, 5];
         } else {
-            $programs = Program::all();
+            $userRoles = $user->getRoleNames();
+            $assignedCourses = collect($roleCourseMapping)->only($userRoles->toArray());
+            $courseIds = $assignedCourses->values();
         }
+        $schoolId = auth()->user()->school_id;
+        $programs = Program::with(['course', 'stage'])
+            ->whereHas('schoolProgram', function ($query) use ($schoolId) {
+                $query->where('school_id', $schoolId);
+            })->whereIn('course_id', $courseIds)
+            ->get();
+
 
         $schools = School::all();
         $assignmentTypes = TestTypes::all();
@@ -3462,8 +3702,10 @@ class ReportController extends Controller
                 'pending' => ceil($pendingPercentage),
             ];
             $data['tests'] = $tests;
+            $sessionKey = 'export_data_' . md5(url()->full() . auth()->id());
+            session([$sessionKey => $tests]);
+            $data['sessionKey'] = $sessionKey;
         }
-
         return view(
             'dashboard.reports.school.school_completion_report',
             $data
@@ -3909,6 +4151,7 @@ class ReportController extends Controller
             $chartLabels = [];
             $chartValues = [];
             $chartNames = [];
+            $exportData = [];
             if ($request->has('filter')) {
                 switch ($request->filter) {
                     case 'Skill':
@@ -3925,11 +4168,26 @@ class ReportController extends Controller
                                             // $gameData[] = $game;
                                             $chartLabels[] = $skill['name'];
                                             $chartValues[] = $skill['mastery_percentage'];
+                                            $exportData[] = [
+                                                'Unit' => $unit['name'],
+                                                'Lesson' => $lesson['name'],
+                                                'Game' => $game['name'],
+                                                'Skill' => $skill['name'],
+                                                'Introduced' => $skill['introduced'] ?? '0',
+                                                'Practiced' => $skill['practiced'] ?? '0',
+                                                'Mastered' => $skill['mastered'] ?? '0',
+                                                'Mastery Percentage' => $skill['mastery_percentage'] . '%',
+                                            ];
                                         }
                                     }
                                 }
                             }
-
+                            $sessionKey = 'export_mastery_data_' . md5(url()->full());
+                            session([
+                                $sessionKey => $exportData,
+                                $sessionKey . '_headers'  => ['Unit', 'Lesson', 'Game', 'Skill', 'Introduced', 'Practiced', 'Mastered', 'Mastery Percentage']
+                            ]);
+                            $data['sessionKey'] =  $sessionKey;
                             $data['chartLabels'] =  $chartLabels;
                             $data['chartValues'] =  $chartValues;
                             $data['chartNames'] =  $chartNames;
@@ -3947,7 +4205,20 @@ class ReportController extends Controller
                             $chartNames[] = $unit['name'];
                             $chartLabels[] = $unit['name'];
                             $chartValues[] = $unit['mastery_percentage'];
+                            $exportData[] = [
+                                'Unit' => $unit['name'],
+                                'Introduced' => $unit['introduced'] ?? '0',
+                                'Practiced' => $unit['practiced'] ?? '0',
+                                'Mastered' => $unit['mastered'] ?? '0',
+                                'Mastery Percentage' => $unit['mastery_percentage'] . '%',
+                            ];
                         }
+                        $sessionKey = 'export_mastery_data_' . md5(url()->full());
+                        session([
+                            $sessionKey => $exportData,
+                            $sessionKey . '_headers'  => ['Unit', 'Introduced', 'Practiced', 'Mastered', 'Mastery Percentage']
+                        ]);
+                        $data['sessionKey'] =  $sessionKey;
                         // $data['unitsMastery'] = array_values($unitsMastery);
                         $data['chartLabels'] =  $chartLabels;
                         $data['chartValues'] =  $chartValues;
@@ -3965,8 +4236,22 @@ class ReportController extends Controller
                                 $chartNames[] = $unit['name'];
                                 $chartLabels[] = $lesson['name'];
                                 $chartValues[] = $lesson['mastery_percentage'];
+                                $exportData[] = [
+                                    'Unit' => $unit['name'],
+                                    'Lesson' => $lesson['name'],
+                                    'Introduced' => $lesson['introduced'] ?? '0',
+                                    'Practiced' => $lesson['practiced'] ?? '0',
+                                    'Mastered' => $lesson['mastered'] ?? '0',
+                                    'Mastery Percentage' => $lesson['mastery_percentage'] . '%',
+                                ];
                             }
                         }
+                        $sessionKey = 'export_mastery_data_' . md5(url()->full());
+                        session([
+                            $sessionKey => $exportData,
+                            $sessionKey . '_headers' => ['Unit', 'Lesson', 'Introduced', 'Practiced', 'Mastered', 'Mastery Percentage']
+                        ]);
+                        $data['sessionKey'] =  $sessionKey;
                         $data['chartLabels'] =  $chartLabels;
                         $data['chartValues'] =  $chartValues;
                         $data['chartNames'] =  $chartNames;
@@ -3984,9 +4269,26 @@ class ReportController extends Controller
                                     $chartNames[] = $unit['name'] . ' - ' . $lesson['name'];
                                     $chartLabels[] = $game['name'];
                                     $chartValues[] = $game['mastery_percentage'];
+                                    $exportData[] = [
+                                        'Unit' => $unit['name'],
+                                        'Lesson' => $lesson['name'],
+                                        'Game' => $game['name'],
+                                        'Introduced' => $game['introduced'] ?? '0',
+                                        'Practiced' => $game['practiced'] ?? '0',
+                                        'Mastered' => $game['mastered'] ?? '0',
+                                        'Mastery Percentage' => $game['mastery_percentage'] . '%',
+                                    ];
                                 }
                             }
                         }
+                        $sessionKey = 'export_mastery_data_' . md5(url()->full());
+                        session([
+                            $sessionKey => $exportData,
+                            $sessionKey . '_headers'  => ['Unit', 'Lesson', 'Game', 'Introduced', 'Practiced', 'Mastered', 'Mastery Percentage']
+                        ]);
+
+                        // dd($exportData);
+                        $data['sessionKey'] =  $sessionKey;
                         $data['chartLabels'] =  $chartLabels;
                         $data['chartValues'] =  $chartValues;
                         $data['chartNames'] =  $chartNames;
@@ -4013,8 +4315,8 @@ class ReportController extends Controller
 
     public function classContentEngagementReport(Request $request)
     {
-        if (Auth::user()->hasRole('school')) {
-            $groups = Group::when(Auth::user()->hasRole('school'), function ($query) {
+        if (Auth::user()->hasRole('school') || Auth::user()->hasRole('Cordinator')) {
+            $groups = Group::when(Auth::user()->hasAnyRole(['school', 'Cordinator']), function ($query) {
                 return $query->where('school_id', Auth::user()->school_id);
             })->get();
         } else {
@@ -4251,6 +4553,7 @@ class ReportController extends Controller
             $chartLabels = [];
             $chartValues = [];
             $chartNames = [];
+            $exportData = [];
             if ($request->has('filter')) {
                 switch ($request->filter) {
                     case 'Skill':
@@ -4264,11 +4567,27 @@ class ReportController extends Controller
                                         $chartLabels[] = $skill['name'];
                                         $chartValues[] = $skill['engagement_percentage'];
                                         $chartNames[] = $unitName . ' - ' . $lesson['name'] . ' - ' . $game['name'] . ' - ' . $skill['name'];
+                                        $exportData[] = [
+                                            'Unit' => $unit['name'],
+                                            'Lesson' => $lesson['name'],
+                                            'Game' => $game['name'],
+                                            'Skill' => $skill['name'],
+                                            'Engagement Percentage' => $skill['engagement_percentage'] . '%',
+                                        ];
                                     }
                                 }
                             }
                         }
-
+                        $sessionKey = 'export_mastery_data_' . md5(url()->full());
+                        $data['sessionKey'] =  $sessionKey;
+                        session([
+                            $sessionKey => $exportData,
+                            $sessionKey . '_headers'  => ['Unit', 'Lesson', 'Game', 'Skill', 'Engagement Percentage']
+                        ]);
+                        if (empty($chartNames)) {
+                            $data['error'] = 'No Skills Found';
+                            return view('dashboard.reports.class.class_content_engagement_report', $data);
+                        }
                         $data['chartLabels'] = $chartLabels;
                         $data['chartValues'] = $chartValues;
                         $data['chartNames'] = $chartNames;
@@ -4291,7 +4610,17 @@ class ReportController extends Controller
                                 $chartValues[] = $unit['engagement_percentage'];
                                 $index += 1;
                             }
+                            $exportData[] = [
+                                'Unit' => $unit['name'],
+                                'Engagement Percentage' => $unit['engagement_percentage'] . '%',
+                            ];
                         }
+                        $sessionKey = 'export_mastery_data_' . md5(url()->full());
+                        $data['sessionKey'] =  $sessionKey;
+                        session([
+                            $sessionKey => $exportData,
+                            $sessionKey . '_headers'  => ['Unit', 'Engagement Percentage']
+                        ]);
 
                         $data['chartLabels'] = $chartLabels;
                         $data['chartValues'] = $chartValues;
@@ -4308,9 +4637,19 @@ class ReportController extends Controller
                                 $chartLabels[] = $lesson['name'];
                                 $chartValues[] = $lesson['engagement_percentage'];
                                 $chartNames[] = $unitName . ' - ' . $lesson['name'];
+                                $exportData[] = [
+                                    'Unit' => $unitName,
+                                    'Lesson' => $lesson['name'],
+                                    'Engagement Percentage' => $lesson['engagement_percentage'] . '%',
+                                ];
                             }
                         }
-
+                        $sessionKey = 'export_mastery_data_' . md5(url()->full());
+                        $data['sessionKey'] =  $sessionKey;
+                        session([
+                            $sessionKey => $exportData,
+                            $sessionKey . '_headers'  => ['Unit', 'Lesson', 'Engagement Percentage']
+                        ]);
                         $data['chartLabels'] = $chartLabels;
                         $data['chartValues'] = $chartValues;
                         $data['chartNames'] = $chartNames;
@@ -4326,10 +4665,21 @@ class ReportController extends Controller
                                     $chartLabels[] = $game['name'];
                                     $chartValues[] = $game['engagement_percentage'];
                                     $chartNames[] = $unitName . ' - ' . $lesson['name'] . ' - ' . $game['name'];
+                                    $exportData[] = [
+                                        'Unit' => $unitName,
+                                        'Lesson' => $lesson['name'],
+                                        'Game' => $game['name'],
+                                        'Engagement Percentage' => $game['engagement_percentage'] . '%',
+                                    ];
                                 }
                             }
                         }
-
+                        $sessionKey = 'export_mastery_data_' . md5(url()->full());
+                        $data['sessionKey'] =  $sessionKey;
+                        session([
+                            $sessionKey => $exportData,
+                            $sessionKey . '_headers' => ['Unit', 'Lesson', 'Game', 'Engagement Percentage']
+                        ]);
                         $data['chartLabels'] = $chartLabels;
                         $data['chartValues'] = $chartValues;
                         $data['chartNames'] = $chartNames;
@@ -4344,15 +4694,27 @@ class ReportController extends Controller
     }
     public function schoolContentEngagementReport(Request $request)
     {
-        if (Auth::user()->hasRole('school')) {
-            $schoolId = Auth::user()->school_id;
-            $programs = Program::with(['course', 'stage'])
-                ->whereHas('schoolProgram', function ($query) use ($schoolId) {
-                    $query->where('school_id', $schoolId);
-                })->get();
+        $roleCourseMapping = [
+            'PracticalLife-Cordinator' => 4,
+            'Math-Cordinator' => 3,
+            'Culture-Cordinator' => 2,
+            'Arabic-Cordinator' => 5,
+            'Phonics-Cordinator' => 1,
+        ];
+        $user = auth()->user();
+        if ($user->hasRole('school') || $user->hasRole('Admin')) {
+            $courseIds = [1, 2, 3, 4, 5];
         } else {
-            $programs = Program::all();
+            $userRoles = $user->getRoleNames();
+            $assignedCourses = collect($roleCourseMapping)->only($userRoles->toArray());
+            $courseIds = $assignedCourses->values();
         }
+        $schoolId = auth()->user()->school_id;
+        $programs = Program::with(['course', 'stage'])
+            ->whereHas('schoolProgram', function ($query) use ($schoolId) {
+                $query->where('school_id', $schoolId);
+            })->whereIn('course_id', $courseIds)
+            ->get();
 
         $schools = School::all();
         // Initialize $data array with defaults
@@ -4564,6 +4926,7 @@ class ReportController extends Controller
             $chartLabels = [];
             $chartValues = [];
             $chartNames = [];
+            $exportData = [];
             if ($request->has('filter')) {
                 switch ($request->filter) {
                     case 'Skill':
@@ -4577,10 +4940,23 @@ class ReportController extends Controller
                                         $chartLabels[] = $skill['name'];
                                         $chartValues[] = $skill['engagement_percentage'];
                                         $chartNames[] = $unitName . ' - ' . $lesson['name'] . ' - ' . $game['name'] . ' - ' . $skill['name'];
+                                        $exportData[] = [
+                                            'Unit' => $unit['name'],
+                                            'Lesson' => $lesson['name'],
+                                            'Game' => $game['name'],
+                                            'Skill' => $skill['name'],
+                                            'Engagement Percentage' => $skill['engagement_percentage'] . '%',
+                                        ];
                                     }
                                 }
                             }
                         }
+                        $sessionKey = 'export_mastery_data_' . md5(url()->full());
+                        $data['sessionKey'] =  $sessionKey;
+                        session([
+                            $sessionKey => $exportData,
+                            $sessionKey . '_headers' => ['Unit', 'Lesson', 'Game', 'Skill', 'Engagement Percentage']
+                        ]);
                         if (empty($chartNames)) {
                             $data['error'] = 'No Skills Found';
                             return view('dashboard.reports.school.school_content_engagement_report', $data);
@@ -4608,7 +4984,17 @@ class ReportController extends Controller
                                 $chartValues[] = $unit['engagement_percentage'];
                                 $index += 1;
                             }
+                            $exportData[] = [
+                                'Unit' => $unit['name'],
+                                'Engagement Percentage' => $unit['engagement_percentage'] . '%',
+                            ];
                         }
+                        $sessionKey = 'export_mastery_data_' . md5(url()->full());
+                        $data['sessionKey'] =  $sessionKey;
+                        session([
+                            $sessionKey => $exportData,
+                            $sessionKey . '_headers' => ['Unit', 'Engagement Percentage']
+                        ]);
 
                         $data['chartLabels'] = $chartLabels;
                         $data['chartValues'] = $chartValues;
@@ -4625,9 +5011,19 @@ class ReportController extends Controller
                                 $chartLabels[] = $lesson['name'];
                                 $chartValues[] = $lesson['engagement_percentage'];
                                 $chartNames[] = $unitName . ' - ' . $lesson['name'];
+                                $exportData[] = [
+                                    'Unit' => $unitName,
+                                    'Lesson' => $lesson['name'],
+                                    'Engagement Percentage' => $lesson['engagement_percentage'] . '%',
+                                ];
                             }
                         }
-
+                        $sessionKey = 'export_mastery_data_' . md5(url()->full());
+                        $data['sessionKey'] =  $sessionKey;
+                        session([
+                            $sessionKey => $exportData,
+                            $sessionKey . '_headers' => ['Unit', 'Lesson', 'Engagement Percentage']
+                        ]);
                         $data['chartLabels'] = $chartLabels;
                         $data['chartValues'] = $chartValues;
                         $data['chartNames'] = $chartNames;
@@ -4643,10 +5039,21 @@ class ReportController extends Controller
                                     $chartLabels[] = $game['name'];
                                     $chartValues[] = $game['engagement_percentage'];
                                     $chartNames[] = $unitName . ' - ' . $lesson['name'] . ' - ' . $game['name'];
+                                    $exportData[] = [
+                                        'Unit' => $unitName,
+                                        'Lesson' => $lesson['name'],
+                                        'Game' => $game['name'],
+                                        'Engagement Percentage' => $game['engagement_percentage'] . '%',
+                                    ];
                                 }
                             }
                         }
-
+                        $sessionKey = 'export_mastery_data_' . md5(url()->full());
+                        $data['sessionKey'] =  $sessionKey;
+                        session([
+                            $sessionKey => $exportData,
+                            $sessionKey . '_headers' => ['Unit', 'Lesson', 'Game', 'Engagement Percentage']
+                        ]);
                         $data['chartLabels'] = $chartLabels;
                         $data['chartValues'] = $chartValues;
                         $data['chartNames'] = $chartNames;
@@ -4780,7 +5187,6 @@ class ReportController extends Controller
 
                     $gamesUsage = [];
 
-
                     foreach ($games as $game) {
                         $skillsUsage = [];
                         $gameId = Game::where('lesson_id', $game['lesson_id'])
@@ -4893,6 +5299,7 @@ class ReportController extends Controller
             $chartLabels = [];
             $chartValues = [];
             $chartNames = [];
+            $exportData = [];
             if ($request->has('filter')) {
                 switch ($request->filter) {
                     case 'Skill':
@@ -4906,11 +5313,27 @@ class ReportController extends Controller
                                         $chartLabels[] = $skill['name'];
                                         $chartValues[] = $skill['engagement_percentage'];
                                         $chartNames[] = $unitName . ' - ' . $lesson['name'] . ' - ' . $game['name'] . ' - ' . $skill['name'];
+                                        $exportData[] = [
+                                            'Unit' => $unit['name'],
+                                            'Lesson' => $lesson['name'],
+                                            'Game' => $game['name'],
+                                            'Skill' => $skill['name'],
+                                            'Engagement Percentage' => $skill['engagement_percentage'] . '%',
+                                        ];
                                     }
                                 }
                             }
                         }
-
+                        $sessionKey = 'export_mastery_data_' . md5(url()->full());
+                        $data['sessionKey'] =  $sessionKey;
+                        session([
+                            $sessionKey => $exportData,
+                            $sessionKey . '_headers'  => ['Unit', 'Lesson', 'Game', 'Skill', 'Engagement Percentage']
+                        ]);
+                        if (empty($chartNames)) {
+                            $data['error'] = 'No Skills Found';
+                            return view('dashboard.reports.instructor.instructor_content_engagement_report', $data);
+                        }
                         $data['chartLabels'] = $chartLabels;
                         $data['chartValues'] = $chartValues;
                         $data['chartNames'] = $chartNames;
@@ -4933,7 +5356,17 @@ class ReportController extends Controller
                                 $chartValues[] = $unit['engagement_percentage'];
                                 $index += 1;
                             }
+                            $exportData[] = [
+                                'Unit' => $unit['name'],
+                                'Engagement Percentage' => $unit['engagement_percentage'] . '%',
+                            ];
                         }
+                        $sessionKey = 'export_mastery_data_' . md5(url()->full());
+                        $data['sessionKey'] =  $sessionKey;
+                        session([
+                            $sessionKey => $exportData,
+                            $sessionKey . '_headers'  => ['Unit', 'Engagement Percentage']
+                        ]);
 
                         $data['chartLabels'] = $chartLabels;
                         $data['chartValues'] = $chartValues;
@@ -4950,9 +5383,19 @@ class ReportController extends Controller
                                 $chartLabels[] = $lesson['name'];
                                 $chartValues[] = $lesson['engagement_percentage'];
                                 $chartNames[] = $unitName . ' - ' . $lesson['name'];
+                                $exportData[] = [
+                                    'Unit' => $unitName,
+                                    'Lesson' => $lesson['name'],
+                                    'Engagement Percentage' => $lesson['engagement_percentage'] . '%',
+                                ];
                             }
                         }
-
+                        $sessionKey = 'export_mastery_data_' . md5(url()->full());
+                        $data['sessionKey'] =  $sessionKey;
+                        session([
+                            $sessionKey => $exportData,
+                            $sessionKey . '_headers'  => ['Unit', 'Lesson', 'Engagement Percentage']
+                        ]);
                         $data['chartLabels'] = $chartLabels;
                         $data['chartValues'] = $chartValues;
                         $data['chartNames'] = $chartNames;
@@ -4968,10 +5411,21 @@ class ReportController extends Controller
                                     $chartLabels[] = $game['name'];
                                     $chartValues[] = $game['engagement_percentage'];
                                     $chartNames[] = $unitName . ' - ' . $lesson['name'] . ' - ' . $game['name'];
+                                    $exportData[] = [
+                                        'Unit' => $unitName,
+                                        'Lesson' => $lesson['name'],
+                                        'Game' => $game['name'],
+                                        'Engagement Percentage' => $game['engagement_percentage'] . '%',
+                                    ];
                                 }
                             }
                         }
-
+                        $sessionKey = 'export_mastery_data_' . md5(url()->full());
+                        $data['sessionKey'] =  $sessionKey;
+                        session([
+                            $sessionKey => $exportData,
+                            $sessionKey . '_headers'  => ['Unit', 'Lesson', 'Game', 'Engagement Percentage']
+                        ]);
                         $data['chartLabels'] = $chartLabels;
                         $data['chartValues'] = $chartValues;
                         $data['chartNames'] = $chartNames;
@@ -5195,6 +5649,7 @@ class ReportController extends Controller
             $chartLabels = [];
             $chartValues = [];
             $chartNames = [];
+            $exportData = [];
             if ($request->has('filter')) {
                 switch ($request->filter) {
                     case 'Skill':
@@ -5208,11 +5663,27 @@ class ReportController extends Controller
                                         $chartLabels[] = $skill['name'];
                                         $chartValues[] = $skill['engagement_percentage'];
                                         $chartNames[] = $unitName . ' - ' . $lesson['name'] . ' - ' . $game['name'] . ' - ' . $skill['name'];
+                                        $exportData[] = [
+                                            'Unit' => $unit['name'],
+                                            'Lesson' => $lesson['name'],
+                                            'Game' => $game['name'],
+                                            'Skill' => $skill['name'],
+                                            'Engagement Percentage' => $skill['engagement_percentage'] . '%',
+                                        ];
                                     }
                                 }
                             }
                         }
-
+                        $sessionKey = 'export_mastery_data_' . md5(url()->full());
+                        $data['sessionKey'] =  $sessionKey;
+                        session([
+                            $sessionKey => $exportData,
+                            $sessionKey . '_headers'  => ['Unit', 'Lesson', 'Game', 'Skill', 'Engagement Percentage']
+                        ]);
+                        if (empty($chartNames)) {
+                            $data['error'] = 'No Skills Found';
+                            return view('dashboard.reports.student.student_content_engagement_report', $data);
+                        }
                         $data['chartLabels'] = $chartLabels;
                         $data['chartValues'] = $chartValues;
                         $data['chartNames'] = $chartNames;
@@ -5235,7 +5706,17 @@ class ReportController extends Controller
                                 $chartValues[] = $unit['engagement_percentage'];
                                 $index += 1;
                             }
+                            $exportData[] = [
+                                'Unit' => $unit['name'],
+                                'Engagement Percentage' => $unit['engagement_percentage'] . '%',
+                            ];
                         }
+                        $sessionKey = 'export_mastery_data_' . md5(url()->full());
+                        $data['sessionKey'] =  $sessionKey;
+                        session([
+                            $sessionKey => $exportData,
+                            $sessionKey . '_headers'  => ['Unit', 'Engagement Percentage']
+                        ]);
 
                         $data['chartLabels'] = $chartLabels;
                         $data['chartValues'] = $chartValues;
@@ -5252,9 +5733,19 @@ class ReportController extends Controller
                                 $chartLabels[] = $lesson['name'];
                                 $chartValues[] = $lesson['engagement_percentage'];
                                 $chartNames[] = $unitName . ' - ' . $lesson['name'];
+                                $exportData[] = [
+                                    'Unit' => $unitName,
+                                    'Lesson' => $lesson['name'],
+                                    'Engagement Percentage' => $lesson['engagement_percentage'] . '%',
+                                ];
                             }
                         }
-
+                        $sessionKey = 'export_mastery_data_' . md5(url()->full());
+                        $data['sessionKey'] =  $sessionKey;
+                        session([
+                            $sessionKey => $exportData,
+                            $sessionKey . '_headers'  => ['Unit', 'Lesson', 'Engagement Percentage']
+                        ]);
                         $data['chartLabels'] = $chartLabels;
                         $data['chartValues'] = $chartValues;
                         $data['chartNames'] = $chartNames;
@@ -5270,10 +5761,21 @@ class ReportController extends Controller
                                     $chartLabels[] = $game['name'];
                                     $chartValues[] = $game['engagement_percentage'];
                                     $chartNames[] = $unitName . ' - ' . $lesson['name'] . ' - ' . $game['name'];
+                                    $exportData[] = [
+                                        'Unit' => $unitName,
+                                        'Lesson' => $lesson['name'],
+                                        'Game' => $game['name'],
+                                        'Engagement Percentage' => $game['engagement_percentage'] . '%',
+                                    ];
                                 }
                             }
                         }
-
+                        $sessionKey = 'export_mastery_data_' . md5(url()->full());
+                        $data['sessionKey'] =  $sessionKey;
+                        session([
+                            $sessionKey => $exportData,
+                            $sessionKey . '_headers'  => ['Unit', 'Lesson', 'Game', 'Engagement Percentage']
+                        ]);
                         $data['chartLabels'] = $chartLabels;
                         $data['chartValues'] = $chartValues;
                         $data['chartNames'] = $chartNames;
@@ -5289,8 +5791,8 @@ class ReportController extends Controller
 
     public function classContentUsageReport(Request $request)
     {
-        if (Auth::user()->hasRole('school')) {
-            $groups = Group::when(Auth::user()->hasRole('school'), function ($query) {
+        if (Auth::user()->hasRole('school') || Auth::user()->hasRole('Cordinator')) {
+            $groups = Group::when(Auth::user()->hasAnyRole(['school', 'Cordinator']), function ($query) {
                 return $query->where('school_id', Auth::user()->school_id);
             })->get();
         } else {
@@ -5531,6 +6033,7 @@ class ReportController extends Controller
 
             $chartLabels = [];
             $chartValues = [];
+            $exportData = [];
             if ($request->filled('filter') && $request->filled('program_id')) {
                 switch ($request->filter) {
                     case 'Unit':
@@ -5538,8 +6041,18 @@ class ReportController extends Controller
                             foreach ($program['units'] as $unit) {
                                 $chartLabels[] = $unit['name'];
                                 $chartValues[] = $unit['usage_percentage'];
+                                $exportData[] = [
+                                    'Unit' => $unit['name'],
+                                    'Usage Percentage' => $unit['usage_percentage'] . '%',
+                                ];
                             }
                         }
+                        $sessionKey = 'export_mastery_data_' . md5(url()->full());
+                        $data['sessionKey'] =  $sessionKey;
+                        session([
+                            $sessionKey => $exportData,
+                            $sessionKey . '_headers' => ['Unit', 'Usage Percentage(%)']
+                        ]);
                         $data['unitsUsage'] =  $programsUsage[$request->program_id]['units'];
                         $data['chartLabels'] =  $chartLabels;
                         $data['chartValues'] =  $chartValues;
@@ -5556,10 +6069,20 @@ class ReportController extends Controller
                                     if ($lesson['assigned'] == 1) {
                                         $assignedCount++;
                                     }
+                                    $exportData[] = [
+                                        'Unit' => $unit['name'],
+                                        'Lesson' => $lesson['name'],
+                                        'Usage Percentage' => $lesson['usage_percentage'] . '%',
+                                    ];
                                 }
                             }
                         }
-
+                        $sessionKey = 'export_mastery_data_' . md5(url()->full());
+                        $data['sessionKey'] =  $sessionKey;
+                        session([
+                            $sessionKey => $exportData,
+                            $sessionKey . '_headers' => ['Unit', 'Lesson', 'Usage Percentage(%)']
+                        ]);
                         $data['lessonsUsage'] =  $programsUsage[$request->program_id]['units'];
                         $data['chartLabels'] =  $chartLabels;
                         $data['chartValues'] =  $chartValues;
@@ -5575,10 +6098,22 @@ class ReportController extends Controller
                                         $gameData[] = $game;
                                         $chartLabels[] = $game['name'];
                                         $chartValues[] = $game['assigned'];
+                                        $exportData[] = [
+                                            'Unit' => $unit['name'],
+                                            'Lesson' => $lesson['name'],
+                                            'Game' => $game['name'],
+                                            'Status' => $game['assigned'] == 1 ? 'Assigned' : 'Unassigned'
+                                        ];
                                     }
                                 }
                             }
                         }
+                        $sessionKey = 'export_mastery_data_' . md5(url()->full());
+                        $data['sessionKey'] =  $sessionKey;
+                        session([
+                            $sessionKey => $exportData,
+                            $sessionKey . '_headers' => ['Unit', 'Lesson', 'Game', 'Status']
+                        ]);
                         $data['gamesUsage'] =  $programsUsage[$request->program_id]['units'];
                         $data['gamesLabels'] =  $chartLabels;
                         $data['gamesValues'] =  $chartValues;
@@ -5594,7 +6129,17 @@ class ReportController extends Controller
                 foreach ($programsUsage as $program) {
                     $chartLabels[] = $program['name'];
                     $chartValues[] = $program['usage_percentage'];
+                    $exportData[] = [
+                        'Program' => $program['name'],
+                        'Usage Percentage' => $program['usage_percentage'] . '%',
+                    ];
                 }
+                $sessionKey = 'export_mastery_data_' . md5(url()->full());
+                $data['sessionKey'] =  $sessionKey;
+                session([
+                    $sessionKey => $exportData,
+                    $sessionKey . '_headers' => ['Program', 'Usage Percentage(%)']
+                ]);
                 $data['programsUsage'] =  $programsUsage;
                 $data['chartLabels'] =  $chartLabels;
                 $data['chartValues'] =  $chartValues;
@@ -5720,6 +6265,7 @@ class ReportController extends Controller
                 }
             }
             // dd($unitsCoverage);
+            $exportData = [];
             if ($request->filled('filter') && $request->filled('program_id')) {
                 switch ($request->filter) {
                     case 'Unit':
@@ -5741,7 +6287,17 @@ class ReportController extends Controller
                                 $total_percentage += $unit['coverage_percentage'];
                                 $index += 1;
                             }
+                            $exportData[] = [
+                                'Unit' => $unit['name'],
+                                'Coverage Percentage' => $unit['coverage_percentage'] . '%',
+                            ];
                         }
+                        $sessionKey = 'export_mastery_data_' . md5(url()->full());
+                        $data['sessionKey'] =  $sessionKey;
+                        session([
+                            $sessionKey => $exportData,
+                            $sessionKey . '_headers' => ['Unit', 'Coverage Percentage(%)']
+                        ]);
                         $data['UnitFlag'] = 1;
                         $data['unitsCoverage'] = $unitsCoverage;
                         $data['chartLabels'] = $chartLabels;
@@ -5766,9 +6322,20 @@ class ReportController extends Controller
                                 } else {
                                     $unassignedCount++;
                                 }
+                                $exportData[] = [
+                                    'Unit' => $unit['name'],
+                                    'Lesson' => $lesson['name'],
+                                    'Coverage Percentage' => $lesson['coverage_percentage'] . '%',
+                                ];
                             }
                             $total_percentage += $unit['coverage_percentage'];
                         }
+                        $sessionKey = 'export_mastery_data_' . md5(url()->full());
+                        $data['sessionKey'] =  $sessionKey;
+                        session([
+                            $sessionKey => $exportData,
+                            $sessionKey . '_headers' => ['Unit', 'Lesson', 'Coverage Percentage(%)']
+                        ]);
                         $data['LessonFlag'] = 1;
                         $data['lessonsCoverage'] = $unitsCoverage;
                         $data['chartLabels'] = $chartLabels;
@@ -5787,8 +6354,8 @@ class ReportController extends Controller
 
     public function classContentGapReport(Request $request)
     {
-        if (Auth::user()->hasRole('school')) {
-            $groups = Group::when(Auth::user()->hasRole('school'), function ($query) {
+        if (Auth::user()->hasRole('school') || Auth::user()->hasRole('Cordinator')) {
+            $groups = Group::when(Auth::user()->hasAnyRole(['school', 'Cordinator']), function ($query) {
                 return $query->where('school_id', Auth::user()->school_id);
             })->get();
         } else {
@@ -6013,9 +6580,28 @@ class ReportController extends Controller
                             foreach ($program['units'] as $unit) {
                                 $chartLabels[] = $unit['name'];
                                 $chartValues[] = $unit['gap_percentage'];
+                                if ($unit['gap_percentage'] == 0) {
+                                    $status = 'Zero Gap';
+                                } elseif ($unit['gap_percentage'] >= 70) {
+                                    $status = 'Clear Gap';
+                                } elseif ($unit['gap_percentage'] <= 30) {
+                                    $status = 'Potential Gap';
+                                } else {
+                                    $status = 'High Gap';
+                                }
+                                $exportData[] = [
+                                    'Unit' => $unit['name'],
+                                    'Gap Percentage(%)' => $unit['gap_percentage'] . '%',
+                                    'Status' => $status
+                                ];
                             }
                         }
-
+                        $sessionKey = 'export_mastery_data_' . md5(url()->full());
+                        $data['sessionKey'] =  $sessionKey;
+                        session([
+                            $sessionKey => $exportData,
+                            $sessionKey . '_headers' => ['Unit', 'Gap Percentage(%)', 'Status']
+                        ]);
                         $data['unitsUsage'] =  $programsUsage[$request->program_id]['units'];
                         $data['chartLabels'] =  $chartLabels;
                         $data['chartValues'] =  $chartValues;
@@ -6033,10 +6619,30 @@ class ReportController extends Controller
                                     if ($lesson['assigned'] == 1) {
                                         $assignedCount++;
                                     }
+                                    if ($lesson['gap_percentage'] == 0) {
+                                        $status = 'Zero Gap';
+                                    } elseif ($lesson['gap_percentage'] >= 70) {
+                                        $status = 'Clear Gap';
+                                    } elseif ($lesson['gap_percentage'] <= 30) {
+                                        $status = 'Potential Gap';
+                                    } else {
+                                        $status = 'High Gap';
+                                    }
+                                    $exportData[] = [
+                                        'Unit' => $unit['name'],
+                                        'Lesson' => $lesson['name'],
+                                        'Gap Percentage(%)' => $lesson['gap_percentage'] . '%',
+                                        'Status' => $status
+                                    ];
                                 }
                             }
                         }
-
+                        $sessionKey = 'export_mastery_data_' . md5(url()->full());
+                        $data['sessionKey'] =  $sessionKey;
+                        session([
+                            $sessionKey => $exportData,
+                            $sessionKey . '_headers' => ['Unit', 'Lesson', 'Gap Percentage(%)', 'Status']
+                        ]);
                         $data['lessonsUsage'] =  $programsUsage[$request->program_id]['units'];
                         $data['chartLabels'] =  $chartLabels;
                         $data['chartValues'] =  $chartValues;
@@ -6052,10 +6658,22 @@ class ReportController extends Controller
                                         $gameData[] = $game;
                                         $chartLabels[] = $game['name'];
                                         $chartValues[] = $game['assigned'];
+                                        $exportData[] = [
+                                            'Unit' => $unit['name'],
+                                            'Lesson' => $lesson['name'],
+                                            'Game' => $game['name'],
+                                            'Status' => $game['assigned'] == 1 ? 'Assigned' : 'Unassigned'
+                                        ];
                                     }
                                 }
                             }
                         }
+                        $sessionKey = 'export_mastery_data_' . md5(url()->full());
+                        $data['sessionKey'] =  $sessionKey;
+                        session([
+                            $sessionKey => $exportData,
+                            $sessionKey . '_headers' => ['Unit', 'Lesson', 'Game', 'Status']
+                        ]);
                         $data['gamesUsage'] =  $programsUsage[$request->program_id]['units'];
                         $data['gamesLabels'] =  $chartLabels;
                         $data['gamesValues'] =  $chartValues;
@@ -6068,10 +6686,31 @@ class ReportController extends Controller
                 $data['error'] = 'Please Select a Program to Use filters';
                 return view('dashboard.reports.class.class_content_gap_report', $data);
             } elseif (!$request->filled('program_id')) {
+                $exportData = [];
                 foreach ($programsUsage as $program) {
                     $chartLabels[] = $program['name'];
                     $chartValues[] = $program['gap_percentage'];
+                    if ($program['gap_percentage'] == 0) {
+                        $status = 'Zero Gap';
+                    } elseif ($program['gap_percentage'] >= 70) {
+                        $status = 'Clear Gap';
+                    } elseif ($program['gap_percentage'] <= 30) {
+                        $status = 'Potential Gap';
+                    } else {
+                        $status = 'High Gap';
+                    }
+                    $exportData[] = [
+                        'Program' => $program['name'],
+                        'Gap Percentage(%)' => $program['gap_percentage'] . '%',
+                        'Status' => $status
+                    ];
                 }
+                $sessionKey = 'export_mastery_data_' . md5(url()->full());
+                $data['sessionKey'] =  $sessionKey;
+                session([
+                    $sessionKey => $exportData,
+                    $sessionKey . '_headers' => ['Program', 'Gap Percentage(%)', 'Status']
+                ]);
                 $data['programsUsage'] =  $programsUsage;
                 $data['chartLabels'] =  $chartLabels;
                 $data['chartValues'] =  $chartValues;
@@ -6084,15 +6723,27 @@ class ReportController extends Controller
     }
     public function schoolContentGapReport(Request $request)
     {
-        if (Auth::user()->hasRole('school')) {
-            $schoolId = Auth::user()->school_id;
-            $programs = Program::with(['course', 'stage'])
-                ->whereHas('schoolProgram', function ($query) use ($schoolId) {
-                    $query->where('school_id', $schoolId);
-                })->get();
+        $roleCourseMapping = [
+            'PracticalLife-Cordinator' => 4,
+            'Math-Cordinator' => 3,
+            'Culture-Cordinator' => 2,
+            'Arabic-Cordinator' => 5,
+            'Phonics-Cordinator' => 1,
+        ];
+        $user = auth()->user();
+        if ($user->hasRole('school') || $user->hasRole('Admin')) {
+            $courseIds = [1, 2, 3, 4, 5];
         } else {
-            $programs = Program::all();
+            $userRoles = $user->getRoleNames();
+            $assignedCourses = collect($roleCourseMapping)->only($userRoles->toArray());
+            $courseIds = $assignedCourses->values();
         }
+        $schoolId = auth()->user()->school_id;
+        $programs = Program::with(['course', 'stage'])
+            ->whereHas('schoolProgram', function ($query) use ($schoolId) {
+                $query->where('school_id', $schoolId);
+            })->whereIn('course_id', $courseIds)
+            ->get();
         $schools = School::all();
         $data = [
             'schools' => $schools,
@@ -6303,6 +6954,7 @@ class ReportController extends Controller
 
             $chartLabels = [];
             $chartValues = [];
+            $exportData = [];
             if ($request->filled('filter') && $request->filled('program_id')) {
                 switch ($request->filter) {
                     case 'Unit':
@@ -6310,9 +6962,28 @@ class ReportController extends Controller
                             foreach ($program['units'] as $unit) {
                                 $chartLabels[] = $unit['name'];
                                 $chartValues[] = $unit['gap_percentage'];
+                                if ($unit['gap_percentage'] == 0) {
+                                    $status = 'Zero Gap';
+                                } elseif ($unit['gap_percentage'] >= 70) {
+                                    $status = 'Clear Gap';
+                                } elseif ($unit['gap_percentage'] <= 30) {
+                                    $status = 'Potential Gap';
+                                } else {
+                                    $status = 'High Gap';
+                                }
+                                $exportData[] = [
+                                    'Unit' => $unit['name'],
+                                    'Gap Percentage(%)' => $unit['gap_percentage'] . '%',
+                                    'Status' => $status
+                                ];
                             }
                         }
-
+                        $sessionKey = 'export_mastery_data_' . md5(url()->full());
+                        $data['sessionKey'] =  $sessionKey;
+                        session([
+                            $sessionKey => $exportData,
+                            $sessionKey . '_headers' => ['Unit', 'Gap Percentage(%)', 'Status']
+                        ]);
                         $data['unitsUsage'] =  $programsUsage[$request->program_id]['units'];
                         $data['chartLabels'] =  $chartLabels;
                         $data['chartValues'] =  $chartValues;
@@ -6330,10 +7001,30 @@ class ReportController extends Controller
                                     if ($lesson['assigned'] == 1) {
                                         $assignedCount++;
                                     }
+                                    if ($lesson['gap_percentage'] == 0) {
+                                        $status = 'Zero Gap';
+                                    } elseif ($lesson['gap_percentage'] >= 70) {
+                                        $status = 'Clear Gap';
+                                    } elseif ($lesson['gap_percentage'] <= 30) {
+                                        $status = 'Potential Gap';
+                                    } else {
+                                        $status = 'High Gap';
+                                    }
+                                    $exportData[] = [
+                                        'Unit' => $unit['name'],
+                                        'Lesson' => $lesson['name'],
+                                        'Gap Percentage(%)' => $lesson['gap_percentage'] . '%',
+                                        'Status' => $status
+                                    ];
                                 }
                             }
                         }
-
+                        $sessionKey = 'export_mastery_data_' . md5(url()->full());
+                        $data['sessionKey'] =  $sessionKey;
+                        session([
+                            $sessionKey => $exportData,
+                            $sessionKey . '_headers' => ['Unit', 'Lesson', 'Gap Percentage(%)', 'Status']
+                        ]);
                         $data['lessonsUsage'] =  $programsUsage[$request->program_id]['units'];
                         $data['chartLabels'] =  $chartLabels;
                         $data['chartValues'] =  $chartValues;
@@ -6349,10 +7040,22 @@ class ReportController extends Controller
                                         $gameData[] = $game;
                                         $chartLabels[] = $game['name'];
                                         $chartValues[] = $game['assigned'];
+                                        $exportData[] = [
+                                            'Unit' => $unit['name'],
+                                            'Lesson' => $lesson['name'],
+                                            'Game' => $game['name'],
+                                            'Status' => $game['assigned'] == 1 ? 'Assigned' : 'Unassigned'
+                                        ];
                                     }
                                 }
                             }
                         }
+                        $sessionKey = 'export_mastery_data_' . md5(url()->full());
+                        $data['sessionKey'] =  $sessionKey;
+                        session([
+                            $sessionKey => $exportData,
+                            $sessionKey . '_headers' => ['Unit', 'Lesson', 'Game', 'Status']
+                        ]);
                         $data['gamesUsage'] =  $programsUsage[$request->program_id]['units'];
                         $data['gamesLabels'] =  $chartLabels;
                         $data['gamesValues'] =  $chartValues;
@@ -6365,10 +7068,31 @@ class ReportController extends Controller
                 $data['error'] = 'Please Select a Program to Use filters';
                 return view('dashboard.reports.school.school_content_gap_report', $data);
             } elseif (!$request->filled('program_id')) {
+                $exportData = [];
                 foreach ($programsUsage as $program) {
                     $chartLabels[] = $program['name'];
                     $chartValues[] = $program['gap_percentage'];
+                    if ($program['gap_percentage'] == 0) {
+                        $status = 'Zero Gap';
+                    } elseif ($program['gap_percentage'] >= 70) {
+                        $status = 'Clear Gap';
+                    } elseif ($program['gap_percentage'] <= 30) {
+                        $status = 'Potential Gap';
+                    } else {
+                        $status = 'High Gap';
+                    }
+                    $exportData[] = [
+                        'Program' => $program['name'],
+                        'Gap Percentage(%)' => $program['gap_percentage'] . '%',
+                        'Status' => $status
+                    ];
                 }
+                $sessionKey = 'export_mastery_data_' . md5(url()->full());
+                $data['sessionKey'] =  $sessionKey;
+                session([
+                    $sessionKey => $exportData,
+                    $sessionKey . '_headers' => ['Program', 'Gap Percentage(%)', 'Status']
+                ]);
                 $data['programsUsage'] =  $programsUsage;
                 $data['chartLabels'] =  $chartLabels;
                 $data['chartValues'] =  $chartValues;
@@ -6384,10 +7108,13 @@ class ReportController extends Controller
 
     public function classHeatmapReport(Request $request)
     {
-        if (Auth::user()->hasRole('school')) {
-            $groups = Group::when(Auth::user()->hasRole('school'), function ($query) {
-                return $query->where('school_id', Auth::user()->school_id);
-            })->get();
+        if (Auth::user()->hasRole('school') || Auth::user()->hasRole('Cordinator')) {
+            $groups = Group::when(
+                Auth::user()->hasRole(['school', 'Cordinator']), // Checks if user has either role
+                function ($query) {
+                    return $query->where('school_id', Auth::user()->school_id);
+                }
+            )->get();
         } else {
             $groups = Group::all();
         }
@@ -6398,10 +7125,26 @@ class ReportController extends Controller
             'request' => $request->all(),
         ];
 
+        $roleCourseMapping = [
+            'PracticalLife-Cordinator' => 4,
+            'Math-Cordinator' => 3,
+            'Culture-Cordinator' => 2,
+            'Arabic-Cordinator' => 5,
+            'Phonics-Cordinator' => 1,
+        ];
+        $user = auth()->user();
+        if ($user->hasRole('school') || $user->hasRole('Admin')) {
+            $courseIds = [1, 2, 3, 4, 5];
+        } else {
+            $userRoles = $user->getRoleNames();
+            $assignedCourses = collect($roleCourseMapping)->only($userRoles->toArray());
+            $courseIds = $assignedCourses->values();
+        }
+
         if ($request->has('group_id')) {
             $groupIds = $request->group_id;
             if ($request->filled('program_id')) {
-                $selectedPrograms = Program::where('id', $request->program_id)->get();
+                $selectedPrograms = Program::where('id', $request->program_id)->whereIn('course_id', $courseIds)->get();
             } else {
                 $commonProgramIds = null;
 
@@ -6428,7 +7171,7 @@ class ReportController extends Controller
                 }
 
                 // Fetch the common programs from the database
-                $selectedPrograms = Program::whereIn('id', $commonProgramIds)->get();
+                $selectedPrograms = Program::whereIn('id', $commonProgramIds)->whereIn('course_id', $courseIds)->get();
             }
 
             $studentsByGroup = [];
@@ -6678,6 +7421,7 @@ class ReportController extends Controller
             $chartLabels = [];
             $chartValues = [];
             $classNames = [];
+            $exportData = [];
             $classIds = array_keys($programUsages);
             foreach ($classIds as $classId) {
                 $classNames[] = Group::find($classId)->name;
@@ -6696,6 +7440,41 @@ class ReportController extends Controller
                             }
                         }
 
+                        $exportHeaders = ['Unit'];
+
+                        foreach ($classNames as $Name) {
+                            $exportHeaders[] = $Name . " Usage(%)";
+                        }
+
+                        $unitData = [];
+                        $index = 0;
+                        foreach ($programUsages as $classIndex => $programsUsage) {
+                            foreach ($programsUsage as $program) {
+                                foreach ($program['units'] as $unit) {
+                                    $unitName = $unit['name'];
+
+                                    if (!isset($unitData[$unitName])) {
+                                        $unitData[$unitName] = ['Unit' => $unitName];
+                                    }
+
+                                    $unitData[$unitName][$classNames[$index] . " Usage(%)"] = $unit['usage_percentage'] . '%';
+                                }
+                            }
+                            $index++;
+                        }
+
+                        // Convert unit data into exportData format
+                        $exportData = array_values($unitData);
+
+                        // Store data in session
+                        if (!empty($exportData)) {
+                            $sessionKey = 'export_mastery_data_' . md5(url()->full());
+                            $data['sessionKey'] =  $sessionKey;
+                            session([
+                                $sessionKey => $exportData,
+                                $sessionKey . '_headers' => $exportHeaders
+                            ]);
+                        }
 
                         $data['unitsUsage'] =  $programsUsage[$request->program_id]['units'];
                         $data['programUsages'] =  $programUsages;
@@ -6724,6 +7503,49 @@ class ReportController extends Controller
                                 }
                             }
                         }
+                        $exportHeaders = ['Unit', 'Lesson'];
+
+                        foreach ($classNames as $Name) {
+                            $exportHeaders[] = $Name . " Usage(%)";
+                        }
+
+
+                        $unitData = [];
+                        $index = 0;
+                        foreach ($programUsages as $classIndex => $programsUsage) {
+                            foreach ($programsUsage as $program) {
+                                foreach ($program['units'] as $unit) {
+                                    foreach ($unit['lessons'] as $lesson) {
+                                        $unitName = $unit['name'];
+                                        $lessonName = $lesson['name'];
+                                        $key = $unitName . ' - ' . $lessonName;
+
+                                        if (!isset($unitData[$key])) {
+                                            $unitData[$key] = [
+                                                'Unit' => $unitName,
+                                                'Lesson' => $lessonName,
+                                            ];
+                                        }
+
+                                        $unitData[$key][$classNames[$index] . " Usage(%)"] = $lesson['usage_percentage'] . '%';
+                                    }
+                                }
+                            }
+                            $index++;
+                        }
+
+                        // Convert unit data into exportData format
+                        $exportData = array_values($unitData);
+                        // dd($exportData, $exportHeaders);
+                        // Store data in session
+                        if (!empty($exportData)) {
+                            $sessionKey = 'export_mastery_data_' . md5(url()->full());
+                            $data['sessionKey'] =  $sessionKey;
+                            session([
+                                $sessionKey => $exportData,
+                                $sessionKey . '_headers' => $exportHeaders
+                            ]);
+                        }
 
                         $data['lessonsUsage'] =  $programsUsage[$request->program_id]['units'];
                         $data['programUsages'] =  $programUsages;
@@ -6751,6 +7573,57 @@ class ReportController extends Controller
                                 }
                             }
                         }
+                        $exportHeaders = ['Unit', 'Lesson', 'Game'];
+
+                        foreach ($classNames as $Name) {
+                            $exportHeaders[] = $Name . " Usage(%)";
+                        }
+
+
+                        $unitData = [];
+                        $index = 0;
+                        foreach ($programUsages as $classIndex => $programsUsage) {
+                            foreach ($programsUsage as $program) {
+                                foreach ($program['units'] as $unit) {
+                                    foreach ($unit['lessons'] as $lesson) {
+                                        foreach ($lesson['games'] as $game) {
+                                            $unitName = $unit['name'];
+                                            $lessonName = $lesson['name'];
+                                            $gameName = $game['name'];
+                                            $key = $unitName . ' - ' . $lessonName . ' - ' . $gameName;
+
+                                            if (!isset($unitData[$key])) {
+                                                $unitData[$key] = [
+                                                    'Unit' => $unitName,
+                                                    'Lesson' => $lessonName,
+                                                    'Game' => $gameName,
+                                                ];
+                                            }
+                                            if ($game['assigned'] == 1) {
+                                                $status = 'Assigned';
+                                            } else {
+                                                $status = 'Unassigned';
+                                            }
+                                            $unitData[$key][$classNames[$index] . " Usage(%)"] = $status;
+                                        }
+                                    }
+                                }
+                            }
+                            $index++;
+                        }
+
+                        // Convert unit data into exportData format
+                        $exportData = array_values($unitData);
+                        // dd($exportData, $exportHeaders);
+                        // Store data in session
+                        if (!empty($exportData)) {
+                            $sessionKey = 'export_mastery_data_' . md5(url()->full());
+                            $data['sessionKey'] =  $sessionKey;
+                            session([
+                                $sessionKey => $exportData,
+                                $sessionKey . '_headers' => $exportHeaders
+                            ]);
+                        }
 
                         $data['gamesUsage'] =  $programsUsage[$request->program_id]['units'];
                         $data['programUsages'] =  $programUsages;
@@ -6773,6 +7646,38 @@ class ReportController extends Controller
                         $chartLabels[] = $program['name'];
                         $chartValues[] = $program['usage_percentage'];
                     }
+                }
+
+                $exportHeaders = ['Program'];
+
+                foreach ($classNames as $Name) {
+                    $exportHeaders[] = $Name . " Usage(%)";
+                }
+
+                $unitData = [];
+                $index = 0;
+                foreach ($programUsages as $classIndex => $programsUsage) {
+                    foreach ($programsUsage as $program) {
+                        $programName = $program['name'];
+                        if (!isset($unitData[$programName])) {
+                            $unitData[$programName] = ['Program' => $programName];
+                        }
+                        $unitData[$programName][$classNames[$index] . " Usage(%)"] = $program['usage_percentage'] . '%';
+                    }
+                    $index++;
+                }
+
+                // Convert unit data into exportData format
+                $exportData = array_values($unitData);
+
+                // Store data in session
+                if (!empty($exportData)) {
+                    $sessionKey = 'export_mastery_data_' . md5(url()->full());
+                    $data['sessionKey'] =  $sessionKey;
+                    session([
+                        $sessionKey => $exportData,
+                        $sessionKey . '_headers' => $exportHeaders
+                    ]);
                 }
 
                 $data['programUsages'] =  $programUsages;
@@ -6799,10 +7704,25 @@ class ReportController extends Controller
             'schools' => $schools,
             'request' => $request->all(),
         ];
+        $roleCourseMapping = [
+            'PracticalLife-Cordinator' => 4,
+            'Math-Cordinator' => 3,
+            'Culture-Cordinator' => 2,
+            'Arabic-Cordinator' => 5,
+            'Phonics-Cordinator' => 1,
+        ];
+        $user = auth()->user();
+        if ($user->hasRole('school') || $user->hasRole('Admin')) {
+            $courseIds = [1, 2, 3, 4, 5];
+        } else {
+            $userRoles = $user->getRoleNames();
+            $assignedCourses = collect($roleCourseMapping)->only($userRoles->toArray());
+            $courseIds = $assignedCourses->values();
+        }
         if ($request->has('teacher_id')) {
             $teacherIds = $request->teacher_id;
             if ($request->filled('program_id')) {
-                $selectedPrograms = Program::where('id', $request->program_id)->get();
+                $selectedPrograms = Program::where('id', $request->program_id)->whereIn('course_id', $courseIds)->get();
             } else {
                 $commonProgramIds = null;
                 foreach ($teacherIds as $teacherId) {
@@ -6820,7 +7740,7 @@ class ReportController extends Controller
                         break;
                     }
                 }
-                $selectedPrograms = Program::whereIn('id', $commonProgramIds)->get();
+                $selectedPrograms = Program::whereIn('id', $commonProgramIds)->whereIn('course_id', $courseIds)->get();
             }
             if ($selectedPrograms->isEmpty()) {
                 $data['error'] = "No Common Programs Found for Teachers ";
@@ -7022,6 +7942,7 @@ class ReportController extends Controller
             $chartLabels = [];
             $chartValues = [];
             $teacherNames = [];
+            $exportData = [];
             $teacherIds = array_keys($programUsages);
             foreach ($teacherIds as $teacherId) {
                 $teacherNames[] = User::find($teacherId)->name;
@@ -7040,6 +7961,41 @@ class ReportController extends Controller
                             }
                         }
 
+                        $exportHeaders = ['Unit'];
+
+                        foreach ($teacherNames as $Name) {
+                            $exportHeaders[] = $Name . " Usage(%)";
+                        }
+
+                        $unitData = [];
+                        $index = 0;
+                        foreach ($programUsages as $classIndex => $programsUsage) {
+                            foreach ($programsUsage as $program) {
+                                foreach ($program['units'] as $unit) {
+                                    $unitName = $unit['name'];
+
+                                    if (!isset($unitData[$unitName])) {
+                                        $unitData[$unitName] = ['Unit' => $unitName];
+                                    }
+
+                                    $unitData[$unitName][$teacherNames[$index] . " Usage(%)"] = $unit['usage_percentage'] . '%';
+                                }
+                            }
+                            $index++;
+                        }
+
+                        // Convert unit data into exportData format
+                        $exportData = array_values($unitData);
+
+                        // Store data in session
+                        if (!empty($exportData)) {
+                            $sessionKey = 'export_mastery_data_' . md5(url()->full());
+                            $data['sessionKey'] =  $sessionKey;
+                            session([
+                                $sessionKey => $exportData,
+                                $sessionKey . '_headers' => $exportHeaders
+                            ]);
+                        }
 
                         $data['unitsUsage'] =  $programsUsage[$request->program_id]['units'];
                         $data['programUsages'] =  $programUsages;
@@ -7068,6 +8024,49 @@ class ReportController extends Controller
                                 }
                             }
                         }
+                        $exportHeaders = ['Unit', 'Lesson'];
+
+                        foreach ($teacherNames as $Name) {
+                            $exportHeaders[] = $Name . " Usage(%)";
+                        }
+
+
+                        $unitData = [];
+                        $index = 0;
+                        foreach ($programUsages as $classIndex => $programsUsage) {
+                            foreach ($programsUsage as $program) {
+                                foreach ($program['units'] as $unit) {
+                                    foreach ($unit['lessons'] as $lesson) {
+                                        $unitName = $unit['name'];
+                                        $lessonName = $lesson['name'];
+                                        $key = $unitName . ' - ' . $lessonName;
+
+                                        if (!isset($unitData[$key])) {
+                                            $unitData[$key] = [
+                                                'Unit' => $unitName,
+                                                'Lesson' => $lessonName,
+                                            ];
+                                        }
+
+                                        $unitData[$key][$teacherNames[$index] . " Usage(%)"] = $lesson['usage_percentage'] . '%';
+                                    }
+                                }
+                            }
+                            $index++;
+                        }
+
+                        // Convert unit data into exportData format
+                        $exportData = array_values($unitData);
+                        // dd($exportData, $exportHeaders);
+                        // Store data in session
+                        if (!empty($exportData)) {
+                            $sessionKey = 'export_mastery_data_' . md5(url()->full());
+                            $data['sessionKey'] =  $sessionKey;
+                            session([
+                                $sessionKey => $exportData,
+                                $sessionKey . '_headers' => $exportHeaders
+                            ]);
+                        }
 
                         $data['lessonsUsage'] =  $programsUsage[$request->program_id]['units'];
                         $data['programUsages'] =  $programUsages;
@@ -7095,6 +8094,57 @@ class ReportController extends Controller
                                 }
                             }
                         }
+                        $exportHeaders = ['Unit', 'Lesson', 'Game'];
+
+                        foreach ($teacherNames as $Name) {
+                            $exportHeaders[] = $Name . " Usage(%)";
+                        }
+
+
+                        $unitData = [];
+                        $index = 0;
+                        foreach ($programUsages as $classIndex => $programsUsage) {
+                            foreach ($programsUsage as $program) {
+                                foreach ($program['units'] as $unit) {
+                                    foreach ($unit['lessons'] as $lesson) {
+                                        foreach ($lesson['games'] as $game) {
+                                            $unitName = $unit['name'];
+                                            $lessonName = $lesson['name'];
+                                            $gameName = $game['name'];
+                                            $key = $unitName . ' - ' . $lessonName . ' - ' . $gameName;
+
+                                            if (!isset($unitData[$key])) {
+                                                $unitData[$key] = [
+                                                    'Unit' => $unitName,
+                                                    'Lesson' => $lessonName,
+                                                    'Game' => $gameName,
+                                                ];
+                                            }
+                                            if ($game['assigned'] == 1) {
+                                                $status = 'Assigned';
+                                            } else {
+                                                $status = 'Unassigned';
+                                            }
+                                            $unitData[$key][$teacherNames[$index] . " Usage(%)"] = $status;
+                                        }
+                                    }
+                                }
+                            }
+                            $index++;
+                        }
+
+                        // Convert unit data into exportData format
+                        $exportData = array_values($unitData);
+                        // dd($exportData, $exportHeaders);
+                        // Store data in session
+                        if (!empty($exportData)) {
+                            $sessionKey = 'export_mastery_data_' . md5(url()->full());
+                            $data['sessionKey'] =  $sessionKey;
+                            session([
+                                $sessionKey => $exportData,
+                                $sessionKey . '_headers' => $exportHeaders
+                            ]);
+                        }
 
                         $data['gamesUsage'] =  $programsUsage[$request->program_id]['units'];
                         $data['programUsages'] =  $programUsages;
@@ -7119,6 +8169,39 @@ class ReportController extends Controller
                     }
                 }
 
+                $exportHeaders = ['Program'];
+
+                foreach ($teacherNames as $Name) {
+                    $exportHeaders[] = $Name . " Usage(%)";
+                }
+
+                $unitData = [];
+                $index = 0;
+                foreach ($programUsages as $classIndex => $programsUsage) {
+                    foreach ($programsUsage as $program) {
+                        $programName = $program['name'];
+                        if (!isset($unitData[$programName])) {
+                            $unitData[$programName] = ['Program' => $programName];
+                        }
+                        $unitData[$programName][$teacherNames[$index] . " Usage(%)"] = $program['usage_percentage'] . '%';
+                    }
+                    $index++;
+                }
+
+                // Convert unit data into exportData format
+                $exportData = array_values($unitData);
+
+                // Store data in session
+                if (!empty($exportData)) {
+                    $sessionKey = 'export_mastery_data_' . md5(url()->full());
+                    $data['sessionKey'] =  $sessionKey;
+                    session([
+                        $sessionKey => $exportData,
+                        $sessionKey . '_headers' => $exportHeaders
+                    ]);
+                }
+
+
                 $data['programUsages'] =  $programUsages;
                 $data['chartLabels'] =  $chartLabels;
                 $data['chartValues'] =  $chartValues;
@@ -7140,10 +8223,26 @@ class ReportController extends Controller
             'schools' => $schools,
             'request' => $request->all(),
         ];
+
+        $roleCourseMapping = [
+            'PracticalLife-Cordinator' => 4,
+            'Math-Cordinator' => 3,
+            'Culture-Cordinator' => 2,
+            'Arabic-Cordinator' => 5,
+            'Phonics-Cordinator' => 1,
+        ];
+        $user = auth()->user();
+        if ($user->hasRole('school') || $user->hasRole('Admin')) {
+            $courseIds = [1, 2, 3, 4, 5];
+        } else {
+            $userRoles = $user->getRoleNames();
+            $assignedCourses = collect($roleCourseMapping)->only($userRoles->toArray());
+            $courseIds = $assignedCourses->values();
+        }
         if ($request->has('student_id')) {
             $studentIds = $request->student_id;
             if ($request->filled('program_id')) {
-                $selectedPrograms = Program::where('id', $request->program_id)->get();
+                $selectedPrograms = Program::where('id', $request->program_id)->whereIn('course_id', $courseIds)->get();
             } else {
                 $commonProgramIds = null;
                 foreach ($studentIds as $studentId) {
@@ -7161,7 +8260,7 @@ class ReportController extends Controller
                         break;
                     }
                 }
-                $selectedPrograms = Program::whereIn('id', $commonProgramIds)->get();
+                $selectedPrograms = Program::whereIn('id', $commonProgramIds)->whereIn('course_id', $courseIds)->get();
             }
             if ($selectedPrograms->isEmpty()) {
                 $data['error'] = "No Common Programs Found for Students ";
@@ -7381,6 +8480,41 @@ class ReportController extends Controller
                                 }
                             }
                         }
+                        $exportHeaders = ['Unit'];
+
+                        foreach ($studentNames as $Name) {
+                            $exportHeaders[] = $Name . " Usage(%)";
+                        }
+
+                        $unitData = [];
+                        $index = 0;
+                        foreach ($programUsages as $classIndex => $programsUsage) {
+                            foreach ($programsUsage as $program) {
+                                foreach ($program['units'] as $unit) {
+                                    $unitName = $unit['name'];
+
+                                    if (!isset($unitData[$unitName])) {
+                                        $unitData[$unitName] = ['Unit' => $unitName];
+                                    }
+
+                                    $unitData[$unitName][$studentNames[$index] . " Usage(%)"] = $unit['usage_percentage'] . '%';
+                                }
+                            }
+                            $index++;
+                        }
+
+                        // Convert unit data into exportData format
+                        $exportData = array_values($unitData);
+
+                        // Store data in session
+                        if (!empty($exportData)) {
+                            $sessionKey = 'export_mastery_data_' . md5(url()->full());
+                            $data['sessionKey'] =  $sessionKey;
+                            session([
+                                $sessionKey => $exportData,
+                                $sessionKey . '_headers' => $exportHeaders
+                            ]);
+                        }
 
 
                         $data['unitsUsage'] =  $programsUsage[$request->program_id]['units'];
@@ -7410,6 +8544,50 @@ class ReportController extends Controller
                                 }
                             }
                         }
+                        $exportHeaders = ['Unit', 'Lesson'];
+
+                        foreach ($studentNames as $Name) {
+                            $exportHeaders[] = $Name . " Usage(%)";
+                        }
+
+
+                        $unitData = [];
+                        $index = 0;
+                        foreach ($programUsages as $classIndex => $programsUsage) {
+                            foreach ($programsUsage as $program) {
+                                foreach ($program['units'] as $unit) {
+                                    foreach ($unit['lessons'] as $lesson) {
+                                        $unitName = $unit['name'];
+                                        $lessonName = $lesson['name'];
+                                        $key = $unitName . ' - ' . $lessonName;
+
+                                        if (!isset($unitData[$key])) {
+                                            $unitData[$key] = [
+                                                'Unit' => $unitName,
+                                                'Lesson' => $lessonName,
+                                            ];
+                                        }
+
+                                        $unitData[$key][$studentNames[$index] . " Usage(%)"] = $lesson['usage_percentage'] . '%';
+                                    }
+                                }
+                            }
+                            $index++;
+                        }
+
+                        // Convert unit data into exportData format
+                        $exportData = array_values($unitData);
+                        // dd($exportData, $exportHeaders);
+                        // Store data in session
+                        if (!empty($exportData)) {
+                            $sessionKey = 'export_mastery_data_' . md5(url()->full());
+                            $data['sessionKey'] =  $sessionKey;
+                            session([
+                                $sessionKey => $exportData,
+                                $sessionKey . '_headers' => $exportHeaders
+                            ]);
+                        }
+
 
                         $data['lessonsUsage'] =  $programsUsage[$request->program_id]['units'];
                         $data['programUsages'] =  $programUsages;
@@ -7437,6 +8615,57 @@ class ReportController extends Controller
                                 }
                             }
                         }
+                        $exportHeaders = ['Unit', 'Lesson', 'Game'];
+
+                        foreach ($studentNames as $Name) {
+                            $exportHeaders[] = $Name . " Usage(%)";
+                        }
+
+
+                        $unitData = [];
+                        $index = 0;
+                        foreach ($programUsages as $classIndex => $programsUsage) {
+                            foreach ($programsUsage as $program) {
+                                foreach ($program['units'] as $unit) {
+                                    foreach ($unit['lessons'] as $lesson) {
+                                        foreach ($lesson['games'] as $game) {
+                                            $unitName = $unit['name'];
+                                            $lessonName = $lesson['name'];
+                                            $gameName = $game['name'];
+                                            $key = $unitName . ' - ' . $lessonName . ' - ' . $gameName;
+
+                                            if (!isset($unitData[$key])) {
+                                                $unitData[$key] = [
+                                                    'Unit' => $unitName,
+                                                    'Lesson' => $lessonName,
+                                                    'Game' => $gameName,
+                                                ];
+                                            }
+                                            if ($game['assigned'] == 1) {
+                                                $status = 'Assigned';
+                                            } else {
+                                                $status = 'Unassigned';
+                                            }
+                                            $unitData[$key][$studentNames[$index] . " Usage(%)"] = $status;
+                                        }
+                                    }
+                                }
+                            }
+                            $index++;
+                        }
+
+                        // Convert unit data into exportData format
+                        $exportData = array_values($unitData);
+                        // dd($exportData, $exportHeaders);
+                        // Store data in session
+                        if (!empty($exportData)) {
+                            $sessionKey = 'export_mastery_data_' . md5(url()->full());
+                            $data['sessionKey'] =  $sessionKey;
+                            session([
+                                $sessionKey => $exportData,
+                                $sessionKey . '_headers' => $exportHeaders
+                            ]);
+                        }
 
                         $data['gamesUsage'] =  $programsUsage[$request->program_id]['units'];
                         $data['programUsages'] =  $programUsages;
@@ -7459,6 +8688,38 @@ class ReportController extends Controller
                         $chartLabels[] = $program['name'];
                         $chartValues[] = $program['usage_percentage'];
                     }
+                }
+
+                $exportHeaders = ['Program'];
+
+                foreach ($studentNames as $Name) {
+                    $exportHeaders[] = $Name . " Usage(%)";
+                }
+
+                $unitData = [];
+                $index = 0;
+                foreach ($programUsages as $classIndex => $programsUsage) {
+                    foreach ($programsUsage as $program) {
+                        $programName = $program['name'];
+                        if (!isset($unitData[$programName])) {
+                            $unitData[$programName] = ['Program' => $programName];
+                        }
+                        $unitData[$programName][$studentNames[$index] . " Usage(%)"] = $program['usage_percentage'] . '%';
+                    }
+                    $index++;
+                }
+
+                // Convert unit data into exportData format
+                $exportData = array_values($unitData);
+
+                // Store data in session
+                if (!empty($exportData)) {
+                    $sessionKey = 'export_mastery_data_' . md5(url()->full());
+                    $data['sessionKey'] =  $sessionKey;
+                    session([
+                        $sessionKey => $exportData,
+                        $sessionKey . '_headers' => $exportHeaders
+                    ]);
                 }
 
                 $data['programUsages'] =  $programUsages;

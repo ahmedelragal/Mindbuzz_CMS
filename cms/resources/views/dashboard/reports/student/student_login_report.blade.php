@@ -31,9 +31,9 @@
                                                 </select>
                                                 @endrole
 
-                                                @role('school')
-                                                <input type="hidden" name="school_id" value="{{ auth()->user()->school_id }}">
-                                                @endrole
+                                                @if(auth()->user()->hasRole('school') || auth()->user()->hasRole('Cordinator'))
+                                                <input type="hidden" name="school_id" id="school_id" value="{{ auth()->user()->school_id }}">
+                                                @endif
                                             </div>
                                         </div>
 
@@ -44,7 +44,7 @@
                                                     @role('Admin')
                                                     <option value="" selected disabled>Choose a Student</option>
                                                     @endrole
-                                                    @role('school')
+                                                    @if(auth()->user()->hasRole('school') || auth()->user()->hasRole('Cordinator'))
                                                     @php
                                                     $schStudents = App\Models\User::where('school_id', auth()->user()->school_id)
                                                     ->where('role', 2)
@@ -56,7 +56,7 @@
                                                         {{ $student->name }}
                                                     </option>
                                                     @endforeach
-                                                    @endrole
+                                                    @endif
                                                 </select>
                                             </div>
                                         </div>
@@ -140,6 +140,7 @@
     document.getElementById('report_container').style.display = 'none';
 </script>
 @endif
+@role('Admin')
 <script>
     $(document).ready(function() {
         // Initialize select2 for the filters
@@ -186,5 +187,5 @@
         });
     }
 </script>
-
+@endrole
 @endsection

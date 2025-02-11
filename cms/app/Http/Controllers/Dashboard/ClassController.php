@@ -27,7 +27,9 @@ class ClassController extends Controller
     public function index(Request $request)
     {
         $user = auth()->user();
-
+        if ($user->hasRole('Cordinator')) {
+            abort(403, 'Unauthorized access.');
+        }
         if ($user->hasRole('school')) {
             $schoolId = $user->school->id;
             $schoolClasses = Group::where('school_id', $schoolId)->get()->unique('name');
@@ -83,6 +85,15 @@ class ClassController extends Controller
             'groupTeacher.groupTeach',
             'groupcoTeachers.coTeacher'
         ])->findOrFail($id);
+
+        $user = auth()->user(); // Get logged-in user
+        // Check if user has the 'school' role and the class belongs to their school
+        if ($user->hasRole('Cordinator')) {
+            abort(403, 'Unauthorized access to this class.');
+        }
+        if ($user->hasRole('school') && $class->school_id !== $user->school_id) {
+            abort(403, 'Unauthorized access to this class.');
+        }
         $groupedTeachers = $class->groupTeacher->groupBy(function ($groupTeacher) {
             if (!$groupTeacher->teacher)
                 return '-';
@@ -535,10 +546,26 @@ class ClassController extends Controller
      */
     public function getProgramSchool($schoolId)
     {
+        $roleCourseMapping = [
+            'PracticalLife-Cordinator' => 4,
+            'Math-Cordinator' => 3,
+            'Culture-Cordinator' => 2,
+            'Arabic-Cordinator' => 5,
+            'Phonics-Cordinator' => 1,
+        ];
+        $user = auth()->user();
+        if ($user->hasRole('school') || $user->hasRole('Admin')) {
+            $courseIds = [1, 2, 3, 4, 5];
+        } else {
+            $userRoles = $user->getRoleNames();
+            $assignedCourses = collect($roleCourseMapping)->only($userRoles->toArray());
+            $courseIds = $assignedCourses->values();
+        }
+
         $programs = Program::with(['course', 'stage'])
             ->whereHas('schoolProgram', function ($query) use ($schoolId) {
                 $query->where('school_id', $schoolId);
-            })
+            })->whereIn('course_id', $courseIds)
             ->get();
         $programsData = $programs->map(function ($program) {
             return [
@@ -550,7 +577,25 @@ class ClassController extends Controller
     }
     public function getProgramsGroup($groupId)
     {
-        $programs =  Program::whereIn('id', Group::with(['groupCourses'])->findOrFail($groupId)->groupCourses->pluck('program_id'))->get();
+        $roleCourseMapping = [
+            'PracticalLife-Cordinator' => 4,
+            'Math-Cordinator' => 3,
+            'Culture-Cordinator' => 2,
+            'Arabic-Cordinator' => 5,
+            'Phonics-Cordinator' => 1,
+        ];
+        $user = auth()->user();
+
+        if ($user->hasRole('school') || $user->hasRole('Admin')) {
+            $courseIds = [1, 2, 3, 4, 5];
+        } else {
+            $userRoles = $user->getRoleNames();
+            $assignedCourses = collect($roleCourseMapping)->only($userRoles->toArray());
+            $courseIds = $assignedCourses->values();
+        }
+
+        $programs =  Program::whereIn('id', Group::with(['groupCourses'])->findOrFail($groupId)->groupCourses->pluck('program_id'))
+            ->whereIn('course_id', $courseIds)->get();
         $programsData = $programs->map(function ($program) {
             return [
                 'id' => $program->id,
@@ -587,9 +632,23 @@ class ClassController extends Controller
                 break;
             }
         }
-
+        $roleCourseMapping = [
+            'PracticalLife-Cordinator' => 4,
+            'Math-Cordinator' => 3,
+            'Culture-Cordinator' => 2,
+            'Arabic-Cordinator' => 5,
+            'Phonics-Cordinator' => 1,
+        ];
+        $user = auth()->user();
+        if ($user->hasRole('school') || $user->hasRole('Admin')) {
+            $courseIds = [1, 2, 3, 4, 5];
+        } else {
+            $userRoles = $user->getRoleNames();
+            $assignedCourses = collect($roleCourseMapping)->only($userRoles->toArray());
+            $courseIds = $assignedCourses->values();
+        }
         // Fetch the common programs
-        $programs = Program::whereIn('id', $commonProgramIds)->get();
+        $programs = Program::whereIn('id', $commonProgramIds)->whereIn('course_id', $courseIds)->get();
 
         // Format the program data for the response
         $programsData = $programs->map(function ($program) {

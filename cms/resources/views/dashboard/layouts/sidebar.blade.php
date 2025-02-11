@@ -13,10 +13,13 @@
                 <div class="nk-sidebar-content">
                         <div class="nk-sidebar-menu" data-simplebar>
                                 <ul class="nk-menu">
+                                        @if (!Auth::user()->hasRole('Cordinator'))
                                         <li class="nk-menu-item"><a href="{{ route('dashboard') }}" class="nk-menu-link"><span
                                                                 class="nk-menu-icon"><em class="icon ni ni-dashboard-fill"></em></span><span
                                                                 class="nk-menu-text">Dashboard</span></a></li>
+                                        @endif
                                         @can('school-list')
+                                        @if(Auth::user()->hasRole('Admin'))
                                         <li class="nk-menu-item has-sub"><a href="#" class="nk-menu-link nk-menu-toggle"><span
                                                                 class="nk-menu-icon"><em class="icon ni ni-building"></em></span><span
                                                                 class="nk-menu-text">Users</span></a>
@@ -33,8 +36,10 @@
                                                         @endcan
                                                 </ul>
                                         </li>
+                                        @endif
                                         @endcan
                                         @can('school-list')
+                                        @if(!Auth::user()->hasRole('Cordinator'))
                                         <li class="nk-menu-item has-sub"><a href="#" class="nk-menu-link nk-menu-toggle"><span
                                                                 class="nk-menu-icon"><em class="icon ni ni-building"></em></span><span
                                                                 class="nk-menu-text">School</span></a>
@@ -51,10 +56,11 @@
                                                         @endcan
                                                 </ul>
                                         </li>
-
+                                        @endif
                                         @endcan
 
                                         @can('class-list')
+                                        @if(!Auth::user()->hasRole('Cordinator'))
                                         <li class="nk-menu-item has-sub"><a href="#" class="nk-menu-link nk-menu-toggle"><span
                                                                 class="nk-menu-icon"><em class="icon ni ni-user-circle"></em></span><span
                                                                 class="nk-menu-text">Class</span></a>
@@ -71,9 +77,11 @@
                                                         @endcan
                                                 </ul>
                                         </li>
+                                        @endif
                                         @endcan
 
                                         @can('student-list')
+                                        @if(!Auth::user()->hasRole('Cordinator'))
                                         <li class="nk-menu-item has-sub"><a href="#" class="nk-menu-link nk-menu-toggle"><span
                                                                 class="nk-menu-icon"><em class="icon ni ni-users-fill"></em></span><span
                                                                 class="nk-menu-text">Students</span></a>
@@ -88,9 +96,11 @@
                                                                                 List</span></a></li>
                                                 </ul>
                                         </li>
+                                        @endif
                                         @endcan
 
                                         @can('instructor-list')
+                                        @if(!Auth::user()->hasRole('Cordinator'))
                                         <li class="nk-menu-item has-sub"><a href="#" class="nk-menu-link nk-menu-toggle"><span
                                                                 class="nk-menu-icon"><em class="icon ni ni-user-fill"></em></span><span
                                                                 class="nk-menu-text">Teachers</span></a>
@@ -105,10 +115,11 @@
                                                                                 List</span></a></li>
                                                 </ul>
                                         </li>
+                                        @endif
                                         @endcan
 
-                                        @can('student-list')
 
+                                        @if(Auth::user()->can('student-list') || Auth::user()->hasRole('Cordinator'))
                                         <li class="nk-menu-item has-sub"><a href="#" class="nk-menu-link nk-menu-toggle"><span
                                                                 class="nk-menu-icon"><em class="icon ni ni-property-add"></em></span><span
                                                                 class="nk-menu-text">Student Reports</span></a>
@@ -223,6 +234,22 @@
                                                 <li class="nk-menu-item"><a href="{{ route('reports.schoolGenderReportWeb') }}"
                                                                 class="nk-menu-link"><span class="nk-menu-text">School Gender Report</span></a>
                                                 </li> -->
+                                                </ul>
+                                        </li>
+                                        @endif
+                                        @can('role-list')
+                                        <li class="nk-menu-item has-sub"><a href="#" class="nk-menu-link nk-menu-toggle"><span
+                                                                class="nk-menu-icon"><em class="icon ni ni-book-fill"></em></span><span
+                                                                class="nk-menu-text">Roles</span></a>
+                                                <ul class="nk-menu-sub">
+                                                        @can('role-create')
+                                                        <li class="nk-menu-item"><a href="{{ route('roles.create') }}" class="nk-menu-link"><span
+                                                                                class="nk-menu-text">Add Role</span></a></li>
+                                                        @endcan
+                                                        @can('role-list')
+                                                        <li class="nk-menu-item"><a href="{{ route('roles.index') }}" class="nk-menu-link"><span
+                                                                                class="nk-menu-text">Roles List</span></a></li>
+                                                        @endcan
                                                 </ul>
                                         </li>
                                         @endcan

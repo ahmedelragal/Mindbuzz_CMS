@@ -19,6 +19,7 @@ use App\Http\Controllers\Dashboard\SchoolController;
 use App\Http\Controllers\Dashboard\StageController;
 use App\Http\Controllers\Dashboard\StudentController;
 use App\Http\Controllers\ReportController;
+use App\Http\Controllers\ExportExcelController;
 use App\Http\Controllers\RoleController;
 use App\Http\Controllers\Dashboard\UserController;
 
@@ -110,6 +111,29 @@ Route::middleware('auth')->group(function () {
         Route::get('classHeatmapReport', [ReportController::class, 'classHeatmapReport'])->name('classHeatmapReport');
         Route::get('teacherHeatmapReport', [ReportController::class, 'teacherHeatmapReport'])->name('teacherHeatmapReport');
         Route::get('studentHeatmapReport', [ReportController::class, 'studentHeatmapReport'])->name('studentHeatmapReport');
+        //Export Excel Routes
+        Route::get('/export-school-completion-report/{sessionKey}', [ExportExcelController::class, 'exportSchoolCompletionReport'])->name('exportSchoolCompletionReport');
+        Route::get('/export-class-completion-report/{sessionKey}', [ExportExcelController::class, 'exportClassCompletionReport'])->name('exportClassCompletionReport');
+        Route::get('/export-student-completion-report/{sessionKey}', [ExportExcelController::class, 'exportStudentCompletionReport'])->name('exportStudentCompletionReport');
+        Route::get('/export-teacher-completion-report/{sessionKey}', [ExportExcelController::class, 'exportTeacherCompletionReport'])->name('exportTeacherCompletionReport');
+        Route::get('/export-class-mastery-report/{sessionKey}', [ExportExcelController::class, 'exportClassMasteryReport'])->name('exportClassMasteryReport');
+        Route::get('/export-student-mastery-report/{sessionKey}', [ExportExcelController::class, 'exportStudentMasteryReport'])->name('exportStudentMasteryReport');
+        Route::get('/export-teacher-mastery-report/{sessionKey}', [ExportExcelController::class, 'exportTeacherMasteryReport'])->name('exportTeacherMasteryReport');
+        Route::get('/export-school-engagement-report/{sessionKey}', [ExportExcelController::class, 'exportSchoolContentEngagementReport'])->name('exportSchoolContentEngagementReport');
+        Route::get('/export-student-engagement-report/{sessionKey}', [ExportExcelController::class, 'exportStudentContentEngagementReport'])->name('exportStudentContentEngagementReport');
+        Route::get('/export-teacher-engagement-report/{sessionKey}', [ExportExcelController::class, 'exportTeacherContentEngagementReport'])->name('exportTeacherContentEngagementReport');
+        Route::get('/export-class-engagement-report/{sessionKey}', [ExportExcelController::class, 'exportClassContentEngagementReport'])->name('exportClassContentEngagementReport');
+        Route::get('/export-class-trials-report/{sessionKey}', [ExportExcelController::class, 'exportClassTrialsReport'])->name('exportClassTrialsReport');
+        Route::get('/export-Student-trials-report/{sessionKey}', [ExportExcelController::class, 'exportStudentTrialsReport'])->name('exportStudentTrialsReport');
+        Route::get('/export-school-gap-report/{sessionKey}', [ExportExcelController::class, 'exportSchoolContentGapReport'])->name('exportSchoolContentGapReport');
+        Route::get('/export-class-gap-report/{sessionKey}', [ExportExcelController::class, 'exportClassContentGapReport'])->name('exportClassContentGapReport');
+        Route::get('/export-class-usage-report/{sessionKey}', [ExportExcelController::class, 'exportClassContentUsageReport'])->name('exportClassContentUsageReport');
+        Route::get('/export-teacher-coverage-report/{sessionKey}', [ExportExcelController::class, 'exportTeacherContentCoverageReport'])->name('exportTeacherContentCoverageReport');
+        Route::get('/export-class-heatmap-report/{sessionKey}', [ExportExcelController::class, 'exportClassHeatmapReport'])->name('exportClassHeatmapReport');
+        Route::get('/export-teacher-heatmap-report/{sessionKey}', [ExportExcelController::class, 'exportTeacherHeatmapReport'])->name('exportTeacherHeatmapReport');
+        Route::get('/export-student-heatmap-report/{sessionKey}', [ExportExcelController::class, 'exportStudentHeatmapReport'])->name('exportStudentHeatmapReport');
+        Route::get('/export-teacher-login-report/{sessionKey}', [ExportExcelController::class, 'exportTeacherLoginReport'])->name('exportTeacherLoginReport');
+        Route::get('/export-student-login-report/{sessionKey}', [ExportExcelController::class, 'exportStudentLoginReport'])->name('exportStudentLoginReport');
     });
     Route::get('/get-teacher-assignments/{teacherId}', [ReportController::class, 'getTeacherAssignments']);
     Route::get('/reports/fetch-mastery-data', [ReportController::class, 'fetchMasteryData'])->name('reports.fetchMasteryData');
@@ -130,14 +154,16 @@ Route::middleware('auth')->group(function () {
 
     Route::post('import-users', [StudentController::class, 'import'])->name('import.users');
     Route::resource('instructors', InstructorController::class);
-    Route::resource('schools', SchoolController::class);
+    Route::resource('schools', SchoolController::class)->middleware(['auth', 'role.admin']);
     // Route::resource('courses', CourseController::class);
     Route::resource('stages', StageController::class);
     Route::resource('classes', ClassController::class);
     Route::resource('programs', ProgramController::class);
     Route::any('programs.addcurriculum/{id}', [ProgramController::class, 'addcurriculum'])->name('add-curriculum');
     Route::any('programs.viewcurriculum/{id}', [ProgramController::class, 'viewcurriculum'])->name('view-curriculum');
-    Route::resource('users', UserController::class);
+    // Route::resource('users', UserController::class);
+    Route::resource('users', UserController::class)->middleware(['auth', 'role.admin']);
+
     Route::delete('curriculum/remove/{schoolid}/{programid}', [ProgramController::class, 'removecurriculum'])->name('curriculum.remove');
     Route::post('/students/import', [StudentController::class, 'import'])->name('students.import');
 
